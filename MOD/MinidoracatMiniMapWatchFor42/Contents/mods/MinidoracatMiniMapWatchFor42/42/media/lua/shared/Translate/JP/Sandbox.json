@@ -1,0 +1,16 @@
+{
+    "Sandbox_MinidoracatWatch": "マップウォッチ",
+    "Sandbox_MinidoracatWatch_Enabled": "マップウォッチを有効にする",
+    "Sandbox_MinidoracatWatch_Enabled_tooltip": "オフにすると、ウォッチなしでミニマップを使え、マップウォッチの電池も減りません。",
+    "Sandbox_MinidoracatWatch_MinimapRule": "ミニマップのルール",
+    "Sandbox_MinidoracatWatch_MinimapRule_tooltip": "ウォッチ不要：これまで通り使えます。\nウォッチ必須：電池のあるマップウォッチを着ける必要があります。\nミニマップ無効：誰もミニマップを開けません。",
+    "Sandbox_MinidoracatWatch_MinimapRule_option1": "ウォッチ不要",
+    "Sandbox_MinidoracatWatch_MinimapRule_option2": "ウォッチ必須",
+    "Sandbox_MinidoracatWatch_MinimapRule_option3": "ミニマップ無効",
+    "Sandbox_MinidoracatWatch_FullHours": "満充電の稼働時間（時間）",
+    "Sandbox_MinidoracatWatch_FullHours_tooltip": "現実時間で 1～720 時間：満充電の電池でマップウォッチが動く時間です。",
+    "Sandbox_MinidoracatWatch_DrainOffline": "オフライン中も消費する",
+    "Sandbox_MinidoracatWatch_DrainOffline_tooltip": "初期設定はオフ：ログアウト中は電池が減りません。\nオンにすると、次のログイン時にオフライン中の分を差し引きます（最大 30 日）。",
+    "Sandbox_MinidoracatWatch_DrainPaused": "シングルプレイの一時停止中も消費する",
+    "Sandbox_MinidoracatWatch_DrainPaused_tooltip": "初期設定はオフ：シングルプレイの一時停止中は電池が減りません。マルチプレイのサーバーには一時停止がありません。"
+}

@@ -1,0 +1,55 @@
+module MinidoracatWatch
+{
+    /*
+        ValuTech 地圖錶：照原版 WristWatch_Right/Left_DigitalBlack（generated/items/alarmclockclothing.txt:155-191）。
+        - ItemType base:alarmclockclothing 建 AlarmClockClothing（Item.java:1578-1610）；base:digital 讓原版時鐘多顯示
+          日期與氣溫（Clock.java:342、:375、:118-186），條件是戴著或手持（Clock.java:327-400）。
+        - 電量不在 Java：AlarmClockClothing 與 DrainableComboItem 都是 final（AlarmClockClothing.java:36、
+          DrainableComboItem.java:32），電量存 modData（shared/MinidoracatWatch.lua）。
+        - ClothingItem 必須用自己的 xml：clothingToItemMap 以 ClothingItem 名為鍵、後載入者覆蓋
+          （ScriptManager.java:1883-1892），共用原版名稱會讓殭屍服裝裡的原版數位錶（HumanVisual.java:853）
+          變成地圖錶。xml 只換 GUID，模型與貼圖照用原版（media/fileGuidTable.xml）。
+        - Icon 是全域貼圖名（Item.java:1988-1991）；WorldStaticModel 沒有 module 前綴時會找遍所有 module
+          （ScriptManager.java:1926-1948），解析成 Base.DigitalWatchBlack。
+        - 物品全名不可含 "Classic"：AlarmClockClothing 以全名含 Classic 判定指針錶（AlarmClockClothing.java:54-66）。
+        - 不加 base:morewhennozombies 與戰利品分佈（取得方式在 Phase 5）。
+        - 物品名碰到正式服之後只加不改：改名或刪除會讓世界裡的錶永久消失（InventoryItemFactory.java:179-184）。
+    */
+    item MapWatch_ValuTech_Right
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:alarmclockclothing,
+        Weight = 0.1,
+        Icon = DigitalWatch_Black,
+        AlarmSound = WatchAlarmLoop,
+        BodyLocation = base:rightwrist,
+        ClothingExtraSubmenu = RightWrist,
+        ClothingItem = MinidoracatWatch_ValuTech_Right,
+        ClothingItemExtra = MinidoracatWatch.MapWatch_ValuTech_Left,
+        ClothingItemExtraOption = LeftWrist,
+        Cosmetic = true,
+        MetalValue = 3.0,
+        SoundRadius = 7,
+        WorldStaticModel = DigitalWatchBlack,
+        Tags = base:digital;base:hasmetal,
+    }
+
+    item MapWatch_ValuTech_Left
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:alarmclockclothing,
+        Weight = 0.1,
+        Icon = DigitalWatch_Black,
+        AlarmSound = WatchAlarmLoop,
+        BodyLocation = base:leftwrist,
+        ClothingExtraSubmenu = LeftWrist,
+        ClothingItem = MinidoracatWatch_ValuTech_Left,
+        ClothingItemExtra = MinidoracatWatch.MapWatch_ValuTech_Right,
+        ClothingItemExtraOption = RightWrist,
+        Cosmetic = true,
+        MetalValue = 3.0,
+        SoundRadius = 7,
+        WorldStaticModel = DigitalWatchBlack,
+        Tags = base:digital;base:hasmetal,
+    }
+}

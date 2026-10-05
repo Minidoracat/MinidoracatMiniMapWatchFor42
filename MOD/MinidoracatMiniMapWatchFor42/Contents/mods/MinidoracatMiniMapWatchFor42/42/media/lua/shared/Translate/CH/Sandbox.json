@@ -1,0 +1,16 @@
+{
+    "Sandbox_MinidoracatWatch": "地圖錶",
+    "Sandbox_MinidoracatWatch_Enabled": "啟用地圖錶",
+    "Sandbox_MinidoracatWatch_Enabled_tooltip": "關閉後小地圖照舊開放、不需要戴錶，地圖錶也不會耗電。",
+    "Sandbox_MinidoracatWatch_MinimapRule": "小地圖規則",
+    "Sandbox_MinidoracatWatch_MinimapRule_tooltip": "不需要錶：照舊開放。\n戴錶才能用：要戴著有電的地圖錶。\n關閉小地圖：所有人都不能開小地圖。",
+    "Sandbox_MinidoracatWatch_MinimapRule_option1": "不需要錶",
+    "Sandbox_MinidoracatWatch_MinimapRule_option2": "戴錶才能用",
+    "Sandbox_MinidoracatWatch_MinimapRule_option3": "關閉小地圖",
+    "Sandbox_MinidoracatWatch_FullHours": "滿電可用時間（小時）",
+    "Sandbox_MinidoracatWatch_FullHours_tooltip": "現實時間，1 到 720 小時：一顆滿電的電池能讓地圖錶用多久。",
+    "Sandbox_MinidoracatWatch_DrainOffline": "離線時也耗電",
+    "Sandbox_MinidoracatWatch_DrainOffline_tooltip": "預設關閉：玩家下線期間電量不會減少。\n開啟時，下次上線會補扣離線期間的電量（最多 30 天）。",
+    "Sandbox_MinidoracatWatch_DrainPaused": "單機暫停時也耗電",
+    "Sandbox_MinidoracatWatch_DrainPaused_tooltip": "預設關閉：單機遊戲暫停期間電量不會減少。多人伺服器沒有暫停。"
+}

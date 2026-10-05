@@ -1,0 +1,16 @@
+{
+    "Sandbox_MinidoracatWatch": "地图表",
+    "Sandbox_MinidoracatWatch_Enabled": "启用地图表",
+    "Sandbox_MinidoracatWatch_Enabled_tooltip": "关闭后小地图照旧开放、不需要戴表，地图表也不会耗电。",
+    "Sandbox_MinidoracatWatch_MinimapRule": "小地图规则",
+    "Sandbox_MinidoracatWatch_MinimapRule_tooltip": "不需要表：照旧开放。\n戴表才能用：要戴着有电的地图表。\n关闭小地图：所有人都不能打开小地图。",
+    "Sandbox_MinidoracatWatch_MinimapRule_option1": "不需要表",
+    "Sandbox_MinidoracatWatch_MinimapRule_option2": "戴表才能用",
+    "Sandbox_MinidoracatWatch_MinimapRule_option3": "关闭小地图",
+    "Sandbox_MinidoracatWatch_FullHours": "满电可用时间（小时）",
+    "Sandbox_MinidoracatWatch_FullHours_tooltip": "现实时间，1 到 720 小时：一颗满电的电池能让地图表用多久。",
+    "Sandbox_MinidoracatWatch_DrainOffline": "离线时也耗电",
+    "Sandbox_MinidoracatWatch_DrainOffline_tooltip": "默认关闭：玩家下线期间电量不会减少。\n开启时，下次上线会补扣离线期间的电量（最多 30 天）。",
+    "Sandbox_MinidoracatWatch_DrainPaused": "单机暂停时也耗电",
+    "Sandbox_MinidoracatWatch_DrainPaused_tooltip": "默认关闭：单机游戏暂停期间电量不会减少。多人服务器没有暂停。"
+}

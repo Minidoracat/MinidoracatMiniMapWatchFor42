@@ -1,0 +1,16 @@
+{
+    "Sandbox_MinidoracatWatch": "Map Watch",
+    "Sandbox_MinidoracatWatch_Enabled": "Enable map watch",
+    "Sandbox_MinidoracatWatch_Enabled_tooltip": "When off, the minimap stays open without a watch and map watches don't drain.",
+    "Sandbox_MinidoracatWatch_MinimapRule": "Minimap rule",
+    "Sandbox_MinidoracatWatch_MinimapRule_tooltip": "No watch needed: the minimap stays open.\nWatch required: wear a map watch with charge.\nMinimap off: nobody can open the minimap.",
+    "Sandbox_MinidoracatWatch_MinimapRule_option1": "No watch needed",
+    "Sandbox_MinidoracatWatch_MinimapRule_option2": "Watch required",
+    "Sandbox_MinidoracatWatch_MinimapRule_option3": "Minimap off",
+    "Sandbox_MinidoracatWatch_FullHours": "Full battery runtime (hours)",
+    "Sandbox_MinidoracatWatch_FullHours_tooltip": "Real time, 1 to 720 hours: how long a full battery keeps a map watch running.",
+    "Sandbox_MinidoracatWatch_DrainOffline": "Drain while offline",
+    "Sandbox_MinidoracatWatch_DrainOffline_tooltip": "Off by default: the battery doesn't drain while the player is offline.\nWhen on, the offline time is deducted on the next login (up to 30 days).",
+    "Sandbox_MinidoracatWatch_DrainPaused": "Drain while paused (single player)",
+    "Sandbox_MinidoracatWatch_DrainPaused_tooltip": "Off by default: the battery doesn't drain while a single-player game is paused. Multiplayer servers don't pause."
+}

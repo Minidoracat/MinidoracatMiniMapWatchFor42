@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fileGuidTable>
+	<files>
+		<path>media/clothing/clothingItems/MinidoracatWatch_ValuTech_Left.xml</path>
+		<guid>c3493348-5bbf-4a04-b1e6-e2c99a392425</guid>
+	</files>
+	<files>
+		<path>media/clothing/clothingItems/MinidoracatWatch_ValuTech_Right.xml</path>
+		<guid>6d5df3d6-b289-43cb-9940-d1a56f04b333</guid>
+	</files>
+</fileGuidTable>

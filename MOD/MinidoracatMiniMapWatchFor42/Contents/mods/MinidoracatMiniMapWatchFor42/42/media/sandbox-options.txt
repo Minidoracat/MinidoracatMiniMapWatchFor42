@@ -1,0 +1,19 @@
+VERSION = 1,
+
+/* 地圖錶（Phase 2 最小集合）。命名空間與 MOD ID 脫鉤，日後併回主 MOD 時設定可沿用 */
+
+option MinidoracatWatch.Enabled
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_Enabled,}
+
+/* 1 不需要錶、2 戴錶才能用、3 關閉小地圖 */
+option MinidoracatWatch.MinimapRule
+{type = enum, numValues = 3, default = 2, page = MinidoracatWatch, translation = MinidoracatWatch_MinimapRule,}
+
+option MinidoracatWatch.FullHours
+{type = integer, min = 1, max = 720, default = 72, page = MinidoracatWatch, translation = MinidoracatWatch_FullHours,}
+
+option MinidoracatWatch.DrainOffline
+{type = boolean, default = false, page = MinidoracatWatch, translation = MinidoracatWatch_DrainOffline,}
+
+option MinidoracatWatch.DrainPaused
+{type = boolean, default = false, page = MinidoracatWatch, translation = MinidoracatWatch_DrainPaused,}

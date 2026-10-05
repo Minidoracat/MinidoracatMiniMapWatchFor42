@@ -20,89 +20,84 @@
 - 新防線寫完先「植入違規證明它會抓」再信任它——測不出來的測試等於沒有測試
 ]]
 
--- 家族佈局固定，直接填死最省事；scaffold 時由模板替換佔位符
-local MEDIA = "MOD/MinidoracatMiniMapWatchFor42/Contents/mods/MinidoracatMiniMapWatchFor42/42/media/lua"
+-- 假全域與載入工具共用 scripts/lib_watch_fakes.lua（test_watch_*.lua 也用同一份）
+local F = dofile("scripts/lib_watch_fakes.lua")
+local check, near = F.check, F.near
 
--- ===== 假的 PZ 全域（依 MOD 實際用到的 API 增補）=====
--- 起始時間要夠大：週期類邏輯常寫成 now - lastAt >= interval 而 lastAt 初值 0，
--- 從 0 起跳會讓第一輪永遠不觸發（遊戲的 getTimestampMs 本來就是大數）
-local nowMs = 5000000
-local logLines = {}
+-- 專用伺服器視角：載入真正的 shared 與 server 檔
+F.mode = "server"
+require "MinidoracatWatch"
+F.load("server/MinidoracatWatch_Server.lua")
+local W = MinidoracatWatchCore
+local H = 3600000
 
-function getTimestampMs() return nowMs end
-function isClient() return false end
-function isServer() return true end
-function writeLog(_, text) logLines[#logLines + 1] = text end
-function getText(key) return key end
-
-local tickHandlers, clientCommandHandlers = {}, {}
-Events = setmetatable({}, {
-    __index = function(_, name)
-        return {
-            Add = function(fn)
-                if name == "OnTick" then tickHandlers[#tickHandlers + 1] = fn
-                elseif name == "OnClientCommand" then clientCommandHandlers[#clientCommandHandlers + 1] = fn end
-            end,
-        }
-    end,
-})
-
--- java 風格清單（size()/get(i)，0-based）——PZ 回傳的容器幾乎都是這個形狀
-local function javaList(items)
-    return {
-        size = function() return #items end,
-        get = function(_, i) return items[i + 1] end,
-        _raw = items,
-    }
+local function tick(ms, step)
+    local t = 0
+    while t < ms do F.now = F.now + step; t = t + step; F.fire("OnTickEvenPaused") end
+end
+local function command(player, args)
+    F.fire("OnClientCommand", W.MODULE, W.CMD_BATTERY, player, args)
 end
 
--- ===== 載入受測程式碼 =====
-local loaded = {}
-function require(name)
-    if loaded[name] then return true end
-    loaded[name] = true
-    for _, dir in ipairs({ "shared", "server", "client" }) do
-        local chunk = loadfile(MEDIA .. "/" .. dir .. "/" .. name .. ".lua")
-        if chunk then chunk() return true end
-    end
-    error("require 找不到: " .. name)
-end
+F.print("情境一：戴錶 → 伺服器每分鐘扣電並同步")
+local alice = F.player("alice", 0)
+local watch = F.item(F.RIGHT)
+alice.inv:AddItem(watch)
+F.action(ISWearClothing, alice, watch):complete()
+tick(1000, 100)
+tick(10 * 60000, 500)
+check(#F.synced == 10, "十分鐘同步十次（不是每 tick）")
+check(near(W.charge(watch), 1 - 10 * 60000 / (72 * H), 1e-4), "扣掉十分鐘的電")
 
--- TODO: require 你的 MOD 模組（shared 先於 server/client）
--- require "MyMod_Core"
--- require "MyMod_Server"
+F.print("情境二：換電池（client command）→ 電量守恆、節流、反例")
+local bat = F.item("Base.Battery")
+bat:setCurrentUsesFloat(0.6)
+alice.inv:AddItem(bat)
+local old = W.charge(watch)
+F.reset()
+command(alice, { watchId = watch:getID(), install = true, batteryId = bat:getID() })
+check(near(W.charge(watch), bat:getCurrentUsesFloat()) and bat.container == nil, "裝入：錶的電量＝電池剩餘量")
+local returned = F.added[1]
+check(returned and near(returned:getCurrentUsesFloat(), old, 0.0035), "舊電池帶剩餘量還回背包")
+check(#F.synced == 1, "換電池後同步錶的 modData")
+command(alice, { watchId = watch:getID(), install = false })
+check(W.charge(watch) ~= nil, "250ms 內的第二個指令被節流")
+F.now = F.now + 300
+command(alice, { watchId = watch:getID(), install = false })
+check(W.charge(watch) == nil, "節流期過後取出成功")
 
--- ===== 測試工具 =====
-local failures = 0
-local function check(ok, label)
-    if ok then print("  PASS  " .. label)
-    else failures = failures + 1; print("  FAIL  " .. label) end
-end
+local mallory = F.player("mallory", 1)
+local loot = F.item("Base.Battery")
+alice.inv:AddItem(loot)
+F.reset()
+F.now = F.now + 300
+command(mallory, { watchId = watch:getID(), install = true, batteryId = loot:getID() })
+check(W.charge(watch) == nil and loot.container == alice.inv, "冒用別人的錶與電池：不動任何東西")
+check(#F.serverCmds == 1 and F.serverCmds[1].player == mallory and F.serverCmds[1].args.reason == W.FAIL_GENERIC
+    and F.serverCmds[1].args.to == "mallory", "失敗只回給送指令的人、只帶常數鍵")
+F.now = F.now + 300
+command(mallory, "junk")
+command(alice, { watchId = "1001", install = true, batteryId = loot:getID() })
+check(W.charge(watch) == nil, "非 table／字串 id 一律不處理")
 
-local function runTicks(count)
-    for _ = 1, count do
-        for _, fn in ipairs(tickHandlers) do fn() end
-    end
-end
+F.print("情境三：換手保留電量、同時只能戴一支")
+F.now = F.now + 300
+command(alice, { watchId = watch:getID(), install = true, batteryId = loot:getID() })
+local before = W.charge(watch)
+local swap = F.action(ISClothingExtraAction, alice, watch, F.LEFT)
+check(swap:complete() == true, "伺服器端換手完成")
+local moved = W.wornWatch(alice)
+check(moved ~= watch and moved.fullType == F.LEFT and W.charge(moved) == before, "新物品 ID 不同、電量隨 modData 過去")
+local second = F.item(F.RIGHT)
+alice.inv:AddItem(second)
+check(F.action(ISWearClothing, alice, second):complete() == false, "伺服器 complete 擋第二支")
+F.reset()
+tick(60000, 500)
+check(#F.synced == 1 and F.synced[1].item == moved, "扣電跟著換手後的新物品")
 
--- ===== 情境 =====
--- TODO: 依 MOD 功能撰寫。範例形狀（來自 Cleaner 的實戰情境，見該 repo scripts/smoke_scanner.lua）：
---   情境一：主流程 happy path（建世界 → 觸發 → 跨 tick 推進 → 斷言結果）
---   情境二：安全邊界反面斷言（範圍外／受保護對象必須存活）
---   情境三：效能不變式（提早退出真的沒碰不該碰的東西——用計數器證明）
---
--- print("情境一：…")
--- check(condition, "描述")
--- nowMs = nowMs + 61000   -- 推進時間跨過掃描間隔／節流窗
--- runTicks(600)
-
-print("（骨架自檢）")
-check(type(javaList({}).size) == "function", "javaList 形狀正確")
-check(#logLines == 0 and #clientCommandHandlers >= 0, "假全域就緒")
-
-print()
-if failures > 0 then
-    print(failures .. " 項失敗")
+F.print()
+if F.failures > 0 then
+    F.print(F.failures .. " 項失敗")
     os.exit(1)
 end
-print("全部通過（記得補上真正的情境）")
+F.print("全部通過（" .. F.count .. " 項）")

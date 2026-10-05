@@ -40,6 +40,9 @@
  15. 腳本區塊註解與大括號   — 註解 /* 沒有對應的 */ 時，ScriptParser.stripComments 從最後一個 */ 往回剝
                           （ScriptParser.java:52-87），剩下的 /* 連同整個 module 被當成區塊標頭，整檔靜默不載入
                           （Knox Pass 2026-10-06 實踩：template 不見、感應盒槽全部沒注入，只有實機看得出來）
+ 16. Lua 字串字面值只有 ASCII — Kahlua LexState 以 (byte)c 存 token（LexState.java:194-199），中文字面值變亂碼；
+                          luac 與標準 Lua 測試都照 UTF-8 處理、攔不住。只掃字串，註解不限
+ 17. Lua 單元測試          — scripts/test_*.lua 自動全跑（非零碼＝FAIL）；PATH 沒有 lua 則 SKIP
 
 新增檢查時：同步把對應的坑記進 AGENTS.md 踩坑錄，並依「踩坑進化協議」回流到
 pz-mod-template（見 AGENTS.md）。
@@ -760,6 +763,38 @@ else:
                         _glyph_problems.append(f"{lang}/{name} {key}：" + "；".join(bad))
     _label = GLYPH_LABEL + (f"（CN 另有 {len(_cn_missing)} 個漢字原版字型就缺，不計）" if _cn_missing else "")
     fail(_label, _glyph_problems) if _glyph_problems else ok(_label)
+
+# ---- 16. Lua 字串字面值禁非 ASCII ----
+# Kahlua 的 LexState 把 token 存進 byte[]、以 (byte)c 截斷（LexState.java:194-199），中文字面值送到畫面是亂碼；
+# luac 與標準 Lua 測試都照 UTF-8 處理、攔不住。註解可以寫中文，只掃字串（含長字串）。
+_LUA_STR = re.compile(r"--\[(=*)\[.*?\]\1\]|--[^\n]*|\[(=*)\[(.*?)\]\2\]|\"((?:\\.|[^\"\\\n])*)\"|'((?:\\.|[^'\\\n])*)'", re.S)
+bad = []
+for f in LUA_FILES:
+    with open(f, encoding="utf-8") as fh:
+        src = fh.read()
+    for mm in _LUA_STR.finditer(src):
+        body = mm.group(3) or mm.group(4) or mm.group(5) or ""
+        if any(ord(ch) > 127 for ch in body):
+            bad.append(f"{os.path.relpath(f, REPO)}:{src.count(chr(10), 0, mm.start()) + 1} {body[:30]}")
+fail("Lua 字串字面值只有 ASCII（玩家文字放翻譯檔）", bad) if bad \
+    else ok("Lua 字串字面值只有 ASCII（玩家文字放翻譯檔）")
+
+# ---- 17. Lua 單元測試（scripts/test_*.lua 自動全跑）----
+# 每支測試失敗時以非零碼結束、最後一行印摘要；沒有 lua 直譯器＝SKIP（防線沒跑到，不能列 PASS）。
+_lua_bin = shutil.which("lua")
+_tests = sorted(n for n in os.listdir(os.path.join(REPO, "scripts")) if re.fullmatch(r"test_.*\.lua", n))
+for _script in _tests:
+    _gate = f"Lua 單元測試（{_script}）"
+    if not _lua_bin:
+        skip(_gate, "PATH 沒有 lua")
+        continue
+    _r = subprocess.run([_lua_bin, f"scripts/{_script}"], capture_output=True, cwd=REPO)
+    _lines = [l for l in (_r.stdout or b"").decode("utf-8", "replace").splitlines() if l.strip()]
+    _err_tail = (_r.stderr or b"").decode("utf-8", "replace").splitlines()[-3:]
+    if _r.returncode != 0:
+        fail(_gate, (_lines[-3:] or []) + _err_tail)
+    else:
+        fail(_gate, ["無輸出"]) if not _lines else ok(f"{_gate}：{_lines[-1]}")
 
 # ---- 總結 ----
 print()
