@@ -69,20 +69,36 @@ function Item:hasModData() return self.md ~= nil end
 function Item:getModData() self.md = self.md or {}; return self.md end
 function Item:getContainer() return self.container end
 function Item:getDisplayName() return self.fullType end
+-- Battery：UseDelta 是 Java float 0.007f（Lua 讀到 0.007000000216066837）；uses 是整數格
+function Item:getUseDelta() return self.useDelta end
+function Item:getMaxUses() return math.floor(1 / self.useDelta) end
+function Item:getCurrentUses() return self.uses end
+function Item:setCurrentUses(n)
+    assert(math.type and math.type(n) == "integer" or n == math.floor(n), "setCurrentUses needs an int")
+    self.uses = n
+end
 function Item:getCurrentUsesFloat() return self.uses * self.useDelta end
+-- DrainableComboItem.setCurrentUsesFloat：夾 0..1 後 Math.round（四捨五入，DrainableComboItem.java:83-87）
 function Item:setCurrentUsesFloat(f)
     if f < 0 then f = 0 elseif f > 1 then f = 1 end
     self.uses = math.floor(f / self.useDelta + 0.5)
 end
 
+F.BATTERY_DELTA = 0.007000000216066837
 function F.item(fullType)
     local it = setmetatable({ id = newId(), fullType = fullType, _class = "InventoryItem" }, Item)
     if fullType == "Base.Battery" then
-        it.useDelta = 0.007
-        it.uses = math.floor(1 / it.useDelta) -- 新電池＝getMaxUses
+        it.useDelta = F.BATTERY_DELTA
+        it.uses = it:getMaxUses() -- 新電池＝getMaxUses（142 格）
     end
     return it
 end
+-- 全域 ModData（ModData.java:20）
+F.globalModData = {}
+ModData = { getOrCreate = function(tag)
+    F.globalModData[tag] = F.globalModData[tag] or {}
+    return F.globalModData[tag]
+end }
 F.RIGHT = "MinidoracatWatch.MapWatch_ValuTech_Right"
 F.LEFT = "MinidoracatWatch.MapWatch_ValuTech_Left"
 function instanceItem(fullType) return F.item(fullType) end

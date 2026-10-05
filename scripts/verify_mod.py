@@ -79,15 +79,15 @@ def ok(label):
 
 def fail(label, details=None):
     details = details or []
+    if not details:
+        # 呼叫端說「失敗」卻沒附細節：照失敗算，不能因為清單是空的就變成 PASS
+        details = ["（呼叫端沒有附失敗細節）"]
     kept = [d for d in details if not any(p in d for p in IGNORE_PATTERNS)]
     waived = [d for d in details if any(p in d for p in IGNORE_PATTERNS)]
     for d in waived:
         print(f"  WAIVE {label}: {d}（verify_ignore.txt 豁免）")
     if not kept:
-        if waived:
-            ok(f"{label}（{len(waived)} 筆豁免）")
-        else:
-            ok(label)
+        ok(f"{label}（{len(waived)} 筆豁免）")
         return
     failed.append(label)
     print(f"  FAIL  {label}")
@@ -781,20 +781,45 @@ fail("Lua 字串字面值只有 ASCII（玩家文字放翻譯檔）", bad) if ba
 
 # ---- 17. Lua 單元測試（scripts/test_*.lua 自動全跑）----
 # 每支測試失敗時以非零碼結束、最後一行印摘要；沒有 lua 直譯器＝SKIP（防線沒跑到，不能列 PASS）。
+# 判定只看退出碼與有沒有輸出，細節一律帶退出碼：沒輸出的非零退出也必須是 FAIL。
+def lua_test_verdict(lua_bin, script, cwd):
+    """回 (True, 摘要) 或 (False, 細節清單)。"""
+    r = subprocess.run([lua_bin, script], capture_output=True, cwd=cwd)
+    lines = [l for l in (r.stdout or b"").decode("utf-8", "replace").splitlines() if l.strip()]
+    err_tail = [l for l in (r.stderr or b"").decode("utf-8", "replace").splitlines() if l.strip()][-3:]
+    if r.returncode != 0:
+        return False, [f"退出碼 {r.returncode}"] + lines[-3:] + err_tail
+    if not lines:
+        return False, ["退出碼 0 但沒有任何輸出"] + err_tail
+    return True, lines[-1]
+
+
 _lua_bin = shutil.which("lua")
+if not _lua_bin:
+    skip("Lua 測試執行器自檢", "PATH 沒有 lua")
+else:
+    # 自檢：沒輸出的 exit 1、沒輸出的 exit 0、error() 都要判 FAIL，有摘要的 exit 0 判 PASS
+    _self_bad = []
+    with tempfile.TemporaryDirectory() as _td:
+        for _name, _src, _want in (("silent_exit1.lua", "os.exit(1)", False),
+                                   ("silent_exit0.lua", "os.exit(0)", False),
+                                   ("error.lua", "error('boom')", False),
+                                   ("good.lua", "print('x: 1 checks OK')", True)):
+            with open(os.path.join(_td, _name), "w", encoding="utf-8") as _fh:
+                _fh.write(_src + "\n")
+            _got, _ = lua_test_verdict(_lua_bin, _name, _td)
+            if _got != _want:
+                _self_bad.append(f"{_name}：預期 {'PASS' if _want else 'FAIL'}，得到 {'PASS' if _got else 'FAIL'}")
+    fail("Lua 測試執行器自檢", _self_bad) if _self_bad else ok("Lua 測試執行器自檢（非零退出與無輸出都判 FAIL）")
+
 _tests = sorted(n for n in os.listdir(os.path.join(REPO, "scripts")) if re.fullmatch(r"test_.*\.lua", n))
 for _script in _tests:
     _gate = f"Lua 單元測試（{_script}）"
     if not _lua_bin:
         skip(_gate, "PATH 沒有 lua")
         continue
-    _r = subprocess.run([_lua_bin, f"scripts/{_script}"], capture_output=True, cwd=REPO)
-    _lines = [l for l in (_r.stdout or b"").decode("utf-8", "replace").splitlines() if l.strip()]
-    _err_tail = (_r.stderr or b"").decode("utf-8", "replace").splitlines()[-3:]
-    if _r.returncode != 0:
-        fail(_gate, (_lines[-3:] or []) + _err_tail)
-    else:
-        fail(_gate, ["無輸出"]) if not _lines else ok(f"{_gate}：{_lines[-1]}")
+    _ok, _info = lua_test_verdict(_lua_bin, f"scripts/{_script}", REPO)
+    ok(f"{_gate}：{_info}") if _ok else fail(_gate, _info)
 
 # ---- 總結 ----
 print()

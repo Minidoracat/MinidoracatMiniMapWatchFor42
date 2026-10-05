@@ -116,13 +116,15 @@ local bag = F.bag(s.inv)
 local bat = F.item("Base.Battery")
 bat:setCurrentUsesFloat(0.8)
 bag:AddItem(bat)
-local batCharge = bat:getCurrentUsesFloat()
+local batCharge = bat:getCurrentUses() * bat:getUseDelta()
+local UD = F.BATTERY_DELTA
 local ok = W.applyBatteryChange(s, w:getID(), true, bat:getID())
 check(ok == true, "裝入袋子裡的電池成功")
 check(near(W.charge(w), batCharge), "錶的電量＝那顆電池的剩餘量")
 check(bat.container == nil and F.removed[1] == bat, "電池從袋子移除並送出移除封包")
 local back = s.inv:getAllTypeRecurse("Base.Battery")
-check(back:size() == 1 and near(back:get(0):getCurrentUsesFloat(), 0.5, 0.0035), "舊電池帶 50% 還回背包（誤差 ≤ 半格）")
+local backC = back:size() == 1 and back:get(0):getCurrentUsesFloat()
+check(backC and backC <= 0.5 and backC > 0.5 - UD, "舊電池還回背包：無條件捨去到整數格（≤ 原電量、少不到一格）")
 check(F.added[1] == back:get(0), "還回的電池有送新增封包")
 check(#F.synced == 1 and F.synced[1].item == w, "伺服器同步錶的 modData")
 
@@ -131,7 +133,8 @@ local before = W.charge(w)
 ok = W.applyBatteryChange(s, w:getID(), false)
 check(ok == true and W.charge(w) == nil, "取出電池後錶沒有電池")
 local all = s.inv:getAllTypeRecurse("Base.Battery")
-check(all:size() == 2 and near(all:get(1):getCurrentUsesFloat(), before, 0.0035), "取出的電池帶原電量")
+local outC = all:size() == 2 and all:get(1):getCurrentUsesFloat()
+check(outC and outC <= before + 1e-12 and outC > before - UD, "取出的電池帶原電量（捨去到整數格）")
 local r1, r2 = W.applyBatteryChange(s, w:getID(), false)
 check(r1 == false and r2 == W.FAIL_NO_BATTERY, "沒電池時取出被拒")
 
@@ -140,7 +143,35 @@ s.inv:AddItem(fresh)
 F.reset()
 check(W.applyBatteryChange(s, fresh:getID(), false) == true and #s.inv:getAllTypeRecurse("Base.Battery")._items == 3,
     "全新錶視為裝著滿電電池，可取出一顆")
-check(near(F.added[1]:getCurrentUsesFloat(), 1, 0.0035), "取出的是滿電電池")
+check(F.added[1]:getCurrentUses() == 142, "取出的是滿電電池（142 格，與新電池相同）")
+
+-- 反覆拆裝不得生電：0.503 用四捨五入會變成 72 格＝0.504
+local function totalCharge(p, watch)
+    local t = W.charge(watch) or 0
+    local list = p.inv:getAllTypeRecurse("Base.Battery")
+    for i = 0, list:size() - 1 do t = t + list:get(i):getCurrentUses() * list:get(i):getUseDelta() end
+    return t
+end
+local loop = F.player("erin", 4)
+local lw = F.item(F.RIGHT)
+loop.inv:AddItem(lw)
+W.setCharge(lw, 0.503)
+local start, grew = totalCharge(loop, lw), false
+for _ = 1, 30 do
+    W.applyBatteryChange(loop, lw:getID(), false)
+    if totalCharge(loop, lw) > start + 1e-12 then grew = true end
+    local b = loop.inv:getAllTypeRecurse("Base.Battery"):get(0)
+    W.applyBatteryChange(loop, lw:getID(), true, b:getID())
+    if totalCharge(loop, lw) > start + 1e-12 then grew = true end
+end
+check(not grew, "反覆拆裝 30 次，總電量從未增加")
+check(totalCharge(loop, lw) > start - UD, "反覆拆裝最多損失一格（第一次捨去）")
+-- 裝入 143 格的電池（setCurrentUsesFloat(1) 四捨五入出來的）夾回 1
+local over = F.item("Base.Battery")
+over:setCurrentUsesFloat(1)
+loop.inv:AddItem(over)
+W.applyBatteryChange(loop, lw:getID(), true, over:getID())
+check(over.uses == 143 and W.charge(lw) == 1, "超過 1 的電池裝入後夾回 1")
 
 -- 反例：每一條都不得動到任何物品
 local function untouched(label, ...)
@@ -197,7 +228,7 @@ check(near(W.charge(worn), 1 - 60000 / (72 * H), 1e-6), "一分鐘扣 1/4320")
 check(W.charge(pocket) == 1 and not pocket.md, "沒戴的錶不扣")
 F.reset()
 run(30000, 100)
-check(#F.synced == 0, "不到一分鐘不寫 modData")
+check(#F.synced == 0, "不到一分鐘不送同步封包")
 F.now = F.now - 3600000 -- 時鐘倒退一小時
 run(60000, 100)
 local afterBack = W.charge(worn)
@@ -235,6 +266,60 @@ F.now = F.now + 6 * H
 F.players = { z }
 run(60000, 1000)
 check(W.charge(worn) > 1 - 3 * 60000 / (72 * H), "預設離線不補扣")
+
+-- 結算間隔內換錶、脫錶：耗電記在當時戴著的那支（誤差 ≤ 一次入帳間隔 1 秒）
+local per = 1 / (72 * H)
+W.setCharge(worn, 1); W.setCharge(pocket, 1)
+F.reset()
+run(30000, 100)
+F.unwear(z, worn); F.wear(z, pocket)
+run(30000, 100)
+check(math.abs((1 - W.charge(worn)) / per - 30000) <= 1100, "換錶前 30 秒記在第一支（" .. math.floor((1 - W.charge(worn)) / per) .. " ms）")
+check(math.abs((1 - W.charge(pocket)) / per - 30000) <= 1100, "換錶後 30 秒記在第二支")
+local syncedOld = false
+for _, e in ipairs(F.synced) do if e.item == worn then syncedOld = true end end
+check(syncedOld, "換下的錶同步一次最後的電量")
+local p0 = W.charge(pocket)
+run(30000, 100)
+F.unwear(z, pocket)
+run(90000, 100)
+check(math.abs((p0 - W.charge(pocket)) / per - 30000) <= 1100, "結算前脫錶：戴著的 30 秒照扣、脫下後不扣")
+
+-- 換手與換電池當下立刻入帳（不留 1 秒誤差）：先對齊到剛入帳完，再走 500ms 不觸發入帳
+F.wear(z, pocket)
+run(3000, 1000)
+local function halfSecond()
+    run(1000, 1000) -- 這一幀剛好入帳
+    W.setCharge(pocket, 71 * F.BATTERY_DELTA + 1e-6)
+    F.now = F.now + 500
+    W.onTick() -- 有效時間 +500ms，但不到入帳間隔
+end
+halfSecond()
+local swapped = F.action(ISClothingExtraAction, z, pocket, F.RIGHT)
+swapped:complete()
+local newWatch = W.wornWatch(z)
+check(newWatch ~= pocket and W.charge(newWatch) < 71 * F.BATTERY_DELTA, "換手前先把 500ms 的耗電寫進舊錶再複製")
+pocket = newWatch
+halfSecond()
+F.reset()
+W.applyBatteryChange(z, pocket:getID(), false)
+check(F.added[1] and F.added[1]:getCurrentUses() == 70, "取電池前先入帳：退回 70 格而不是 71 格")
+W.setCharge(pocket, 1)
+
+-- 客戶端整表覆蓋玩家 modData 之後重登：離線時間仍以伺服器的紀錄計算
+SandboxVars.MinidoracatWatch.DrainOffline = true
+run(61000, 1000)
+z.md = {} -- 客戶端 transmitModData 用舊表覆蓋（ObjectModDataPacket.java:54-62）
+F.players = {}
+run(61000, 1000)
+F.now = F.now + 6 * H
+F.players = { z }
+run(2000, 1000)
+check(near(W.charge(pocket), 1 - 6 * H / (72 * H), 0.002), "玩家 modData 被覆蓋也照樣補扣離線 6 小時")
+check(F.globalModData[W.SEEN_TABLE] and F.globalModData[W.SEEN_TABLE][W.seenKey(z)] == F.now,
+    "上次在線時間存在伺服器的全域 ModData")
+SandboxVars.MinidoracatWatch.DrainOffline = false
+worn = pocket
 
 -- 單機暫停
 F.mode = "sp"

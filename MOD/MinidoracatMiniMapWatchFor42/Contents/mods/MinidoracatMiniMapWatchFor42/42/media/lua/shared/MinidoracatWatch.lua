@@ -6,7 +6,7 @@
 -- （AlarmClockClothing.java:36、DrainableComboItem.java:32）。
 -- 換手（ISClothingExtraAction）會建新物品、ID 改變，但整份 modData 會複製過去
 -- （ISClothingExtraAction.lua:107-108），所以狀態只綁 modData，不綁物品 ID。
--- 物品 modData 只放這一個數字：時間戳放玩家 modData（家族規則：物品身上不存時間戳）。
+-- 物品 modData 只放這一個數字：上次在線時間放伺服器的全域 ModData（家族規則：物品身上不存時間戳）。
 --
 -- 權威：扣電與換電池只在伺服器（MP）或單機執行。MP 客戶端只讀 modData、送請求。
 
@@ -18,7 +18,6 @@ W.MODULE = "MinidoracatWatch" -- client／server command module
 W.CMD_BATTERY = "battery"
 W.CMD_FAILED = "batteryFailed"
 W.KEY = "MinidoracatWatchBattery"
-W.SEEN_KEY = "MinidoracatWatchSeenMs" -- 玩家 modData：上次結算的牆鐘時間（只給「離線也耗電」用）
 W.NO_BATTERY = -1
 W.BATTERY_TYPE = "Base.Battery"
 W.WATCH_TYPES = {
@@ -191,6 +190,8 @@ function W.guardWearAction(cls)
     end
     cls.complete = function(self)
         if W.blockingWatch(self) then return false end
+        -- 換手會複製舊錶的 modData 到新物品（ISClothingExtraAction.lua:107-108）：先把還沒入帳的耗電寫進舊錶
+        if W.isWatch(self.item) then W.settleNow(self.character) end
         return complete(self)
     end
 end
@@ -205,12 +206,24 @@ if ISClothingExtraAction then W.guardWearAction(ISClothingExtraAction) end
 -- 只收純量：watchId、install、batteryId；兩件物品都只從「這位玩家自己的背包樹」依 ID 重新解析
 -- （ItemContainer.getItemWithIDRecursiv＝ItemContainer.java:3094），地上、別人身上、車上的物品都拿不到。
 -- 電量守恆：裝入＝錶的電量變成那顆電池的剩餘量、那顆電池移除；錶原本有電池就以當時剩餘量還一顆回背包。
+-- 電池的電量是整數格（uses × UseDelta，Battery 0.007＝最多 142 格，DrainableComboItem.java:67-69、:90-92）。
+-- 還電池時一律無條件捨去到整數格：setCurrentUsesFloat 是四捨五入（:83-87），反覆拆裝能把已扣的電補回來。
+-- 裝入時錶的電量取「格數 × UseDelta」的 Lua 雙精度值（不用 float 運算的 getCurrentUsesFloat），
+-- 拆出來時同一個值除回去才會剛好是原格數；+1e-9 只吸收除法的 1 ulp 誤差。
 -- 回傳 true 或 false, 翻譯鍵。
+function W.batteryUses(charge, useDelta, maxUses)
+    local n = math.floor(charge / useDelta + 1e-9)
+    if n < 0 then return 0 end
+    if n > maxUses then return maxUses end
+    return n
+end
+
 local function giveBattery(player, charge)
     local inv = player:getInventory()
     local battery = instanceItem(W.BATTERY_TYPE) -- LuaManager.java:5605
     if not battery or not inv then return end
-    battery:setCurrentUsesFloat(charge) -- InventoryItem.java:2601（DrainableComboItem 依 UseDelta 取整，DrainableComboItem.java:83-87）
+    -- getUseDelta／getMaxUses／setCurrentUses(int)：DrainableComboItem.java:458、:67-69、:72-75
+    battery:setCurrentUses(W.batteryUses(charge, battery:getUseDelta(), battery:getMaxUses()))
     inv:AddItem(battery)
     -- 伺服器的 send* 只送封包、不動容器，所以先 AddItem（GameServer.java:2405-2421；原版順序 ISClothingExtraAction.lua:128-129）
     if isServer() then sendAddItemToContainer(inv, battery) end
@@ -225,6 +238,7 @@ function W.applyBatteryChange(player, watchId, install, batteryId)
     if not inv then return false, W.FAIL_GENERIC end
     local watch = inv:getItemWithIDRecursiv(watchId)
     if not W.isWatch(watch) then return false, W.FAIL_GENERIC end
+    W.settleNow(player) -- 戴著的錶先把還沒入帳的耗電寫進去，退回的電池才不會多出這段電
     local old = W.charge(watch)
 
     if install then
@@ -232,9 +246,9 @@ function W.applyBatteryChange(player, watchId, install, batteryId)
         if not battery or battery:getFullType() ~= W.BATTERY_TYPE then return false, W.FAIL_GENERIC end
         local container = battery:getContainer() -- InventoryItem.java:3840：實際所在的袋子
         if not container then return false, W.FAIL_GENERIC end
-        -- InventoryItem.java:2597；Battery 的 uses 是 round(f/0.007) 的整數，setCurrentUsesFloat(1) 會讀成 1.001
-        -- （DrainableComboItem.java:83-92），存進錶之前夾回 1
-        local charge = math.min(1, battery:getCurrentUsesFloat())
+        -- 格數 × UseDelta（InventoryItem.java:2584、DrainableComboItem.java:458）；超過 1 的格數
+        -- （例如 setCurrentUsesFloat(1) 會四捨五入成 143 格＝1.001）存進錶之前夾回 1
+        local charge = math.min(1, battery:getCurrentUses() * battery:getUseDelta())
         -- 以下不再有失敗點
         player:removeFromHands(battery)
         container:DoRemoveItem(battery)
@@ -253,53 +267,102 @@ function W.applyBatteryChange(player, watchId, install, batteryId)
 end
 
 -- ===== 扣電（伺服器與單機；MP 客戶端不跑）=====
--- 一個全域的「有效時間」計數器 activeMs：每幀加上 tickDelta。每位玩家記下上次結算時的 activeMs，
--- 每分鐘結算一次「這段時間的有效毫秒數」扣在當時戴著的那支錶上，寫 modData 並同步。
--- 暫停、時鐘倒退、大跳躍都只在 tickDelta 一處處理。
+-- 一個全域的「有效時間」計數器 activeMs：每幀加上 tickDelta（暫停、時鐘倒退、大跳躍只在這一處處理）。
+-- 每位玩家記下「上次入帳時的 activeMs」與「那時戴著的錶」。每秒入帳一次（只寫伺服器記憶體裡的 modData），
+-- 每分鐘把有變動的錶同步給客戶端一次。戴著的錶換了（穿脫、換手、掉落、其他 MOD 改穿戴）就先把累積的
+-- 耗電記在舊錶上並同步；換電池與穿戴動作完成前另外立刻入帳（settleNow），不留一秒的誤差。
 -- 掛 OnTickEvenPaused 而不是 OnTick：單機暫停時 GameWindow 跳過 states.update（OnTick 不觸發），只派
 -- OnTickEvenPaused（GameWindow.java:354-368）；沒暫停時 IngameState.updateInternal 每幀派一次（IngameState.java:1347）。
 -- 所以「暫停時也耗電」要靠它才算得到暫停的時間；暫停與否用 isGamePaused 判斷（LuaManager.java:7986-7992 →
 -- GameTime.java:184-193，單機＝遊戲速度 0）。專用伺服器的暫停（沒人在線）時沒有人在戴錶，不需要特別處理。
-local activeMs, lastTickMs, lastSettleMs = 0, nil, nil
-local marks = {} -- [IsoPlayer] = 上次結算時的 activeMs
+--
+-- 「離線也耗電」的上次在線時間放伺服器的全域 ModData（ModData.java:20）：玩家 modData 會被客戶端整表覆蓋
+-- （ObjectModDataPacket.java:54-62、KahluaTableImpl.load 先清空），客戶端送來的全域 ModData 則只觸發
+-- OnReceiveGlobalModData、不改伺服器的表（GlobalModDataPacket.java:45-56）。
+W.POLL_MS = 1000
+W.SEEN_TABLE = "MinidoracatWatchSeen"
+local activeMs, lastTickMs, lastPollMs, lastSyncMs = 0, nil, nil, nil
+local state = {} -- [IsoPlayer] = { mark = 上次入帳時的 activeMs, watch = 那時戴著的錶或 false, dirty = 有沒同步的變動 }
 
-local function settlePlayer(player, now, nextMarks, drainOffline, fullHours, enabled)
-    if player:isDead() then return end
-    local pmd = player:getModData()
-    local mark = marks[player]
-    local ms
-    if mark == nil then
-        ms = W.offlineMs(now, pmd[W.SEEN_KEY], drainOffline)
-    else
-        ms = activeMs - mark
-    end
-    nextMarks[player] = activeMs
-    pmd[W.SEEN_KEY] = now
-    if not enabled or ms <= 0 then return end
-    local watch = W.wornWatch(player)
-    if not watch then return end
-    local c = W.charge(watch)
-    if c == nil or c <= 0 then return end
-    W.setCharge(watch, W.drain(c, ms, fullHours))
-    if isServer() then syncItemModData(player, watch) end
+function W.seenKey(player)
+    return tostring(player:getUsername()) .. "|" .. tostring(player:getPlayerNum())
 end
 
-function W.settleAll(now)
-    local nextMarks = {}
+-- 只同步還在這位玩家背包樹裡的錶：同步封包以容器＋物品 ID 定位（SyncItemModDataPacket），掉在地上或已被
+-- 換手刪掉的舊物品沒有東西可對。
+local function sync(player, w)
+    if isServer() and player:getInventory():getItemWithIDRecursiv(w:getID()) == w then
+        syncItemModData(player, w)
+    end
+end
+
+local function drainWatch(w, ms, fullHours)
+    if ms <= 0 then return false end
+    local c = W.charge(w)
+    if c == nil or c <= 0 then return false end
+    W.setCharge(w, W.drain(c, ms, fullHours))
+    return true
+end
+
+local function accrue(s, fullHours, enabled)
+    local ms = activeMs - s.mark
+    s.mark = activeMs
+    if s.watch and enabled and drainWatch(s.watch, ms, fullHours) then s.dirty = true end
+end
+
+-- 換電池與穿戴動作完成前呼叫：把這位玩家還沒入帳的耗電立刻記到目前那支錶上
+function W.settleNow(player)
+    if isClient() or not player then return end
+    local s = state[player]
+    if s then accrue(s, W.fullHours(), W.enabled()) end
+end
+
+local function visit(player, now, doSync, seen, drainOffline, fullHours, enabled)
+    if player:isDead() then return nil end
+    local key = W.seenKey(player)
+    local w = W.wornWatch(player) or false
+    local s = state[player]
+    if not s then
+        -- 第一次看到（登入、讀檔、重生）：只有「離線也耗電」開啟時補扣離線時間
+        s = { mark = activeMs, watch = w, dirty = false }
+        if w and enabled and drainWatch(w, W.offlineMs(now, seen[key], drainOffline), fullHours) then
+            s.dirty = true
+        end
+    else
+        accrue(s, fullHours, enabled)
+        if s.watch ~= w then
+            if s.dirty and s.watch then sync(player, s.watch) end
+            s.watch, s.dirty = w, false
+        end
+    end
+    if doSync and s.dirty and w then
+        sync(player, w)
+        s.dirty = false
+    end
+    seen[key] = now
+    return s
+end
+
+function W.visitAll(now, doSync)
+    local seen = ModData.getOrCreate(W.SEEN_TABLE)
     local drainOffline = W.sandbox("DrainOffline", false) == true
     local fullHours, enabled = W.fullHours(), W.enabled()
+    local nextState = doSync and {} or state
     if isServer() then
         local players = getOnlinePlayers() -- LuaManager.java:4453-4463（單機回空清單）
         for i = 0, players:size() - 1 do
-            settlePlayer(players:get(i), now, nextMarks, drainOffline, fullHours, enabled)
+            local p = players:get(i)
+            local s = visit(p, now, doSync, seen, drainOffline, fullHours, enabled)
+            if s then state[p] = s; nextState[p] = s end
         end
     else
         for i = 0, getNumActivePlayers() - 1 do -- LuaManager.java:3880-3886
             local p = getSpecificPlayer(i)
-            if p then settlePlayer(p, now, nextMarks, drainOffline, fullHours, enabled) end
+            local s = p and visit(p, now, doSync, seen, drainOffline, fullHours, enabled)
+            if s then state[p] = s; nextState[p] = s end
         end
     end
-    marks = nextMarks -- 離線的玩家自然掉出去
+    state = nextState -- 每分鐘重建一次：離線與死亡的玩家掉出去
 end
 
 function W.onTick()
@@ -307,9 +370,11 @@ function W.onTick()
     local paused = not isServer() and isGamePaused()
     activeMs = activeMs + W.tickDelta(now, lastTickMs, paused, W.sandbox("DrainPaused", false) == true)
     lastTickMs = now
-    if lastSettleMs and now >= lastSettleMs and now - lastSettleMs < W.SETTLE_MS then return end
-    lastSettleMs = now
-    W.settleAll(now)
+    if lastPollMs and now >= lastPollMs and now - lastPollMs < W.POLL_MS then return end
+    lastPollMs = now
+    local doSync = not lastSyncMs or now < lastSyncMs or now - lastSyncMs >= W.SETTLE_MS
+    if doSync then lastSyncMs = now end
+    W.visitAll(now, doSync)
 end
 
 if not isClient() then Events.OnTickEvenPaused.Add(W.onTick) end
