@@ -1,0 +1,301 @@
+module MinidoracatWatch
+{
+    /*
+        美術 spike 測試物品（feat/watch-art；合併到 main 前整個檔案刪掉）。
+        手腕模型：ArtTest_<款>_Left/Right 戴自製模型；ValuTech 走 ArtTest 專用 clothing xml（正式 xml 合併時才改）。
+        圖示：ArtTest_Icon_* 只用來在物品欄看新圖示。
+    */
+    item ArtTest_ValuTech_Left
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_ValuTech,
+        BodyLocation = base:leftwrist,
+        ClothingItem = MinidoracatWatch_ArtTest_ValuTech_Left,
+        Cosmetic = true,
+        WorldStaticModel = DigitalWatchBlack,
+    }
+
+    item ArtTest_ValuTech_Right
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_ValuTech,
+        BodyLocation = base:rightwrist,
+        ClothingItem = MinidoracatWatch_ArtTest_ValuTech_Right,
+        Cosmetic = true,
+        WorldStaticModel = DigitalWatchBlack,
+    }
+
+    item ArtTest_Paws_Left
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Paws,
+        BodyLocation = base:leftwrist,
+        ClothingItem = MinidoracatWatch_Paws_Left,
+        Cosmetic = true,
+        WorldStaticModel = DigitalWatchBlack,
+    }
+
+    item ArtTest_Paws_Right
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Paws,
+        BodyLocation = base:rightwrist,
+        ClothingItem = MinidoracatWatch_Paws_Right,
+        Cosmetic = true,
+        WorldStaticModel = DigitalWatchBlack,
+    }
+
+    item ArtTest_Nexus_Left
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Nexus,
+        BodyLocation = base:leftwrist,
+        ClothingItem = MinidoracatWatch_Nexus_Left,
+        Cosmetic = true,
+        WorldStaticModel = DigitalWatchBlack,
+    }
+
+    item ArtTest_Nexus_Right
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Nexus,
+        BodyLocation = base:rightwrist,
+        ClothingItem = MinidoracatWatch_Nexus_Right,
+        Cosmetic = true,
+        WorldStaticModel = DigitalWatchBlack,
+    }
+
+    item ArtTest_Spiffo_Left
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Spiffo,
+        BodyLocation = base:leftwrist,
+        ClothingItem = MinidoracatWatch_Spiffo_Left,
+        Cosmetic = true,
+        WorldStaticModel = DigitalWatchBlack,
+    }
+
+    item ArtTest_Spiffo_Right
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Spiffo,
+        BodyLocation = base:rightwrist,
+        ClothingItem = MinidoracatWatch_Spiffo_Right,
+        Cosmetic = true,
+        WorldStaticModel = DigitalWatchBlack,
+    }
+
+    item ArtTest_Ranger_Left
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Ranger,
+        BodyLocation = base:leftwrist,
+        ClothingItem = MinidoracatWatch_Ranger_Left,
+        Cosmetic = true,
+        WorldStaticModel = DigitalWatchBlack,
+    }
+
+    item ArtTest_Ranger_Right
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Ranger,
+        BodyLocation = base:rightwrist,
+        ClothingItem = MinidoracatWatch_Ranger_Right,
+        Cosmetic = true,
+        WorldStaticModel = DigitalWatchBlack,
+    }
+
+    item ArtTest_Luthex_Left
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Luthex,
+        BodyLocation = base:leftwrist,
+        ClothingItem = MinidoracatWatch_Luthex_Left,
+        Cosmetic = true,
+        WorldStaticModel = DigitalWatchBlack,
+    }
+
+    item ArtTest_Luthex_Right
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Luthex,
+        BodyLocation = base:rightwrist,
+        ClothingItem = MinidoracatWatch_Luthex_Right,
+        Cosmetic = true,
+        WorldStaticModel = DigitalWatchBlack,
+    }
+
+    item ArtTest_BB3000_Left
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_BB3000,
+        BodyLocation = base:leftwrist,
+        ClothingItem = MinidoracatWatch_BB3000_Left,
+        Cosmetic = true,
+        WorldStaticModel = DigitalWatchBlack,
+    }
+
+    item ArtTest_BB3000_Right
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:clothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_BB3000,
+        BodyLocation = base:rightwrist,
+        ClothingItem = MinidoracatWatch_BB3000_Right,
+        Cosmetic = true,
+        WorldStaticModel = DigitalWatchBlack,
+    }
+
+    item ArtTest_Icon_Module_Compass
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Module_Compass,
+        WorldStaticModel = Receiver,
+    }
+
+    item ArtTest_Icon_Module_Ledger
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Module_Ledger,
+        WorldStaticModel = Receiver,
+    }
+
+    item ArtTest_Icon_Module_GPS
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Module_GPS,
+        WorldStaticModel = Receiver,
+    }
+
+    item ArtTest_Icon_Module_Comm
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Module_Comm,
+        WorldStaticModel = Receiver,
+    }
+
+    item ArtTest_Icon_Module_Scan
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Module_Scan,
+        WorldStaticModel = Receiver,
+    }
+
+    item ArtTest_Icon_Module_Detect
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Module_Detect,
+        WorldStaticModel = Receiver,
+    }
+
+    item ArtTest_Icon_Module_Light
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Module_Light,
+        WorldStaticModel = Receiver,
+    }
+
+    item ArtTest_Icon_Module_MilDetect
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Module_MilDetect,
+        WorldStaticModel = Receiver,
+    }
+
+    item ArtTest_Icon_Module_LongComm
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Module_LongComm,
+        WorldStaticModel = Receiver,
+    }
+
+    item ArtTest_Icon_Module_Relay
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Module_Relay,
+        WorldStaticModel = Receiver,
+    }
+
+    item ArtTest_Icon_Module_Eco
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Module_Eco,
+        WorldStaticModel = Receiver,
+    }
+
+    item ArtTest_Icon_UnlockCard_Ext
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_UnlockCard_Ext,
+        WorldStaticModel = Receiver,
+    }
+
+    item ArtTest_Icon_UnlockCard_Adv
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_UnlockCard_Adv,
+        WorldStaticModel = Receiver,
+    }
+
+    item ArtTest_Icon_UnlockCard_Core
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_UnlockCard_Core,
+        WorldStaticModel = Receiver,
+    }
+}
