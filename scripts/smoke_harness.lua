@@ -287,6 +287,33 @@ W.setCharge(W.wornWatch(sender), 0)
 check(shareTarget(sender, team, 1, 2) == "", "分享者的錶沒電：誰都收不到")
 SB.SlotAdv = nil
 
+F.print("情境：照明模組（Phase 8）→ 伺服器開燈、偽造指令被拒、沒電自動熄燈")
+local lia = F.player("lia", 0)
+local lw = F.item(F.LEFT)
+lia.inv:AddItem(lw)
+F.action(ISWearClothing, lia, lw):complete()
+lia.inv:AddItem(F.item("Base.Screwdriver"))
+tick(1000, 500)
+F.reset()
+send(lia, W.CMD_LIGHT, { on = true })
+check(W.lightItem(lia) == nil and fails(lia) == 1, "沒裝照明模組：伺服器拒絕開燈並回報")
+send(lia, W.CMD_LIGHT, { on = "true" })
+check(W.lightItem(lia) == nil and fails(lia) == 2, "on 不是布林：拒絕")
+local lm = F.item("MinidoracatWatch.Module_Light")
+lia.inv:AddItem(lm)
+send(lia, W.CMD_MODULE, { watchId = lw:getID(), slotId = "std1", install = true, itemId = lm:getID() })
+F.reset()
+send(lia, W.CMD_LIGHT, { on = true })
+local emitter = W.lightItem(lia)
+check(emitter and emitter:isActivated() and lia:getAttachedItem(W.LIGHT_LOC) == emitter and F.added[1] == emitter,
+    "開燈：主背包一個啟動中的光源、掛上、送給擁有者")
+check(near(W.drainFactor(lia, lw), 2), "開燈：耗電 2 倍")
+W.setCharge(lw, 0)
+F.reset()
+tick(1500, 500)
+check(W.lightItem(lia) == nil and lia:getAttachedItem(W.LIGHT_LOC) == nil and F.removed[1] == emitter,
+    "沒電：一秒內自動熄燈、刪除光源")
+
 F.print("情境十：取得方式 → 第一次翻找殭屍屍體時依預設規則放物品（缺檔寫預設）；嗶嗶腕機切螢幕經伺服器廣播")
 local files = {}
 function getFileReader(path)

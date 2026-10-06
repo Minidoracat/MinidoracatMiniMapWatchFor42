@@ -26,5 +26,6 @@
     "MinidoracatWatch.MapWatch_Luthex_Right": "盧瑟斯 金錶",
     "MinidoracatWatch.MapWatch_BB3000_Left": "嗶嗶腕機 BB-3000",
     "MinidoracatWatch.MapWatch_BB3000_Right": "嗶嗶腕機 BB-3000",
-    "MinidoracatWatch.Module_Light": "照明模組"
+    "MinidoracatWatch.Module_Light": "照明模組",
+    "MinidoracatWatch.LightEmitter": "地圖錶燈光"
 }

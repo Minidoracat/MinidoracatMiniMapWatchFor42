@@ -49,7 +49,7 @@ end
 D.STYLE_BY_ID = { valutech = "ValuTech", paws = "Paws", nexus = "Nexus", spiffo = "Spiffo", ranger = "Ranger",
     luthex = "Luthex", crt = "BB3000" }
 D.STYLE_IDS = { "valutech", "paws", "nexus", "spiffo", "ranger", "luthex", "crt" }
-D.GENERAL_MODULES = { "compass", "ledger", "gps", "comm", "scan", "detect" }
+D.GENERAL_MODULES = { "compass", "ledger", "gps", "comm", "scan", "detect", "light" }
 D.CARD_TIERS = { ext = true, adv = true, core = true }
 
 -- 預設 10 條（設計稿 DEFAULT_DROPS；機率單位是 %）

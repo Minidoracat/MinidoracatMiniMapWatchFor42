@@ -47,6 +47,8 @@ local RULE_BY_VALUE = { W.RULE_FREE, W.RULE_WATCH, W.RULE_MODULE, W.RULE_OFF }
 W.FEATURE_RULE_KEY = { arrow = "RuleArrow", poi = "RulePoi", nav = "RuleNav", share = "RuleShare",
     scan = "RuleScan", zombie = "RuleZombie" }
 function W.featureRule(feature)
+    -- 照明只有「需要模組」與「關閉」兩種（設計稿 FEATURE_RULES light 的 opts）：RuleLight 1 需要模組、2 關閉
+    if feature == "light" then return W.sandbox("RuleLight", 1) == 2 and W.RULE_OFF or W.RULE_MODULE end
     local key = W.FEATURE_RULE_KEY[feature]
     if not key then return W.RULE_FREE end
     return RULE_BY_VALUE[W.sandbox(key, 3)] or W.RULE_MODULE
@@ -143,7 +145,7 @@ local function registerSlot(def)
     return true
 end
 
--- ===== 內建：槽位與模組（名稱／類別／耗電照設計稿 data.mjs MODULES；照明是 Phase 8）=====
+-- ===== 內建：槽位與模組（名稱／類別／耗電照設計稿 data.mjs MODULES）=====
 local STD = { "standard" }
 addSlot("std1", "IGUI_MinidoracatWatch_Slot_std1", "std", STD)
 addSlot("std2", "IGUI_MinidoracatWatch_Slot_std2", "std", STD)
@@ -166,6 +168,8 @@ local BUILTIN = {
     { "longcomm", "LongComm", "advanced", 25, "share" },
     { "relay", "Relay", "core", 25, "share" },
     { "eco", "Eco", "core", 0, nil },
+    -- 照明：裝著不耗電，開燈時另加 LightDrain%（W.drainFactor；沙盒鍵不叫 DrainLight，moduleDrain 才會是 0）
+    { "light", "Light", "standard", 0, "light" },
 }
 for _, b in ipairs(BUILTIN) do
     registerModule({ id = b[1], name = "IGUI_MinidoracatWatch_Module_" .. b[1], class = b[3], drain = b[4],
@@ -174,7 +178,7 @@ for _, b in ipairs(BUILTIN) do
 end
 -- 每個功能由哪些模組提供（順序＝缺模組時提示哪一個）
 W.PROVIDERS = { arrow = { "compass" }, poi = { "ledger" }, nav = { "gps" }, share = { "comm", "longcomm", "relay" },
-    scan = { "scan" }, zombie = { "detect", "mildetect" } }
+    scan = { "scan" }, zombie = { "detect", "mildetect" }, light = { "light" } }
 
 W.CARD_TYPES = { ext = "MinidoracatWatch.UnlockCard_Ext", adv = "MinidoracatWatch.UnlockCard_Adv",
     core = "MinidoracatWatch.UnlockCard_Core", addon = "MinidoracatWatch.UnlockCard_Ext" }
@@ -289,11 +293,11 @@ function W.orphanSlots(watch)
     return out
 end
 
--- 錶的耗電倍率：Σ（有效槽位裡、功能沒被關閉的模組耗電%）；節能核心運作時整支錶減半（設計稿 fullRuntime）
+-- 錶的耗電倍率：Σ（有效槽位裡、功能沒被關閉的模組耗電%，照明開著時另加 LightDrain%）；節能核心運作時整支錶減半（設計稿 fullRuntime）
 function W.drainFactor(player, watch)
     local slots = W.slotsOf(watch)
     if not slots then return 1 end
-    local pct, eco = 0, false
+    local pct, eco, lit = 0, false, false
     for _, slot in ipairs(W.slotList) do
         local rec = slots[slot.id]
         local def = type(rec) == "table" and W.modules[rec.id]
@@ -302,6 +306,10 @@ function W.drainFactor(player, watch)
             if not (b and b.feature and W.featureRule(b.feature) == W.RULE_OFF) then
                 pct = pct + W.moduleDrain(def)
                 if def.id == "eco" then eco = true end
+                if def.id == "light" and not lit and W.lightLit(player, watch) then
+                    lit = true
+                    pct = pct + W.lightDrain()
+                end
             end
         end
     end

@@ -118,7 +118,7 @@
     "Sandbox_MinidoracatWatch_LootBB3000": "哔哔腕机出现在战利品中",
     "Sandbox_MinidoracatWatch_LootBB3000_tooltip": "军事据点、地堡、生存装备柜（稀有）。关闭后容器里不再出现，已经生成的不受影响；僵尸掉落另外设置。改了立刻生效。",
     "Sandbox_MinidoracatWatch_LootModules": "模块出现在战利品中",
-    "Sandbox_MinidoracatWatch_LootModules_tooltip": "电器行、电子零件箱、军警据点、生存装备柜。一般模块较常见，进阶与核心模块很少见。照明模块目前不会出现。改了立刻生效。",
+    "Sandbox_MinidoracatWatch_LootModules_tooltip": "电器行、电子零件箱、军警据点、生存装备柜。一般模块较常见，进阶与核心模块很少见。改了立刻生效。",
     "Sandbox_MinidoracatWatch_LootCards": "解锁卡出现在战利品中",
     "Sandbox_MinidoracatWatch_LootCards_tooltip": "很少见：扩充槽在电器行，进阶槽在军警据点，核心槽在军事地堡。用经济系统出售槽位时可以关闭，避免玩家不付费也能开槽。改了立刻生效。",
     "Sandbox_MinidoracatWatch_AllowCraft": "允许制作模块",
@@ -126,5 +126,13 @@
     "Sandbox_MinidoracatWatch_ZombieDrops": "僵尸身上会带地图表相关物品",
     "Sandbox_MinidoracatWatch_ZombieDrops_tooltip": "尸体第一次被翻找时，按服务器设置文件的掉落规则放入物品（默认 10 条，按僵尸的服装分组）。已经被翻找过的尸体不受影响。\n规则文件在 Zomboid/Lua/MinidoracatWatch/服务器名称/server-settings.json（单机是 sp_存档名称），没有就自动写一份默认。",
     "Sandbox_MinidoracatWatch_ZombieDropCap": "每只僵尸最多掉落（件）",
-    "Sandbox_MinidoracatWatch_ZombieDropCap_tooltip": "一只僵尸符合多条规则时，按顺序掷概率，掉到这个数量就停。"
+    "Sandbox_MinidoracatWatch_ZombieDropCap_tooltip": "一只僵尸符合多条规则时，按顺序掷概率，掉到这个数量就停。",
+    "Sandbox_MinidoracatWatch_RuleLight": "功能：照明",
+    "Sandbox_MinidoracatWatch_RuleLight_tooltip": "照明模块的灯：开灯照亮身边，所有玩家都看得到。\n需要模块：要把照明模块装在戴着、有电的表的有效槽位上。\n关闭：任何人都不能开灯，开着的灯会熄灭。",
+    "Sandbox_MinidoracatWatch_RuleLight_option1": "需要模块",
+    "Sandbox_MinidoracatWatch_RuleLight_option2": "关闭",
+    "Sandbox_MinidoracatWatch_LightRadius": "照明半径（格）",
+    "Sandbox_MinidoracatWatch_LightRadius_tooltip": "开灯时照亮身边的范围，所有玩家都使用这个值。",
+    "Sandbox_MinidoracatWatch_LightDrain": "照明模块开灯时耗电（%%）",
+    "Sandbox_MinidoracatWatch_LightDrain_tooltip": "灯开着时比只开小地图多耗的电，与其他模块的耗电相加。例如 100 表示多耗一倍。\n关灯时不耗电。"
 }

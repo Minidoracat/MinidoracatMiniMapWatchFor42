@@ -26,5 +26,6 @@
     "MinidoracatWatch.MapWatch_Luthex_Right": "Luthex ゴールドウォッチ",
     "MinidoracatWatch.MapWatch_BB3000_Left": "BB-3000 リストコンピューター",
     "MinidoracatWatch.MapWatch_BB3000_Right": "BB-3000 リストコンピューター",
-    "MinidoracatWatch.Module_Light": "ライトモジュール"
+    "MinidoracatWatch.Module_Light": "ライトモジュール",
+    "MinidoracatWatch.LightEmitter": "マップウォッチのライト"
 }

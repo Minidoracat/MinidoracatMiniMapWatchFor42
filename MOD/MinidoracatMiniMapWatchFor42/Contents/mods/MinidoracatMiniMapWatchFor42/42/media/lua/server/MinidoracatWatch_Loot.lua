@@ -13,7 +13,6 @@
 --   所以權威端每 POLL_MS 比對一次開關（讀原生 SandboxOptions：單機介面用 set 寫原生選項、不 toLua，
 --   SandboxOptions.java:572-582，SandboxVars 會是舊值）；跟上次套用的不同就重排分佈表並 IsoWorld.parseDistributions()。
 --   開局後第一次比對也會補上「merge 時沙盒還沒載入」的情況。
--- 照明模組（Phase 8）本階段不進分佈表。
 if isClient() then return end
 require "MinidoracatWatch"
 local W = MinidoracatWatchCore
@@ -47,9 +46,10 @@ L.ENTRIES = {
     -- 嗶嗶腕機（稀有）：軍事據點、緊急避難所（地堡）、生存狂的藏身處
     { "LootBB3000", W.watchType("BB3000"), { "ArmyStorageElectronics", 0.3, "ArmyBunkerStorage", 0.3,
         "ArmyBunkerLockers", 0.3, "SurvivalGear", 0.5 } },
-    -- 模組：常見（羅盤、名錄）、少見（定位、通訊）、一般（掃描、偵測）、稀有（軍規偵測、長距通訊）、很稀有（中繼、節能）
+    -- 模組：常見（羅盤、名錄、照明）、少見（定位、通訊）、一般（掃描、偵測）、稀有（軍規偵測、長距通訊）、很稀有（中繼、節能）
     { "LootModules", mod("Compass"), { "ElectronicStoreMisc", 1, "CrateElectronics", 1, "SurvivalGear", 1 } },
     { "LootModules", mod("Ledger"), { "ElectronicStoreMisc", 1, "CrateElectronics", 1 } },
+    { "LootModules", mod("Light"), { "ElectronicStoreMisc", 1, "CrateElectronics", 1, "SurvivalGear", 1 } },
     { "LootModules", mod("GPS"), { "ElectronicStoreMisc", 0.5, "ArmyStorageElectronics", 1 } },
     { "LootModules", mod("Comm"), { "ElectronicStoreMisc", 0.5, "PoliceLockers", 0.5 } },
     { "LootModules", mod("Scan"), { "ElectronicStoreMisc", 0.5, "CrateElectronics", 0.5 } },

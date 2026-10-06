@@ -135,3 +135,13 @@ option MinidoracatWatch.ZombieDrops
 
 option MinidoracatWatch.ZombieDropCap
 {type = integer, min = 1, max = 5, default = 1, page = MinidoracatWatch, translation = MinidoracatWatch_ZombieDropCap,}
+
+/* 照明模組（Phase 8）：規則 1 需要模組（預設）、2 關閉；開燈半徑（格，torch 半徑）與開燈時耗電（%，關燈不耗電） */
+option MinidoracatWatch.RuleLight
+{type = enum, numValues = 2, default = 1, page = MinidoracatWatch, translation = MinidoracatWatch_RuleLight,}
+
+option MinidoracatWatch.LightRadius
+{type = integer, min = 1, max = 20, default = 4, page = MinidoracatWatch, translation = MinidoracatWatch_LightRadius,}
+
+option MinidoracatWatch.LightDrain
+{type = integer, min = 0, max = 1000, default = 100, page = MinidoracatWatch, translation = MinidoracatWatch_LightDrain,}

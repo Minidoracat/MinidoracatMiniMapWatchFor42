@@ -118,7 +118,7 @@
     "Sandbox_MinidoracatWatch_LootBB3000": "BB-3000 リストコンピューターを戦利品に出す",
     "Sandbox_MinidoracatWatch_LootBB3000_tooltip": "軍事施設、地下壕、サバイバル用品のロッカー（レア）。オフにするとコンテナに出なくなります（すでに出たものはそのまま）。ゾンビのドロップは別に設定します。変更はすぐ反映されます。",
     "Sandbox_MinidoracatWatch_LootModules": "モジュールを戦利品に出す",
-    "Sandbox_MinidoracatWatch_LootModules_tooltip": "電器店、電子部品の箱、軍・警察の施設、サバイバル用品のロッカー。一般モジュールは比較的よく見つかり、上級・コアモジュールはまれです。ライトモジュールは今は出ません。変更はすぐ反映されます。",
+    "Sandbox_MinidoracatWatch_LootModules_tooltip": "電器店、電子部品の箱、軍・警察の施設、サバイバル用品のロッカー。一般モジュールは比較的よく見つかり、上級・コアモジュールはまれです。変更はすぐ反映されます。",
     "Sandbox_MinidoracatWatch_LootCards": "アンロックカードを戦利品に出す",
     "Sandbox_MinidoracatWatch_LootCards_tooltip": "まれ：拡張スロット用は電器店、上級スロット用は軍・警察の施設、コアスロット用は軍の地下壕。経済システムでスロットを販売するときはオフにすると、無料で開けられなくなります。変更はすぐ反映されます。",
     "Sandbox_MinidoracatWatch_AllowCraft": "モジュールの製作を許可",
@@ -126,5 +126,13 @@
     "Sandbox_MinidoracatWatch_ZombieDrops": "ゾンビがマップウォッチ関連のアイテムを持つ",
     "Sandbox_MinidoracatWatch_ZombieDrops_tooltip": "死体を初めて調べたとき、サーバー設定ファイルのドロップルール（初期設定は服装グループごとの 10 件）に従ってアイテムを入れます。すでに調べた死体には影響しません。\nルールファイル：Zomboid/Lua/MinidoracatWatch/サーバー名/server-settings.json（シングルプレイは sp_セーブ名）。ない場合は初期設定のファイルを自動で書き出します。",
     "Sandbox_MinidoracatWatch_ZombieDropCap": "ゾンビ 1 体あたりの最大ドロップ数",
-    "Sandbox_MinidoracatWatch_ZombieDropCap_tooltip": "1 体のゾンビが複数のルールに当てはまるときは順に確率を判定し、この数に達したら止めます。"
+    "Sandbox_MinidoracatWatch_ZombieDropCap_tooltip": "1 体のゾンビが複数のルールに当てはまるときは順に確率を判定し、この数に達したら止めます。",
+    "Sandbox_MinidoracatWatch_RuleLight": "機能：ライト",
+    "Sandbox_MinidoracatWatch_RuleLight_tooltip": "ライトモジュールの明かり：点灯すると周囲を照らし、すべてのプレイヤーに見えます。\nモジュール必須：身に着けた、電池のあるウォッチの有効なスロットにライトモジュールを装着する必要があります。\nオフ：誰も点灯できず、点灯中のライトは消えます。",
+    "Sandbox_MinidoracatWatch_RuleLight_option1": "モジュール必須",
+    "Sandbox_MinidoracatWatch_RuleLight_option2": "オフ",
+    "Sandbox_MinidoracatWatch_LightRadius": "ライトの半径（マス）",
+    "Sandbox_MinidoracatWatch_LightRadius_tooltip": "点灯したときに照らす範囲です。すべてのプレイヤーに同じ値が使われます。",
+    "Sandbox_MinidoracatWatch_LightDrain": "ライトモジュール点灯中の消費電力（%%）",
+    "Sandbox_MinidoracatWatch_LightDrain_tooltip": "ライト点灯中に、ミニマップだけの場合に比べて増える消費電力で、他のモジュールの消費電力に加算されます。たとえば 100 なら消費電力が 2 倍になります。\n消灯中は消費しません。"
 }

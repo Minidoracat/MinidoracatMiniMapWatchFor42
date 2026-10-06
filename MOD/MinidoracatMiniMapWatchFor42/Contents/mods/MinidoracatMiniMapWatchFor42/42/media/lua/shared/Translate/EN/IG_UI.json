@@ -142,5 +142,14 @@
     "IGUI_MinidoracatWatch_SlotAndModule": "%1: %2",
     "IGUI_MinidoracatWatch_WatchAndSlot": "%1: %2",
     "IGUI_MinidoracatWatch_ScreenAmber": "Switch screen to amber",
-    "IGUI_MinidoracatWatch_ScreenGreen": "Switch screen to green"
+    "IGUI_MinidoracatWatch_ScreenGreen": "Switch screen to green",
+    "IGUI_MinidoracatWatch_Module_light": "Light Module",
+    "IGUI_MinidoracatWatch_ModuleDesc_light": "A light on your watch: when on, it lights up about %1 tiles around you, and nearby players can see it too. No drain while off.",
+    "IGUI_MinidoracatWatch_Reason_Need_light": "Needs the Light Module",
+    "IGUI_MinidoracatWatch_Feature_light": "Light",
+    "IGUI_MinidoracatWatch_LightOn": "Light on",
+    "IGUI_MinidoracatWatch_LightOff": "Light off",
+    "IGUI_MinidoracatWatch_LightFailed": "Couldn't turn on the light: the Light Module isn't working or the watch has no charge.",
+    "IGUI_MinidoracatWatch_DrainLight": "+%1%% while on",
+    "IGUI_MinidoracatWatch_Foot_LightOn": "Light is on. %1"
 }

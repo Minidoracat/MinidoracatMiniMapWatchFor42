@@ -1,6 +1,6 @@
 -- 地圖錶取得方式（Phase 5，伺服器／單機）：殭屍掉落的機率與上限（固定種子）、服裝分組對應原版 clothing.xml、
 -- 伺服器設定檔（缺檔寫預設、壞檔保留上一份、逐條驗證、區段各自獨立）、戰利品開關（開局與改沙盒後重排、不重複、
--- 照明模組不進表、表名都在原版 ProceduralDistributions）、配方 OnTest、嗶嗶腕機螢幕（伺服器廣播、單機重建模型）。
+-- 照明模組在表上、表名都在原版 ProceduralDistributions）、配方 OnTest、嗶嗶腕機螢幕（伺服器廣播、單機重建模型）。
 -- 原版檔案（PZ_PATH，預設 D:/SteamLibrary/steamapps/common/ProjectZomboid）不在時，對照原版的檢查改用假資料並註明。
 -- 用法（repo 根目錄）：lua scripts/test_watch_acquire.lua
 local F = dofile("scripts/lib_watch_fakes.lua")
@@ -146,9 +146,9 @@ for t in pairs(styles) do nS = nS + 1; if not W.WATCH_TYPES[t] then okM = false 
 for m in pairs(mods) do
     nM = nM + 1
     local def = W.moduleByItem[m]
-    if not def or def.class ~= "standard" or m:find("Light") then okM = false end
+    if not def or def.class ~= "standard" then okM = false end
 end
-check(nS == 7 and nM == 6 and okM, "watch:any 七款都出現、mod:any 只出六種一般模組（不含照明）")
+check(nS == 7 and nM == 7 and okM and mods["MinidoracatWatch.Module_Light"], "watch:any 七款都出現、mod:any 出七種一般模組（含照明）")
 check(D.resolve("watch:crt", rnd) == "MinidoracatWatch.MapWatch_BB3000_Left" and D.resolve("card:core", rnd) == W.CARD_TYPES.core,
     "crt＝嗶嗶腕機左手款；card:core＝核心卡")
 
@@ -159,7 +159,7 @@ local function rejects(raw, label)
 end
 rejects({ group = "all", item = "battery", chance = 1 }, "不是清單")
 rejects({ { group = "zombies", item = "battery", chance = 1 } }, "未知分組")
-rejects({ { group = "all", item = "mod:light", chance = 1 } }, "照明模組沒登記成模組：不能當掉落物")
+check(D.parse({ { group = "all", item = "mod:light", chance = 1 } }) ~= nil, "照明模組是內建模組：可以當掉落物")
 rejects({ { group = "all", item = "watch:pipboy", chance = 1 } }, "未知錶款")
 rejects({ { group = "all", item = "battery", chance = 101 } }, "機率超過 100")
 rejects({ { group = "all", item = "battery", chance = -1 } }, "機率小於 0")
@@ -313,9 +313,8 @@ F.fire("OnPostDistributionMerge")
 check(ours() == total and parses == 0 and logged("loot tables prepared"), "開局 merge：加入全部 " .. total .. " 筆、不自己 Parse")
 check(count("JewelryWrist", W.watchType("Luthex")) == 1 and count("ArmyBunkerStorage", W.watchType("BB3000")) == 1
     and count("GiftStoreToys", W.watchType("Paws")) == 1, "盧瑟斯在珠寶店、嗶嗶腕機在地堡、貓爪在禮品店")
-local lightAnywhere = false
-for name in pairs(Lt.TABLES) do if count(name, "MinidoracatWatch.Module_Light") > 0 then lightAnywhere = true end end
-check(not lightAnywhere, "照明模組不在任何分佈表")
+check(count("ElectronicStoreMisc", "MinidoracatWatch.Module_Light") == 1 and count("CrateElectronics", "MinidoracatWatch.Module_Light") == 1
+    and count("SurvivalGear", "MinidoracatWatch.Module_Light") == 1, "照明模組（常見）在電器行、電子零件箱、生存裝備櫃")
 local wantStyles = {}
 for _, e in ipairs(Lt.ENTRIES) do if W.WATCH_TYPES[e[2]] then wantStyles[e[2]] = true end end
 local nStyles = 0

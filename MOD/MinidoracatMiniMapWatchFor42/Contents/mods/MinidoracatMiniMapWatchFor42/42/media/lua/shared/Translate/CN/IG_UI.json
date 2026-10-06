@@ -142,5 +142,14 @@
     "IGUI_MinidoracatWatch_SlotAndModule": "%1：%2",
     "IGUI_MinidoracatWatch_WatchAndSlot": "%1：%2",
     "IGUI_MinidoracatWatch_ScreenAmber": "屏幕改成琥珀色",
-    "IGUI_MinidoracatWatch_ScreenGreen": "屏幕改成绿色"
+    "IGUI_MinidoracatWatch_ScreenGreen": "屏幕改成绿色",
+    "IGUI_MinidoracatWatch_Module_light": "照明模块",
+    "IGUI_MinidoracatWatch_ModuleDesc_light": "表上的灯：开灯后照亮身边约 %1 格，周围的玩家也看得到。关灯时不耗电。",
+    "IGUI_MinidoracatWatch_Reason_Need_light": "需要照明模块",
+    "IGUI_MinidoracatWatch_Feature_light": "照明",
+    "IGUI_MinidoracatWatch_LightOn": "开灯",
+    "IGUI_MinidoracatWatch_LightOff": "关灯",
+    "IGUI_MinidoracatWatch_LightFailed": "开不了灯：照明模块没有运作或表没电。",
+    "IGUI_MinidoracatWatch_DrainLight": "开灯时 +%1%%",
+    "IGUI_MinidoracatWatch_Foot_LightOn": "灯开着。%1"
 }

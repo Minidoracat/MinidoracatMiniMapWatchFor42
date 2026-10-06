@@ -15,7 +15,7 @@ local MOD = function(name) return "MinidoracatWatch.Module_" .. name end
 check(type(API) == "table" and API.watchApiVersion == 1, "MinidoracatWatchAPI.watchApiVersion = 1")
 check(type(API.registerWatchModule) == "function" and type(API.registerWatchSlot) == "function"
     and type(API.getWatchModuleState) == "function", "三個 API 函式")
-check(#W.moduleList == 10 and W.modules.compass and W.modules.eco and not W.modules.light, "內建 10 個模組（照明是 Phase 8）")
+check(#W.moduleList == 11 and W.modules.compass and W.modules.eco and W.modules.light, "內建 11 個模組（含照明）")
 check(W.modules.mildetect.class == "advanced" and W.modules.relay.class == "core" and W.modules.gps.drain == 25,
     "內建模組的類別與耗電照設計稿")
 check(#W.slotList == 6 and W.slotById.adv.accepts.advanced and not W.slotById.ext.accepts.advanced
@@ -47,7 +47,7 @@ rejects(API.registerWatchModule, with("drain", "15"), "drain 是字串")
 rejects(API.registerWatchModule, with("item", "NoModule"), "item 沒有 module 前綴")
 rejects(API.registerWatchModule, with("item", MOD("GPS")), "item 已被其他模組使用")
 rejects(API.registerWatchModule, with("onStateChanged", "yes"), "onStateChanged 不是函式")
-check(W.modules.weather == nil and #W.moduleList == 10, "拒收的 def 沒有留下任何登記")
+check(W.modules.weather == nil and #W.moduleList == 11, "拒收的 def 沒有留下任何登記")
 local calls = {}
 local def = with("onStateChanged", function(p, s, old) calls[#calls + 1] = { s = s, old = old } end)
 check(API.registerWatchModule(def) == true, "合法的第三方模組登記成功")
