@@ -15,7 +15,8 @@ function C.requestLight(player, on)
         return
     end
     local ok, reason = W.applyLight(player, on)
-    if not ok then W.notify(player, reason) end
+    if not ok then return W.notify(player, reason) end
+    C.syncLight(player) -- 單機：開關音效不等下一秒
 end
 
 function C.toggleLight(player) C.requestLight(player, not W.lightOn(player)) end
@@ -26,10 +27,12 @@ function C.toggleLight(player) C.requestLight(player, not W.lightOn(player)) end
 -- 啟動狀態隨附掛物品的完整物品資料送出（InventoryItem.java:2032），晚加入的人另有 syncActivatedItems
 -- （GameServer.java:2775-2790），不必另送 syncItemActivated。旁人只在「自己此刻看得到的格子」上看到這盞燈
 -- （約 3.5 格內或視野錐內），和原版手電筒相同（features.md）。
+-- 開關燈的音效也在這裡：狀態真的變了才響（伺服器開關、自動熄燈、原版切燈鍵都算；剛上線只記基準）。
 function C.syncLight(p)
     local item = W.lightItem(p)
     local want = item ~= nil and item:isActivated() and item or nil
     if p:getAttachedItem(W.LIGHT_LOC) ~= want then p:setAttachedItem(W.LIGHT_LOC, want) end
+    MinidoracatWatchSound.lightSeen(p, want ~= nil)
 end
 
 -- 半徑只來自 script、不存檔也不入封包（Item.java:1826-1829）：每台客戶端改自己記憶體裡每位玩家那份，

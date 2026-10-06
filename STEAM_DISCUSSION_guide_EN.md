@@ -43,6 +43,7 @@ Rules are set by the server: the sandbox "Map Watch" page, or "Map Watch Admin" 
 [*] The minimap title bar shows watch charge %, in a warning color when low or a rental ended; the toolbar icon shows charge too.
 [*] Hover a watch for charge, time left (or charging / no battery needed), installed modules (rented / disabled) and paid slots; hover a module for class, drain and feature.
 [*] One-time pop-ups (top right) for low battery, dead battery, rental ended, auto-renew success or failure, charging started, fully charged, and modules disabled by an invalid slot.
+[*] [b]Sounds[/b]: installing a module (each of the seven watches has its own sound, based on the one you wear), removing a module, the light switch, low battery, dead battery and rental ended each have a sound; the battery and rental ones play with the pop-up, once. Only you can hear them.
 [/list]
 
 [h3]Modules and slots[/h3]
@@ -85,6 +86,13 @@ Rules are set by the server: the sandbox "Map Watch" page, or "Map Watch Admin" 
 [/list]
 
 [h2]⚙️ Settings[/h2]
+
+[h3]Player settings (sounds)[/h3]
+[list]
+[*] The "Map Watch" category in the minimap settings (gear) is visible to every player; the same page is in the game's Options → Mods. Settings are saved on your own computer, not in the save.
+[*] [b]Map watch sound volume[/b]: 0–100% (default 70%), on top of the game's master volume; 0% plays nothing.
+[*] [b]Ping on scheduled scan updates[/b] (off by default): a short ping when zombie dots or vehicles and animals are rescanned (once if both update together). [b]Only plays when the server sets the minimap scan interval to scheduled[/b]; live updates (the default) don't ping. Your watch must be able to use that feature.
+[/list]
 
 [h3]Admin settings window[/h3]
 [list]

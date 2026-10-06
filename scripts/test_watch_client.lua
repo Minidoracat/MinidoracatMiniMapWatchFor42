@@ -63,7 +63,9 @@ MinidoracatMiniMapAPI = nil
 MinidoracatMiniMapServerAPI = { shareApiVersion = 1, registerShareFilter = function() return true end }
 F.fire("OnGameStart")
 check(C.gateActive == false, "主 MOD 沒有 API：不設閘")
-check(#F.logs == 1 and F.logs[1]:find("featureApiVersion", 1, true) ~= nil, "log 一次")
+local gateLogs = 0 -- 同一個 OnGameStart 還有音效的守衛 log（test_watch_sound.lua）
+for _, l in ipairs(F.logs) do if l:find("featureApiVersion", 1, true) then gateLogs = gateLogs + 1 end end
+check(gateLogs == 1, "log 一次")
 F.admin = false
 F.fire("OnTick")
 check(#F.halos == 0, "一般玩家不提示")

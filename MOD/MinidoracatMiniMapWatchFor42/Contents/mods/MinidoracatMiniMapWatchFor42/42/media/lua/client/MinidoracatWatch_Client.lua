@@ -251,6 +251,15 @@ Events.OnServerCommand.Add(function(module, command, args)
         end
         W.clientUnlocks[args.to] = slots
         W.invalidate()
+    elseif command == W.CMD_MODULE then
+        -- 伺服器確認裝卸成功（MinidoracatWatch_Server.lua）：只播音效
+        for pn = 0, getNumActivePlayers() - 1 do
+            local p = getSpecificPlayer(pn)
+            if p and p:getUsername() == args.to then
+                local watch = W.isFiniteInt(args.watchId) and p:getInventory():getItemWithIDRecursiv(args.watchId) or nil
+                MinidoracatWatchSound.moduleDone(p, args.install == true, watch)
+            end
+        end
     end
 end)
 

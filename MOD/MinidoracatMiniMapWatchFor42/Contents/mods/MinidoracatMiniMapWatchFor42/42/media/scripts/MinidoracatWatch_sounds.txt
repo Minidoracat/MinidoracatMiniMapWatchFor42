@@ -1,0 +1,24 @@
+module Base
+{
+    /*
+        地圖錶音效（Phase 9；規劃書 §0：只有自己聽得到、有音量設定）。作者用 ElevenLabs 生成，
+        柔化、等響度、去掉開頭靜音後存成 WAV 44.1 kHz 16-bit 單聲道，放 media/sound/MinidoracatWatch/。
+        名稱＝檔名；播放在 client/MinidoracatWatch_Sound.lua（玩家 emitter 的 playSoundImpl，不送封包）。
+        鍵解析：GameSoundScript.java:29-39（category／is3D／master），clip 鍵 :57-77（file／volume）。
+        is3D=false＝非空間音、master=Primary＝跟主音量；玩家的「地圖錶音效音量」由 Lua 的
+        emitter:setVolume(ref, v) 再乘。照 AutoDrive sounds_autodrive.txt。
+    */
+    sound MinidoracatWatch_Install_ValuTech { category = UI, is3D = false, master = Primary, clip { file = media/sound/MinidoracatWatch/MinidoracatWatch_Install_ValuTech.wav, } }
+    sound MinidoracatWatch_Install_Paws { category = UI, is3D = false, master = Primary, clip { file = media/sound/MinidoracatWatch/MinidoracatWatch_Install_Paws.wav, } }
+    sound MinidoracatWatch_Install_Nexus { category = UI, is3D = false, master = Primary, clip { file = media/sound/MinidoracatWatch/MinidoracatWatch_Install_Nexus.wav, } }
+    sound MinidoracatWatch_Install_Spiffo { category = UI, is3D = false, master = Primary, clip { file = media/sound/MinidoracatWatch/MinidoracatWatch_Install_Spiffo.wav, } }
+    sound MinidoracatWatch_Install_Ranger { category = UI, is3D = false, master = Primary, clip { file = media/sound/MinidoracatWatch/MinidoracatWatch_Install_Ranger.wav, } }
+    sound MinidoracatWatch_Install_Luthex { category = UI, is3D = false, master = Primary, clip { file = media/sound/MinidoracatWatch/MinidoracatWatch_Install_Luthex.wav, } }
+    sound MinidoracatWatch_Install_BB3000 { category = UI, is3D = false, master = Primary, clip { file = media/sound/MinidoracatWatch/MinidoracatWatch_Install_BB3000.wav, } }
+    sound MinidoracatWatch_RemoveModule { category = UI, is3D = false, master = Primary, clip { file = media/sound/MinidoracatWatch/MinidoracatWatch_RemoveModule.wav, } }
+    sound MinidoracatWatch_LightToggle { category = UI, is3D = false, master = Primary, clip { file = media/sound/MinidoracatWatch/MinidoracatWatch_LightToggle.wav, } }
+    sound MinidoracatWatch_BatteryLow { category = UI, is3D = false, master = Primary, clip { file = media/sound/MinidoracatWatch/MinidoracatWatch_BatteryLow.wav, } }
+    sound MinidoracatWatch_BatteryDead { category = UI, is3D = false, master = Primary, clip { file = media/sound/MinidoracatWatch/MinidoracatWatch_BatteryDead.wav, } }
+    sound MinidoracatWatch_SlotLapsed { category = UI, is3D = false, master = Primary, clip { file = media/sound/MinidoracatWatch/MinidoracatWatch_SlotLapsed.wav, } }
+    sound MinidoracatWatch_ScanPing { category = UI, is3D = false, master = Primary, clip { file = media/sound/MinidoracatWatch/MinidoracatWatch_ScanPing.wav, } }
+}

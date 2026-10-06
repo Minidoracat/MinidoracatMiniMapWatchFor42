@@ -12,6 +12,7 @@ F.logs, F.halos, F.synced, F.added, F.removed, F.clientCmds, F.serverCmds = {}, 
 
 function F.reset()
     F.logs, F.halos, F.synced, F.added, F.removed, F.clientCmds, F.serverCmds = {}, {}, {}, {}, {}, {}, {}
+    F.sounds = {}
 end
 
 function getTimestampMs() return F.now end
@@ -257,6 +258,29 @@ function F.square(room, generator, grid)
         haveElectricity = function() return generator ~= nil and generator.fuel > 0 end,
         hasGridPower = function() return grid == true end }
 end
+-- 音效：玩家 emitter 的本機播放（FMODSoundEmitter.java:484-492：名稱沒登記回 0；setVolume :284-298）。
+-- 登記的名稱照真的 sound script 讀（script 漏寫、改名就播不出來）。F.sounds 收 { player, name, ref, volume }。
+F.sounds, F.soundNames, F.soundRef = {}, {}, 0
+do
+    local f = assert(io.open(F.MEDIA .. "/../scripts/MinidoracatWatch_sounds.txt", "r"))
+    for name in f:read("*a"):gmatch("sound%s+([%w_]+)%s*{") do F.soundNames[name] = true end
+    f:close()
+end
+local Emitter = {}
+Emitter.__index = Emitter
+function Emitter:playSoundImpl(name, obj)
+    if not F.soundNames[name] then return 0 end
+    F.soundRef = F.soundRef + 1
+    F.sounds[#F.sounds + 1] = { player = self.player, name = name, ref = F.soundRef }
+    return F.soundRef
+end
+function Emitter:setVolume(ref, v)
+    for _, s in ipairs(F.sounds) do if s.ref == ref then s.volume = v end end
+end
+function Player:getEmitter()
+    self.emitter = self.emitter or setmetatable({ player = self }, Emitter)
+    return self.emitter
+end
 
 F.players = {}
 function F.player(name, pn)
@@ -378,6 +402,7 @@ local MODULES = {
     MinidoracatWatch_Light = F.MEDIA .. "/shared/MinidoracatWatch_Light.lua",
     MinidoracatWatch_Action = F.MEDIA .. "/client/MinidoracatWatch_Action.lua",
     MinidoracatWatch_Client = F.MEDIA .. "/client/MinidoracatWatch_Client.lua",
+    MinidoracatWatch_Sound = F.MEDIA .. "/client/MinidoracatWatch_Sound.lua",
     MinidoracatWatch_Config = F.MEDIA .. "/server/MinidoracatWatch_Config.lua",
     MinidoracatWatch_Pay = F.MEDIA .. "/shared/MinidoracatWatch_Pay.lua",
     MinidoracatWatch_PayClient = F.MEDIA .. "/client/MinidoracatWatch_PayClient.lua",

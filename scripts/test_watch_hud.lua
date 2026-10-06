@@ -242,7 +242,7 @@ end
 SB.SlotExt, SB.SlotAdv, SB.SlotCore = 1, 1, 1
 local w2 = wear(alice, 0.25)
 H.state = {}
-toasts = {}
+toasts, F.sounds = {}, {}
 H.check(0, alice, F.now)
 check(#toasts == 0, "第一次看到（換錶、上線）：只記基準")
 w2:getModData()[W.KEY] = 0.19
@@ -414,6 +414,14 @@ wear(alice, 0)
 step()
 H.check(0, alice, F.now)
 check(#toasts == 14, "換一支沒電的錶：基準，不報")
+-- 音效跟著同一則 Toast（同樣不重報）：低電量兩次、沒電、租約到期三次（#7、#12 併扣款失敗、#14）；
+-- 充電、充飽、模組停用、扣款失敗、續租不響
+local heard = {}
+for _, s in ipairs(F.sounds) do heard[#heard + 1] = s.name .. "@" .. tostring(s.volume) end
+check(table.concat(heard, ",") == "MinidoracatWatch_BatteryLow@0.7,MinidoracatWatch_BatteryLow@0.7,"
+    .. "MinidoracatWatch_BatteryDead@0.7,MinidoracatWatch_SlotLapsed@0.7,MinidoracatWatch_SlotLapsed@0.7,"
+    .. "MinidoracatWatch_SlotLapsed@0.7",
+    "音效：低電量／沒電／租約到期跟著 Toast 響一次（預設音量 70%）：" .. table.concat(heard, ","))
 
 -- ===== 管理員視窗：到經濟中心上架（Economy 客戶端 rev 4＋shopAdd）=====
 F.load("client/MinidoracatWatch_AdminUI.lua")

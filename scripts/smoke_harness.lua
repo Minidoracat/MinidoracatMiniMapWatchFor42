@@ -127,7 +127,14 @@ local function fails(player)
     return n
 end
 
-F.print("情境四：裝卸模組（client command）→ 物品進出、錶同步、功能狀態")
+local function acks(player)
+    local n = 0
+    for _, c in ipairs(F.serverCmds) do
+        if c.player == player and c.command == W.CMD_MODULE and c.args.to == player:getUsername() then n = n + 1 end
+    end
+    return n
+end
+F.print("情境四：裝卸模組（client command）→ 物品進出、錶同步、功能狀態、成功才回本人（播音效）")
 local SB = SandboxVars.MinidoracatWatch
 local API = MinidoracatWatchAPI
 local driver = F.item("Base.Screwdriver")
@@ -139,6 +146,7 @@ check(API.getWatchModuleState(alice, "gps") == "missing", "裝之前定位模組
 send(alice, W.CMD_MODULE, { watchId = moved:getID(), slotId = "std1", install = true, itemId = gps:getID() })
 check(gps.container == nil and W.slotRecord(moved, "std1").id == "gps" and #F.synced == 1 and F.removed[1] == gps,
     "安裝：模組離開背包、紀錄進錶、同步")
+check(acks(alice) == 1, "安裝成功：回本人一則確認（客戶端播裝好音效）")
 check(API.getWatchModuleState(alice, "gps") == "active", "伺服器上 getWatchModuleState＝active（AutoDrive 讀這個）")
 F.reset()
 local c0 = W.charge(moved)
@@ -152,8 +160,8 @@ check(back:size() == 1 and W.slotRecord(moved, "std1") == nil and F.added[1] == 
 check(API.getWatchModuleState(alice, "gps") == "missing", "拆下後 missing")
 F.reset()
 send(mallory, W.CMD_MODULE, { watchId = moved:getID(), slotId = "std1", install = true, itemId = back:get(0):getID() })
-check(W.slotRecord(moved, "std1") == nil and back:get(0).container == alice.inv and fails(mallory) == 1,
-    "冒用別人的錶與模組：不動、失敗只回給送指令的人")
+check(W.slotRecord(moved, "std1") == nil and back:get(0).container == alice.inv and fails(mallory) == 1
+    and acks(mallory) == 0, "冒用別人的錶與模組：不動、失敗只回給送指令的人、沒有成功確認")
 send(alice, W.CMD_MODULE, { watchId = moved:getID(), slotId = "ext", install = true, itemId = back:get(0):getID() })
 check(W.slotRecord(moved, "ext") == nil and fails(alice) == 1, "擴充槽（預設經濟系統＝解鎖卡）未開啟：拒絕")
 send(alice, W.CMD_MODULE, "junk")

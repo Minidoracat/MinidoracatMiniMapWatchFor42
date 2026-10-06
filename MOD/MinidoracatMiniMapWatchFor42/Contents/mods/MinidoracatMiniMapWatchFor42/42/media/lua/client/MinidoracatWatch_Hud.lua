@@ -226,16 +226,18 @@ Events.OnGameStart.Add(H.installTooltip)
 -- 每秒比對每位本機玩家的上一次狀態：戴的錶換了（或剛上線）只記基準、不提示。玩家看到的清單在 README「功能」的狀態顯示：
 -- 低電量（往下跨過 W.LOW_CHARGE 一次，回到門檻＋5% 以上才重新武裝）、沒電（燈同時被熄就併成一則）、開始充電／充飽、
 -- 經濟系統槽位的租約到期／自動續租沒扣到款／自動續租成功（面板自己付的不報：檢視區已經說了）、其他原因的槽位失效讓模組停用。
--- 同一件事 60 秒內不重報（車子反覆熄火發動、門檻上下跳）。
+-- 同一件事 60 秒內不重報（車子反覆熄火發動、門檻上下跳）。低電量、沒電、租約到期另播音效（MinidoracatWatch_Sound.lua），跟著 Toast 一起不重報。
 local POLL_MS, REPEAT_MS, LIGHT_MS, REARM, PAID_MS = 1000, 60000, 5000, 0.05, 10000
 H.state = {}
 local lastPoll = nil
+local Snd = MinidoracatWatchSound
 
-local function say(s, player, id, now, title, msg)
+local function say(s, player, id, now, title, msg, sound)
     local last = s.said[id]
     if last and now >= last and now - last < REPEAT_MS then return end
     s.said[id] = now
     C.toast(player, msg, title)
+    if sound then Snd.play(player, sound) end
 end
 
 local function failText(v)
@@ -267,7 +269,7 @@ local function leaseEvents(s, player, watch, slot, now, valid)
     if lapsed then
         -- 到期那一步自動續租就沒扣到款：併成一則（原因＋重試期限）
         local msg = v.fail and failText(v) or (rec and T("Toast_Lapsed_msg", C.moduleName(rec.id)) or T("Toast_Lapsed_empty"))
-        say(s, player, "lapse:" .. slot.id, now, T("Toast_Lapsed", name), msg)
+        say(s, player, "lapse:" .. slot.id, now, T("Toast_Lapsed", name), msg, Snd.LAPSED)
     elseif v.fail and not e.fail then
         say(s, player, "fail:" .. slot.id, now, T("Toast_RenewFailed", name), failText(v))
     end
@@ -302,13 +304,13 @@ function H.check(pn, player, now)
     if c and s.c and s.c > W.LOW_CHARGE and c > 0 and c <= W.LOW_CHARGE and not s.lowSaid then
         s.lowSaid = true
         say(s, player, "low", now, T("Toast_Low", tostring(C.percent(c))),
-            T("Toast_Low_msg", C.timeText(c, C.fullRuntime(player, watch))))
+            T("Toast_Low_msg", C.timeText(c, C.fullRuntime(player, watch))), Snd.LOW)
     end
     if c == 0 and s.c and s.c > 0 then
         -- 伺服器沒電當下就同步電量、同一秒熄燈（MinidoracatWatch.lua accrue、_Light.lua lightCheck）：5 秒內亮過燈就併成一則
         local msg = T(W.deadKeepsMinimap() and "Toast_Dead_map" or "Toast_Dead_msg")
         if s.litAt and now - s.litAt <= LIGHT_MS then msg = T("Toast_Dead_light", msg) end
-        say(s, player, "dead", now, T("Toast_Dead"), msg)
+        say(s, player, "dead", now, T("Toast_Dead"), msg, Snd.DEAD)
     end
     if kind and not s.kind then
         say(s, player, "charge:" .. kind, now, T("Toast_Charging"),

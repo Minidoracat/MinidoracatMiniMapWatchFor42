@@ -6,6 +6,7 @@
 -- 走動、跑步、瞄準會中斷（ISBaseTimedAction.new 的 stopOnWalk／stopOnRun／stopOnAim），模組與電池留在背包。
 require "TimedActions/ISBaseTimedAction"
 require "MinidoracatWatch"
+require "MinidoracatWatch_Sound"
 local W = MinidoracatWatchCore
 
 ISMinidoracatWatchAction = ISBaseTimedAction:derive("ISMinidoracatWatchAction")
@@ -34,6 +35,8 @@ function ISMinidoracatWatchAction:perform()
                 { watchId = watchId, slotId = self.slotId, install = self.install, itemId = itemId })
         else
             ok, reason = W.applyModuleChange(p, watchId, self.slotId, self.install, itemId)
+            -- MP 的音效等伺服器確認（MinidoracatWatch_Client.lua 收 CMD_MODULE）
+            if ok then MinidoracatWatchSound.moduleDone(p, self.install, self.watch) end
         end
     else
         if isClient() then

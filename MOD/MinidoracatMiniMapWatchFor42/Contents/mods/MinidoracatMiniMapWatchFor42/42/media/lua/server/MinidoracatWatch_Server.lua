@@ -63,7 +63,13 @@ local function onClientCommand(module, command, player, args)
     local handler = HANDLERS[command]
     if not handler or type(args) ~= "table" or throttled(key, now) then return end
     local ok, reason = handler(player, args)
-    if not ok then notifyFail(player, reason or W.FAIL_GENERIC) end
+    if not ok then
+        notifyFail(player, reason or W.FAIL_GENERIC)
+    elseif command == W.CMD_MODULE then
+        -- 裝卸成功回本人（只為了播音效，MinidoracatWatch_Client.lua）：install 已在突變點驗過是布林
+        sendServerCommand(player, W.MODULE, W.CMD_MODULE,
+            { to = player:getUsername(), install = args.install, watchId = args.watchId })
+    end
 end
 
 Events.OnClientCommand.Add(onClientCommand)
