@@ -192,10 +192,20 @@ check(emitters(a) == 0 and a:getAttachedItem(LOC) == nil, "被原版切燈鍵關
 cmd(a, true)
 check(lit(a) and emitters(a) == 1, "之後照常能再開")
 
--- 死亡的玩家不校正（屍體上的光源不發光：checkLights 只看玩家與車）
+-- 死亡：OnCharacterDeath（IsoGameCharacter.java:4873-4875，在 becomeCorpse 把背包交給屍體之前）由伺服器刪光源，
+-- 屍體與掉落的背包裡不留隱形光源；之後的校正跳過死亡玩家
+check(lit(a), "（死亡前燈開著）")
 a.dead = true
+F.reset()
+F.fire("OnCharacterDeath", a)
+check(emitters(a) == 0 and a:getAttachedItem(LOC) == nil, "死亡後背包沒有光源物品、也沒掛著")
+check(lastAttach(a) and lastAttach(a).item == nil and F.removed[1] ~= nil, "死亡：伺服器送出移除與拿下")
+F.fire("OnCharacterDeath", { _class = "IsoZombie" })
+check(true, "殭屍死亡：不出錯")
 check(W.applyLight(a, false) == false, "死亡：指令拒絕")
 a.dead = false
+cmd(a, true)
+check(lit(a), "（重生後再開燈）")
 
 -- 沒戴著的錶算續航時不加開燈的耗電
 local w2 = give(a, F.RIGHT)

@@ -139,3 +139,14 @@ end
 
 -- 單機暫停時 OnTick 不跑（GameWindow.java:354-368）：沒電熄燈與扣電同一個事件
 if not isClient() then Events.OnTickEvenPaused.Add(W.lightTick) end
+
+-- 死亡：刪光源，屍體（IsoDeadBody 直接接手玩家的背包與 attached，IsoDeadBody.java:326-330）裡不留隱形光源。
+-- OnCharacterDeath 由 DoDeath→OnDeath 觸發（IsoGameCharacter.java:2024-2025、4873-4875），早於 becomeCorpse
+-- （:14623-14643、14683-14689），SP 與專用伺服器都在權威端跑；MP 客戶端也會觸發，交給伺服器。
+-- 不用 OnPlayerDeath：它只在非伺服器的本機玩家觸發（IsoPlayer.java:6554-6570），dedicated 收不到。
+function W.lightOnDeath(chr)
+    if not instanceof(chr, "IsoPlayer") then return end
+    local item = W.lightItem(chr)
+    if item then W.lightOff(chr, item) end
+end
+if not isClient() then Events.OnCharacterDeath.Add(W.lightOnDeath) end
