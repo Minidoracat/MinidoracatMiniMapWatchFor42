@@ -76,7 +76,14 @@ S.SKINS["crt-amber"] = { base = "crt", colors = {
     ring = "#FFDCA0", socket = "#241505", socketLocked = "#140B02", glyph = "#FFC266", headLine = "#E09A2E",
     footSurface = "#2A1A06" } }
 
--- 框架太舊時的預設 theme 仍要有自有 token（未知 token 的繪製是靜默不畫）：深色家族外觀
+-- 預設 theme（管理員視窗與確認框、Dock 圖示、框架太舊時的面板）：框架 DARK 的色，但底色全部不透明——框架預設
+-- surface 是 0.8 的黑，後面的角色視窗與地圖文字會透出來疊在設定標籤上。hover／selected 仍用框架的半透明疊色。
+S.DEFAULT = {
+    surface = "#141517", surfaceTitle = "#2B2C2F", well = "#0A0A0C", border = "#666666", text = "#FFFFFF",
+    textMuted = "#9E9E9E", textFaint = "#8C8C8C", textDisabled = "#666666", accent = "#FFD966", onAccent = "#1A1405",
+    titleText = "#FFFFFF", titleMuted = "#9E9E9E",
+}
+-- 預設 theme 的自有 token（未知 token 的繪製是靜默不畫）：深色家族外觀
 S.FALLBACK = { ring = "#FFD966", socket = "#1A1C21", socketLocked = "#111214", glyph = "#E6E6E6", headLine = "#666666" }
 
 local STYLE_SKIN = { ValuTech = "valutech", Paws = "paws", Nexus = "nexus", Spiffo = "spiffo", Ranger = "ranger",
@@ -108,10 +115,11 @@ function S.rgb(hex)
         b = tonumber(hex:sub(6, 7), 16) / 255, a = 1 }
 end
 
-local function colorsOf(map, over)
+local function colorsOf(...)
     local out = {}
-    for k, v in pairs(map) do out[k] = S.rgb(v) end
-    for k, v in pairs(over or {}) do out[k] = S.rgb(v) end
+    for i = 1, select("#", ...) do
+        for k, v in pairs(select(i, ...) or {}) do out[k] = S.rgb(v) end
+    end
     return out
 end
 
@@ -121,11 +129,11 @@ function S.canSkin(UI)
 end
 
 local cache = {}
--- 預設 theme：框架預設配色＋自有 token（面板外的 Dock、框架太舊時的面板）
+-- 預設 theme：不透明的框架深色＋共用色＋自有 token（MinidoracatWatch_AdminUI.lua、Dock、框架太舊時的面板）
 function S.defaultTheme(UI)
     local hit = cache["@default"]
     if hit and hit.ui == UI then return hit.theme end
-    local theme = UI.Theme.create({ colors = colorsOf(S.COMMON, S.FALLBACK) })
+    local theme = UI.Theme.create({ colors = colorsOf(S.DEFAULT, S.COMMON, S.FALLBACK) })
     cache["@default"] = { ui = UI, theme = theme }
     return theme
 end

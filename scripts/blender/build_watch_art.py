@@ -11,7 +11,7 @@
 產物（直接寫進 MOD 的 42/media/）：
     models_X/Static/Clothes/MinidoracatWatch_<款>_<M|F>_<Left|Right>.x   手腕模型（掛 Bip01_{L,R}_Forearm，靜態）
     textures/MinidoracatWatch_<款>.png（嗶嗶腕機另有 _Amber）             模型貼圖 256×256
-    textures/Item_MinidoracatWatch_<款>.png、_Module_<模組>.png、_UnlockCard_<等級>.png   32×32 物品欄圖示
+    textures/Item_MinidoracatWatch_<款>.png（嗶嗶腕機另有 _Amber）、_Module_<模組>.png、_UnlockCard_<等級>.png   32×32 物品欄圖示
 中間產物與預覽（不進 MOD、不進版控）：temp/watch-art/（verify.txt、icons_sheet.png、blender/*.png）
 
 需求：node（跑設計稿 design/export_design.mjs）、Blender 5.2（算錶的圖示原圖）、本機 PZ（只讀手臂網格量尺寸，不複製）。
@@ -187,9 +187,12 @@ def main():
     # 錶的圖示照設計稿 watchIcon：viewBox 14 38 172 172 裁成正方形、只看錶殼（3D 斜看時錶帶環比錶面還大，28 px 下看不出款式）
     icons = []
     for sid in only:
-        ic = to_icon(render(svg_doc(design["watches"][wm.STYLES[sid]["svg"]], (14, 38, 172, 172), 256, 256)))
-        ic.save(os.path.join(tex_dir, f"Item_{PREFIX}_{sid}.png"))
-        icons.append((f"Item_{PREFIX}_{sid}", ic))
+        st = wm.STYLES[sid]
+        # 另一套螢幕色（嗶嗶腕機琥珀）也出一張：物品圖示固定是預設色，面板錶面與標題列依螢幕色換（MinidoracatWatch_Panel.lua）
+        for suffix, svg_id in [("", st["svg"])] + [("_" + alt, v) for alt, v in st.get("svg_alt", {}).items()]:
+            ic = to_icon(render(svg_doc(design["watches"][svg_id], (14, 38, 172, 172), 256, 256)))
+            ic.save(os.path.join(tex_dir, f"Item_{PREFIX}_{sid}{suffix}.png"))
+            icons.append((f"Item_{PREFIX}_{sid}{suffix}", ic))
     for mid, glyph, tier, color in MODULES:
         ic = to_icon(render(svg_doc(module_svg(design, glyph, tier, color), (0, 0, 64, 64), 256, 256)))
         ic.save(os.path.join(tex_dir, f"Item_{PREFIX}_Module_{mid}.png"))

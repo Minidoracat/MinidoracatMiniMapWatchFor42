@@ -88,6 +88,28 @@ for _, key in ipairs(keys) do
     run(key, foot, FOOT_PAIRS, "（電量列）")
 end
 check(#keys == 8, "七款皮膚＋嗶嗶腕機琥珀＝8 套（" .. #keys .. "）")
+-- 預設 theme（管理員視窗與確認框、Dock、框架太舊時的面板）：框架 DARK 的色＋共用色，底色不透明
+local DEFAULT_PAIRS = {
+    { "text", "surface", 4.5, "內文" }, { "textMuted", "surface", 4.5, "說明文字、欄位單位" },
+    { "accent", "surface", 4.5, "頁尾訊息、經濟系統狀態" }, { "errorText", "surface", 4.5, "錯誤說明" },
+    { "text", "well", 4.5, "輸入框、下拉選單" }, { "textMuted", "well", 4.5, "輸入框提示字" },
+    { "titleText", "surfaceTitle", 4.5, "標題列" }, { "titleMuted", "surfaceTitle", 3, "關閉鈕" },
+    { "onAccent", "accent", 4.5, "主要按鈕" }, { "border", "surface", 3, "控制項外框" },
+    { "textDisabled", "surface", 3, "停用控制項" }, { "errorText", "errorSurface", 4.5, "欄位錯誤框" },
+    { "warnText", "warnSurface", 4.5, "警示框" },
+}
+local defaultColors = {}
+for _, map in ipairs({ S.DEFAULT, S.COMMON, S.FALLBACK }) do for k, v in pairs(map) do defaultColors[k] = v end end
+run("預設", defaultColors, DEFAULT_PAIRS, "")
+local made0 = {}
+local dt = S.defaultTheme({ Theme = { create = function(o) made0[#made0 + 1] = o; return { colors = o.colors } end } })
+local opaque = true
+for _, tok in ipairs({ "surface", "surfaceTitle", "well", "errorSurface", "warnSurface" }) do
+    local c = dt.colors[tok]
+    if not (c and c.a == 1) then opaque = false end
+end
+check(opaque and dt.colors.hover == nil and dt.colors.selected == nil,
+    "預設 theme：底色（surface／surfaceTitle／well／錯誤與警示框）不透明，hover／selected 留給框架的半透明疊色")
 if os.getenv("SKIN_REPORT") then for _, l in ipairs(report) do F.print(l) end end
 
 -- ===== 皮膚選擇 =====

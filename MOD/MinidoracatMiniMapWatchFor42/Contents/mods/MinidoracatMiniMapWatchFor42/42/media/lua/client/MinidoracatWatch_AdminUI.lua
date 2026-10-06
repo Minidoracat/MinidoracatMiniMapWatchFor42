@@ -196,7 +196,9 @@ end
 -- ============================================================
 if not AU.uiReady then return end
 
-local THEME = UI.Theme.create()
+-- 不透明底的預設 theme（框架預設 surface 半透明，後面的視窗會透出來疊在設定標籤上）；確認框也用這個
+require "MinidoracatWatch_Skins"
+local THEME = MinidoracatWatchClient.Skins.defaultTheme(UI)
 local COL = THEME.colors
 local FONT = UIFont.Small
 local FH = getTextManager():getFontHeight(FONT)

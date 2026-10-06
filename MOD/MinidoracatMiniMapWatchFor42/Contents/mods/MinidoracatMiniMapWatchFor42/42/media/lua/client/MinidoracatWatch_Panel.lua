@@ -328,7 +328,7 @@ function Sockets:prerender()
     local outer, inner = (face + 3) * 56 / 40, face * 56 / 40
     tint(self, disc, cx - outer / 2, cy - outer / 2, outer, outer, colors.border)
     tint(self, disc, cx - inner / 2, cy - inner / 2, inner, inner, colors.well)
-    local tex = watch:getTex() -- InventoryItem.java:678
+    local tex = p.faceTex or watch:getTex() -- InventoryItem.java:678
     if tex then self:drawTextureScaled(tex, cx - DIAL / 2, cy - DIAL / 2, DIAL, DIAL, 1, 1, 1, 1) end
     local item, def = draggedModule()
     local over = item and self:isMouseOver() and self:socketAt(self:getMouseX(), self:getMouseY())
@@ -506,6 +506,8 @@ function M:applySkin(key)
     self.skinKey, self.skin = key, key == "crt-amber" and "crt" or key
     self.theme, self.inspTheme, self.footTheme = S.themes(UI, key)
     self.shape, self.mono = spec.shape, spec.mono == true
+    -- 錶面與標題列的錶圖示：物品圖示固定是綠螢幕，琥珀螢幕用另一張（build_watch_art.py 產生；缺圖＝nil，退回物品圖示）
+    self.faceTex = key == "crt-amber" and getTexture("media/textures/Item_MinidoracatWatch_BB3000_Amber.png") or nil
     self.tex = { sel = shapeTex("sock_" .. spec.shape .. "_sel"), ring = shapeTex("sock_" .. spec.shape .. "_ring"),
         fill = shapeTex("sock_" .. spec.shape .. "_fill"), deco = spec.shape == "circle" and shapeTex("sock_circle_deco") or nil }
     self.sockets.layout = spec.layout
@@ -664,7 +666,7 @@ function M:update()
     if player then self:scan(player, w, slot) end
     if w then
         self:setTitle(w:getDisplayName())
-        self.icon = w:getTex()
+        self.icon = self.faceTex or w:getTex()
     else
         self:setTitle(getText("IGUI_MinidoracatWatch_DockLabel"))
         self.icon = nil

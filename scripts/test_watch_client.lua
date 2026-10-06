@@ -742,9 +742,15 @@ pp.sockets:prerender()
 check(F.draws > 40, "貓爪面板畫得出來")
 pp, pw = openStyle("BB3000", true)
 check(pp.skinKey == "crt-amber" and pp.mono and pp.sockets.layout == "plates", "嗶嗶腕機琥珀：琥珀 theme、等寬讀數")
+pp:update()
+local AMBER = "media/textures/Item_MinidoracatWatch_BB3000_Amber.png"
+local amberFile = io.open(F.MEDIA .. "/../textures/Item_MinidoracatWatch_BB3000_Amber.png", "rb")
+if amberFile then amberFile:close() end
+check(pp.icon == "tex:" .. AMBER and pp.faceTex == pp.icon and amberFile ~= nil,
+    "嗶嗶腕機琥珀：標題列與錶面用琥珀版錶圖示（圖檔存在）")
 pw:getModData()[W.SCREEN_KEY] = 0
 pp:update()
-check(pp.skinKey == "crt", "螢幕切回綠色：面板跟著換 theme")
+check(pp.skinKey == "crt" and pp.icon == pw:getTex() and pp.faceTex == nil, "螢幕切回綠色：面板跟著換 theme 與錶圖示")
 pp.sockets.cur = 1
 check(pp.sockets:onFocusKey(Keyboard.KEY_DOWN) and pp.sockets.cur == 4 and pp.sockets:onFocusKey(Keyboard.KEY_RIGHT)
     and pp.sockets.cur == 5 and pp.sockets:onFocusKey(Keyboard.KEY_UP) and pp.sockets.cur == 2, "3×2 版面：↓ → ↑ 依位置走")
