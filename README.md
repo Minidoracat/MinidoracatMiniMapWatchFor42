@@ -18,9 +18,17 @@ Project Zomboid Build 42 MOD，[Minidoracat MiniMap for B42](https://steamcommun
 - **不受限制**：世界地圖底圖、搜尋、自己的座標不需要戴錶
 - **照明模組**：裝在一般槽位的錶上的燈，開燈照亮身邊約 4 格（半徑可調），所有玩家都看得到；關燈不耗電、開燈耗電 +100%（可調）；沒電、拿下錶、拆模組、槽位失效時自動熄滅。面板按鈕、錶的右鍵、快捷鍵（預設 `,`）開關
 
-## 管理員：殭屍掉落規則檔
+## 管理員：設定視窗
 
-數值（掉落總開關、每隻最多幾件、各款錶／模組／解鎖卡是否出現在戰利品）在沙盒「地圖錶」分頁；掉落規則是清單，放在伺服器設定檔：
+小地圖設定（齒輪）裡的「地圖錶管理」分類只有沙盒權限的角色（admin、moderator；gm 與一般玩家沒有）看得到，單人遊戲一定看得到。按「開啟地圖錶設定」打開視窗：總覽（快速方案與目前設定一覽）、功能、槽位與價格、電池、取得方式、殭屍掉落六個分類。
+
+- 「檢查並套用」先列出這次會改變的項目（原本→改成；改了租金、幣別或租期會提醒玩家要重新同意自動續租），要填原因才會套用。原因與改變的項目寫進伺服器設定檔同一個資料夾的 `admin-audit.log`，伺服器 log 也記一筆。
+- 數值存沙盒（和原版沙盒介面同一條路：多人遊戲由伺服器存進 `<伺服器名>_SandboxVars.lua` 並推給所有玩家；單人遊戲存檔時寫進存檔）；清單（殭屍掉落規則、其他 MOD 模組的耗電、其他 MOD 槽位的逐槽設定）存伺服器設定檔。伺服器收到修改時會再檢查一次權限。
+- 兩位管理員同時開著視窗時，後送出的那位會被擋下並重新讀取目前的設定，不會蓋掉先送出的修改；直接改設定檔也算一次修改。
+
+## 管理員：伺服器設定檔
+
+數值（掉落總開關、每隻最多幾件、各款錶／模組／解鎖卡是否出現在戰利品與數量）在沙盒「地圖錶」分頁；清單放在伺服器設定檔（設定視窗會改寫它，也可以直接編輯）：
 
 - 位置：`Zomboid/Lua/MinidoracatWatch/<伺服器名>/server-settings.json`（單人遊戲是 `sp_<存檔名>`，非英數字換成底線）。不存在時自動寫一份預設（10 條）。
 - 改檔後 10 秒內生效，不必重開伺服器。檔案不是合法 JSON、或任何一條規則不合法時，整份規則不採用、保留上一份有效的，伺服器 log 會寫出是第幾條、哪裡不對。
@@ -44,7 +52,18 @@ Project Zomboid Build 42 MOD，[Minidoracat MiniMap for B42](https://steamcommun
 
 各分組包含的服裝：軍人 `ArmyCamoGreen` `ArmyCamoDesert` `ArmyInstructor` `ArmyServiceUniform` `Ghillie` `PrivateMilitia`；警察與警衛 `Police` `PoliceState` `Police_SWAT` `PoliceRiot` `PrisonGuard`；消防員 `Fireman` `FiremanFullSuit`；醫護 `Doctor` `Nurse` `AmbulanceDriver` `Pharmacist`；技工與工人 `Mechanic` `MetalWorker` `ConstructionWorker` `Foreman`；上班族 `OfficeWorker` `OfficeWorkerSkirt` `Trader`；學生 `Student` `HonorStudent`；生存狂 `Survivalist`、`Survivalist02`–`05` 與各自的 `_Mid`／`_Late`；富人 `Classy` `Gaudy`；Spiffo `Spiffo` `Waiter_Spiffo` `Cook_Spiffos`；獵人與巡山員 `Hunter` `Ranger` `Camper`。
 
-這個設定檔之後也會存其他 MOD 模組的耗電設定（新的鍵，不影響既有的 `zombieDrops`）。
+另外兩個區段由設定視窗寫入，也可以手改：
+
+```json
+{
+  "moduleDrains": { "weather": 40 },
+  "addonSlots": { "weather": { "mode": "econ", "buy": false, "rentPrice": 90 } }
+}
+```
+
+- `moduleDrains`：其他 MOD 的模組耗電（%，0–1000 的整數），鍵是模組 id；沒寫的模組用它登記的建議值。內建模組的耗電在沙盒，不能寫在這裡。
+- `addonSlots`：其他 MOD 的槽位逐槽設定，鍵是槽位 id；`mode` 是 `free`／`card`／`econ`／`off`（必填），`buy`／`rent`（true／false）與 `buyPrice`／`rentPrice`（1 以上的整數）可省略，省略的照沙盒「其他 MOD 的槽位」那幾項。沒寫的槽位整個照沙盒。
+- 兩個區段各自驗證：任何一筆不合法就保留那個區段上一份有效的值，伺服器 log 寫明原因。提供模組或槽位的 MOD 暫時被移除時，設定照樣保留。
 
 ## 管理員：經濟系統（付費槽位）
 
@@ -121,8 +140,8 @@ end
 ```
 
 - 只看「有沒有」的功能（例如 AutoDrive 的 GPS）只認 `"active"`。
-- 模組耗電：內建模組由沙盒調整；第三方模組目前用 `drain` 建議值（管理員調整在之後的版本）。
-- 其他 MOD 的槽位開啟方式是沙盒「其他 MOD 加入的槽位的開啟方式」（預設免費開放）；選解鎖卡時用擴充槽解鎖卡。
+- 模組耗電：內建模組由沙盒調整；第三方模組預設用你登記的 `drain`，管理員可以在設定視窗（存伺服器設定檔 `moduleDrains`）逐個調整。
+- 其他 MOD 的槽位預設照沙盒「其他 MOD 加入的槽位的開啟方式」（預設免費開放）；管理員可以在設定視窗逐槽設定開啟方式與價格（存伺服器設定檔 `addonSlots`）。選解鎖卡時用擴充槽解鎖卡。
 - 解鎖卡開啟的名額綁在帳號（登入名）。多人伺服器上分割畫面的第 2～4 位玩家無法確認身分，不能使用解鎖卡；Steam 伺服器以連線的 SteamID 確認身分，改名冒用別人讀不到對方的名額。**已知殘餘風險**：no-steam 伺服器沒有驗證因子，玩家重生時改名成離線玩家仍能使用對方已開啟的名額。
 - 你的 MOD 被移除後（沒有再登記同一個槽位 id），裝在那個槽位裡的模組會停用、不耗電，玩家照樣能從面板或錶的右鍵選單拆下來；槽位與解鎖紀錄保留，MOD 裝回來就恢復。模組的 `item` 類型如果也跟著消失，那個模組會留在錶上、拆不下來，直到 MOD 裝回來。
 - 選「經濟系統」時，每個槽位是 Economy 裡的一個商品：槽位 id 是小寫英數字與底線、26 字元以內時商品 id 是 `w_<槽位 id>`，否則是 `w_` 加 8 位雜湊。**槽位 id 請加上你的 MOD 前綴**（不同 MOD 用同一個 id 會被當成同一個槽位）。你的 MOD 被移除時，Economy（API revision 4 以上）會凍結這個槽位的租約，不扣租金、MOD 裝回來後剩餘時間接著算；買斷的名額一直保留。槽位要在 shared 檔案載入時登記，伺服器啟動後才登記的槽位沒有商品、不能購買。

@@ -54,13 +54,40 @@ function W.featureRule(feature)
     return RULE_BY_VALUE[W.sandbox(key, 3)] or W.RULE_MODULE
 end
 
+-- ===== 伺服器設定檔的清單（Phase 4）=====
+-- 第三方模組耗電（moduleDrains：[模組 id] = %）與第三方槽位逐槽設定（addonSlots：[槽位 id] = { mode, buy?, buyPrice?,
+-- rent?, rentPrice? }）存在伺服器設定檔（server/MinidoracatWatch_Admin.lua 登記區段）。伺服器與單機直接讀設定檔的值；
+-- MP 客戶端讀伺服器推來的那份（W.clientLists，登入時要一次、每次變更廣播），閘門與面板才和伺服器一致。
+W.CMD_LISTS = "lists"
+W.CMD_LISTS_REQ = "listsReq"
+-- 管理員設定視窗（server/MinidoracatWatch_Admin.lua）：讀取 get → state、寫回 set → result
+W.CMD_ADMIN_GET, W.CMD_ADMIN_STATE = "adminGet", "adminState"
+W.CMD_ADMIN_SET, W.CMD_ADMIN_RESULT = "adminSet", "adminResult"
+W.clientLists = { moduleDrains = {}, addonSlots = {} }
+function W.listValue(name)
+    if isClient() then return W.clientLists[name] end
+    local Cfg = W.Config
+    return Cfg and Cfg.get(name) or nil
+end
+W.MODE_VALUE = { free = 1, card = 2, econ = 3, off = 4 }
+function W.addonSlotCfg(slotId)
+    local t = W.listValue("addonSlots")
+    local e = t and t[slotId]
+    if type(e) == "table" and W.MODE_VALUE[e.mode] then return e end
+    return nil
+end
+
 -- 槽位開啟方式：1 免費開放、2 解鎖卡、3 經濟系統、4 不開放。經濟系統要伺服器的 Economy 整合是 READY
 -- （W.econStatus，MinidoracatWatch_Pay.lua）；Economy 缺席、版本不足、單機時改用解鎖卡。
--- 預設照設計稿 DEFAULT_ADMIN：擴充／進階／核心＝經濟系統，其他 MOD 的槽位＝免費。
+-- 預設照設計稿 DEFAULT_ADMIN：擴充／進階／核心＝經濟系統，其他 MOD 的槽位＝免費（沙盒 SlotAddon；設定檔有逐槽設定時以它為準）。
 W.SLOT_MODE_KEY = { ext = "SlotExt", adv = "SlotAdv", core = "SlotCore", addon = "SlotAddon" }
-function W.slotModeValue(slot) -- 沙盒原始值
+function W.slotModeValue(slot) -- 沙盒原始值（第三方槽位先看設定檔的逐槽設定）
     local key = W.SLOT_MODE_KEY[slot.tier]
     if not key then return 1 end
+    if slot.tier == "addon" then
+        local e = W.addonSlotCfg(slot.id)
+        if e then return W.MODE_VALUE[e.mode] end
+    end
     return W.sandbox(key, slot.tier == "addon" and 1 or 3)
 end
 function W.slotMode(slot)
@@ -86,6 +113,7 @@ W.slotList, W.slotById = {}, {}
 local function validId(id)
     return type(id) == "string" and #id <= 32 and id:match("^[%a][%w_]*$") ~= nil
 end
+W.validId = validId
 local function finite(n, lo, hi) return type(n) == "number" and n == n and n >= lo and n <= hi end
 
 local function reject(what, def, why)
@@ -189,13 +217,28 @@ W.CARD_TYPES = { ext = "MinidoracatWatch.UnlockCard_Ext", adv = "MinidoracatWatc
     core = "MinidoracatWatch.UnlockCard_Core", addon = "MinidoracatWatch.UnlockCard_Ext" }
 function W.cardType(slot) return W.CARD_TYPES[slot.tier] end
 
--- 模組耗電（%）：內建模組讀沙盒，第三方用它自己的建議值（管理員調整是 Phase 4 的伺服器設定檔）
+-- 模組耗電（%）：內建模組讀沙盒；第三方讀設定檔 moduleDrains（管理員調整），沒有就用它登記的建議值
 function W.moduleDrain(def)
     local b = W.BUILTIN[def.id]
-    if not b then return def.drain end
+    if not b then
+        local t = W.listValue("moduleDrains")
+        local v = t and t[def.id]
+        if type(v) == "number" and v == v and v >= 0 and v <= 1000 then return v end
+        return def.drain
+    end
     local v = tonumber(W.sandbox(b.drainKey, def.drain))
     if not v or v ~= v or v < 0 then return def.drain end
     return v
+end
+
+-- ===== 管理員設定的權限（Phase 4）=====
+-- 和原版沙盒介面同一個權限：SandboxOptions（admin、moderator 有，gm 沒有；Roles.java、封包要求見
+-- PacketTypes.java:421 與 :301-311）。單機玩家就是管理員。客戶端拿來決定齒輪分類看不看得到，伺服器收到修改時再查一次。
+function W.isSettingsAdmin(player)
+    if not isClient() and not isServer() then return true end
+    if not player or Capability == nil then return false end
+    local ok, res = pcall(function() return player:getRole():hasCapability(Capability.SandboxOptions) end)
+    return ok and res == true
 end
 
 -- ===== 解鎖紀錄與帳號身分 =====

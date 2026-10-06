@@ -73,16 +73,22 @@ end
 
 -- 沙盒 → 12 欄方案。該級不是經濟系統（或第三方產品缺席）：兩種販售與自動續租全關（Economy 就不賣、不扣款，
 -- 已付期間照舊）；不刪產品或權益，改回經濟系統就恢復。價格至少 1（Economy 範圍）。
+-- 第三方槽位：設定檔 addonSlots 有這個槽位時，買斷／租用開關與價格以它為準（沒寫的欄位照沙盒 SlotAddon*）。
 function Econ.planValues(slot, absent)
     local key = W.SLOT_MODE_KEY[slot.tier] or W.SLOT_MODE_KEY.addon -- 缺席的第三方產品是孤立假槽位
     local econ = not absent and W.slotModeValue(slot) == 3
     local d = Econ.PRICE[slot.tier] or Econ.PRICE.addon
     local cur = Econ.CURRENCIES[W.sandbox("PayCurrency", 1)] or "survivor"
+    local e = slot.tier == "addon" and W.addonSlotCfg(slot.id) or nil
+    local function pick(field, suffix, default)
+        if e and e[field] ~= nil then return e[field] end
+        return W.sandbox(key .. suffix, default)
+    end
     return {
-        permanentEnabled = econ and W.sandbox(key .. "Buy", true) ~= false,
-        permanentCurrency = cur, permanentPrice = intIn(W.sandbox(key .. "BuyPrice", d[2]), 1, 1e9, d[2]), permanentLimit = 1,
-        rentalEnabled = econ and W.sandbox(key .. "Rent", true) ~= false,
-        rentalCurrency = cur, rentalPrice = intIn(W.sandbox(key .. "RentPrice", d[1]), 1, 1e9, d[1]), rentalLimit = 1,
+        permanentEnabled = econ and pick("buy", "Buy", true) ~= false,
+        permanentCurrency = cur, permanentPrice = intIn(pick("buyPrice", "BuyPrice", d[2]), 1, 1e9, d[2]), permanentLimit = 1,
+        rentalEnabled = econ and pick("rent", "Rent", true) ~= false,
+        rentalCurrency = cur, rentalPrice = intIn(pick("rentPrice", "RentPrice", d[1]), 1, 1e9, d[1]), rentalLimit = 1,
         rentalDays = intIn(W.sandbox("PayRentDays", 7), 1, 365, 7),
         graceHours = intIn(W.sandbox("PayRetryHours", 24), 0, 168, 24),
         reminderHours = intIn(W.sandbox("PayReminderHours", 24), 0, 168, 24),

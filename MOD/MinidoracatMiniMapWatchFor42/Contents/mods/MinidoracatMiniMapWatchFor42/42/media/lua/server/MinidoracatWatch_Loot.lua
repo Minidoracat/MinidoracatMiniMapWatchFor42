@@ -65,32 +65,48 @@ L.ENTRIES = {
 }
 L.KEYS = { "Enabled", "LootValuTech", "LootPaws", "LootNexus", "LootSpiffo", "LootRanger", "LootLuthex", "LootBB3000",
     "LootModules", "LootCards" }
+-- 數量（Phase 4，設計稿取得方式的「很少／少／一般／多」）：每類一個 enum 沙盒，乘上 ENTRIES 的機率；一般＝建議值
+L.AMOUNT_KEYS = { "LootWatchAmount", "LootModuleAmount", "LootCardAmount" }
+L.AMOUNT_OF = { LootModules = "LootModuleAmount", LootCards = "LootCardAmount" } -- 其餘（七款錶）＝LootWatchAmount
+L.FACTORS = { 0.25, 0.5, 1, 2 }
 L.TABLES = {} -- 本 MOD 碰到的分佈表
 for _, e in ipairs(L.ENTRIES) do
     for i = 1, #e[3], 2 do L.TABLES[e[3][i]] = true end
 end
 
 -- 原生沙盒值（getSandboxOptions():getOptionByName(...):getValue()，原版用例 CPlantGlobalObject.lua:19）；拿不到就退回 SandboxVars
-function L.option(key)
+local function native(key, default)
     local opts = getSandboxOptions and getSandboxOptions()
     local o = opts and opts:getOptionByName("MinidoracatWatch." .. key)
-    if o then return o:getValue() ~= false end
-    return W.sandbox(key, true) ~= false
+    if o then return o:getValue() end
+    return W.sandbox(key, default)
+end
+function L.option(key) return native(key, true) ~= false end
+function L.amount(key)
+    local v = tonumber(native(key, 3))
+    if v and L.FACTORS[v] then return v end
+    return 3
 end
 
--- 目前開關的簽章（字串比對；每 POLL_MS 一次、10 個選項）
+-- 目前開關與數量的簽章（字串比對；每 POLL_MS 一次、13 個選項）：開關一字一位、"|"、數量一字一位
 function L.signature()
     local s = ""
     for _, k in ipairs(L.KEYS) do s = s .. (L.option(k) and "1" or "0") end
+    s = s .. "|"
+    for _, k in ipairs(L.AMOUNT_KEYS) do s = s .. L.amount(k) end
     return s
 end
 
--- 把本 MOD 的物品從碰到的表移掉，再依開關加回；list＝ProceduralDistributions.list。原地改 items 陣列
+-- 把本 MOD 的物品從碰到的表移掉，再依開關與數量加回；list＝ProceduralDistributions.list。原地改 items 陣列
 -- （其他 MOD 在 merge 時拿到的是同一個 table）。回加入的筆數。
 local missingLogged = {}
 function L.apply(list, sig)
-    local on = {}
+    local on, factor = {}, {}
     for i, k in ipairs(L.KEYS) do on[k] = string.sub(sig, i, i) == "1" end
+    local base = #L.KEYS + 1 -- "|" 的位置
+    for i, k in ipairs(L.AMOUNT_KEYS) do
+        factor[k] = L.FACTORS[tonumber(string.sub(sig, base + i, base + i))] or 1
+    end
     for name in pairs(L.TABLES) do
         local items = list[name] and list[name].items
         if type(items) == "table" then
@@ -112,11 +128,12 @@ function L.apply(list, sig)
     if not on.Enabled then return 0 end
     for _, e in ipairs(L.ENTRIES) do
         if on[e[1]] then
+            local f = factor[L.AMOUNT_OF[e[1]] or "LootWatchAmount"]
             for i = 1, #e[3], 2 do
                 local t = list[e[3][i]]
                 if t and type(t.items) == "table" then
                     table.insert(t.items, e[2])
-                    table.insert(t.items, e[3][i + 1])
+                    table.insert(t.items, e[3][i + 1] * f)
                     added = added + 1
                 end
             end

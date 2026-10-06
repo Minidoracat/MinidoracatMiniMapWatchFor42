@@ -370,6 +370,11 @@ local MODULES = {
     MinidoracatWatch_Pay = F.MEDIA .. "/shared/MinidoracatWatch_Pay.lua",
     MinidoracatWatch_PayClient = F.MEDIA .. "/client/MinidoracatWatch_PayClient.lua",
     MinidoracatWatch_Economy = F.MEDIA .. "/server/MinidoracatWatch_Economy.lua",
+    MinidoracatWatch_DropData = F.MEDIA .. "/shared/MinidoracatWatch_DropData.lua",
+    MinidoracatWatch_Drops = F.MEDIA .. "/server/MinidoracatWatch_Drops.lua",
+    MinidoracatWatch_Admin = F.MEDIA .. "/server/MinidoracatWatch_Admin.lua",
+    MinidoracatWatch_AdminModel = F.MEDIA .. "/client/MinidoracatWatch_AdminModel.lua",
+    MinidoracatWatch_AdminUI = F.MEDIA .. "/client/MinidoracatWatch_AdminUI.lua",
 }
 local loaded = {}
 function require(name)

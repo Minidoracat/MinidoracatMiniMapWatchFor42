@@ -2,7 +2,7 @@
 -- 位置：Zomboid/Lua/MinidoracatWatch/<伺服器名；單機 sp_<存檔名>>/server-settings.json（資料夾規則照車輛管理
 -- MinidoracatVehicleManager_Export.lua X.folder；getFileReader／getFileWriter 的路徑相對於 Zomboid/Lua）。
 -- 格式：一個 JSON 物件，一個區段一個鍵，例如 { "version": 1, "zombieDrops": [ … ] }。區段由 Cfg.section 登記
--- （本階段只有殭屍掉落；Phase 4 的第三方模組耗電加一個區段即可），各自驗證、各自保留上一份有效值：
+-- （zombieDrops 在 _Drops.lua；moduleDrains、addonSlots 在 _Admin.lua，管理員視窗經 Cfg.save 寫回），各自驗證、各自保留上一份有效值：
 --   - 檔案不存在：用各區段目前的值（新伺服器＝預設）寫一份；寫完讀回比對才算成功（PrintWriter 吞 I/O 錯誤）。
 --   - 讀不到、不是 JSON、最外層不是物件：每個區段都保留上一份有效值，log 一次（同一份內容不重報）。
 --   - 缺某個區段：那個區段用預設值。區段驗證失敗：那個區段保留上一份有效值，log 每個問題。未知的鍵：log、不影響其他區段。
@@ -12,7 +12,7 @@ if isClient() then return end
 require "MinidoracatWatch"
 local W = MinidoracatWatchCore
 
-local Cfg = { sections = {}, order = {}, values = {}, lastText = nil, loaded = false }
+local Cfg = { sections = {}, order = {}, values = {}, lastText = nil, loaded = false, revision = 0 }
 W.Config = Cfg
 Cfg.DIR = "MinidoracatWatch/"
 Cfg.FILE = "server-settings.json"
@@ -282,10 +282,49 @@ local function writeText(path, text)
     return ok and readText(path) == text
 end
 
-function Cfg.document()
+-- 寫出的文件：各區段的 export（沒有就原值；只留設定檔欄位）
+local function documentOf(values)
     local doc = { version = Cfg.VERSION }
-    for _, name in ipairs(Cfg.order) do doc[name] = Cfg.values[name] end
+    for _, name in ipairs(Cfg.order) do
+        local spec, v = Cfg.sections[name], values[name]
+        if v == nil then v = Cfg.values[name] end
+        doc[name] = spec.export and spec.export(v) or v
+    end
     return doc
+end
+function Cfg.document() return documentOf(Cfg.values) end
+
+-- 版本號：檔案內容換了（管理員改檔、管理員視窗寫回）就 +1。管理員視窗以它擋兩人同時修改（MinidoracatWatch_Admin.lua）；
+-- 只存在記憶體（重開伺服器時所有視窗也都斷線了）。onBump 給管理員模組推送清單。
+function Cfg.bump()
+    Cfg.revision = Cfg.revision + 1
+    if Cfg.onBump then Cfg.onBump() end
+end
+
+-- 管理員視窗寫回（伺服器／單機）：updates＝{ [區段名] = 原始值 }。全部區段先驗證（任何一個不合格就什麼都不動），
+-- 再寫檔、讀回比對成功才換值並 +1 版本。回 true 或 false, { 問題… }（寫檔失敗＝{ "write_failed" }）。
+function Cfg.save(updates)
+    local parsed, problems = {}, {}
+    for name, raw in pairs(updates) do
+        local spec = Cfg.sections[name]
+        if not spec then
+            problems[#problems + 1] = "unknown section " .. tostring(name)
+        else
+            local v, errs = spec.parse(raw)
+            if v == nil then
+                for _, e in ipairs(errs or { "invalid" }) do problems[#problems + 1] = name .. ": " .. e end
+            else
+                parsed[name] = v
+            end
+        end
+    end
+    if #problems > 0 then return false, problems end
+    local out = Cfg.encode(documentOf(parsed))
+    if not writeText(Cfg.path(), out) then return false, { "write_failed" } end
+    for name, v in pairs(parsed) do Cfg.values[name] = v end
+    Cfg.lastText = out
+    Cfg.bump()
+    return true
 end
 
 function Cfg.poll()
@@ -313,6 +352,7 @@ function Cfg.poll()
     if text == Cfg.lastText then return end
     Cfg.lastText = text
     if Cfg.apply(text) then W.log("server settings loaded: Zomboid/Lua/" .. path) end
+    Cfg.bump()
 end
 
 local lastPoll = nil
