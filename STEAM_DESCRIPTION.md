@@ -15,7 +15,7 @@
 [*] [b]七款錶[/b]：ValuTech、貓爪、極光、Spiffo、遊騎兵、盧瑟斯、嗶嗶腕機 BB-3000；外觀不同，槽位、耗電與功能完全相同；同時只能戴一支
 [*] [b]取得方式[/b]：錶、模組與解鎖卡依稀有度出現在對應地點；羅盤、名錄、通訊模組可以製作；殭屍依服裝帶地圖錶相關物品。嗶嗶腕機的螢幕可以切換綠色或琥珀色
 [*] [b]模組與槽位[/b]：3 個標準槽，另有擴充、進階、核心槽；裝上模組才解鎖導航、資源點、殭屍偵測、隊友分享等功能；其他 MOD 也能加入自己的模組與槽位
-[*] [b]付費槽位[/b]：管理員可設為免費開放、解鎖卡、Economy 買斷或租用、不開放
+[*] [b]付費槽位[/b]：管理員可設為免費開放、解鎖卡、Economy 買斷或租用、不開放；租約到期立刻停用，可開自動續租
 [*] [b]電池[/b]：以現實時間計算；預設離線與單人暫停時不耗電，沒電時所有功能停用；各模組耗電可調；管理員可開放在發動中的車上或有電的建築裡慢慢充電
 [*] [b]管理員設定[/b]：沙盒選項，加上小地圖設定裡只有管理員看得到的「地圖錶管理」分類與獨立設定視窗；殭屍掉落規則依服裝分組
 [/list]
@@ -24,6 +24,7 @@
 [list]
 [*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3763913359]Minidoracat MiniMap for B42[/url]
 [*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3789836701]Minidoracat UI for B42[/url]
+[*] 選用：[url=https://steamcommunity.com/sharedfiles/filedetails/?id=3801482125]Minidoracat Economy[/url]（付費槽位的買斷與租用，多人伺服器）
 [/list]
 
 [h2]🔗 Minidoracat 全系列[/h2]

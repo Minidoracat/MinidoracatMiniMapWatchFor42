@@ -331,6 +331,51 @@ F.now = F.now + 1000
 F.fire("OnClientCommand", W.MODULE, W.CMD_SCREEN, carol, { watchId = watch:getID(), choice = 1 })
 check(F.serverCmds[1] and F.serverCmds[1].command == W.CMD_FAILED, "別人的錶／不是嗶嗶腕機：拒絕並回報")
 
+F.print("情境十一：Economy 付費槽位（Phase 6）→ 開服註冊並推方案；沒付款裝不進去、租用後裝得進去；"
+    .. "到期立刻停用（不等 Economy 通知）並推給本人；自動續租扣到款的通知一到就恢復")
+local ents, plans, listener = {}, {}, nil
+local econSrc = {
+    registerProduct = function() return { ok = true } end,
+    setPlan = function(pid, v) plans[pid] = v; return { ok = true, updated = true, changed = {} } end,
+    getEntitlement = function(_, pid) return { ok = true, entitlement = ents[pid] or { permanent = 0, rentals = {} } } end,
+    onEntitlementChanged = function(fn) listener = fn; return { ok = true } end,
+}
+MinidoracatEconomy = { CURRENCIES = { survivor = {} }, v1 = { API_MAJOR = 1, API_REVISION = 4,
+    CAPABILITIES = { entitlements = true, rentals = true, setPlan = true, freeze = true },
+    registerSource = function() return econSrc end } }
+F.load("shared/MinidoracatWatch_Pay.lua")
+F.load("server/MinidoracatWatch_Economy.lua")
+F.fire("OnServerStarted")
+check(W.econStatus == "READY" and plans.watch_ext and plans.watch_ext.rentalPrice == 60 and plans.watch_ext.rentalEnabled,
+    "開服：READY、擴充槽（經濟系統）方案推給 Economy")
+local dave = F.player("dave", 0)
+local dw = F.item(F.LEFT)
+dave.inv:AddItem(dw)
+F.action(ISWearClothing, dave, dw):complete()
+dave.inv:AddItem(F.item("Base.Screwdriver"))
+local scanMod = F.item("MinidoracatWatch.Module_Scan")
+dave.inv:AddItem(scanMod)
+F.reset()
+send(dave, W.CMD_MODULE, { watchId = dw:getID(), slotId = "ext", install = true, itemId = scanMod:getID() })
+check(W.slotRecord(dw, "ext") == nil and fails(dave) == 1, "沒付款：擴充槽拒絕安裝")
+ents.watch_ext = { permanent = 0, rentals = { { id = "o1", state = "active", paidUntil = F.now + 20000 } } }
+listener("dave", "watch_ext", { ok = true, entitlement = ents.watch_ext })
+send(dave, W.CMD_MODULE, { watchId = dw:getID(), slotId = "ext", install = true, itemId = scanMod:getID() })
+check(W.slotRecord(dw, "ext") and W.slotRecord(dw, "ext").id == "scan" and API.getWatchModuleState(dave, "scan") == "active",
+    "租用後：裝得進去、掃描模組 active")
+F.reset()
+tick(25000, 500)
+local gone = false
+for _, c in ipairs(F.serverCmds) do
+    if c.player == dave and c.command == W.CMD_PAY and c.args.slots.ext == nil then gone = true end
+end
+check(API.getWatchModuleState(dave, "scan") == "paused" and gone, "到期：Economy 還沒通知也立刻 paused，並推給本人")
+ents.watch_ext = { permanent = 0, rentals = { { id = "o1", state = "active", paidUntil = F.now + 7 * 24 * H } } }
+listener("dave", "watch_ext", { ok = true, entitlement = ents.watch_ext })
+tick(1000, 500)
+check(API.getWatchModuleState(dave, "scan") == "active", "自動續租扣到款的通知：恢復 active")
+MinidoracatEconomy = nil
+
 F.print()
 if F.failures > 0 then
     F.print(F.failures .. " 項失敗")

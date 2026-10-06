@@ -52,15 +52,20 @@ function W.featureRule(feature)
     return RULE_BY_VALUE[W.sandbox(key, 3)] or W.RULE_MODULE
 end
 
--- 槽位開啟方式：1 免費開放、2 解鎖卡、3 經濟系統、4 不開放。經濟系統在 Phase 6 之前一律當解鎖卡。
+-- 槽位開啟方式：1 免費開放、2 解鎖卡、3 經濟系統、4 不開放。經濟系統要伺服器的 Economy 整合是 READY
+-- （W.econStatus，MinidoracatWatch_Pay.lua）；Economy 缺席、版本不足、單機時改用解鎖卡。
 -- 預設照設計稿 DEFAULT_ADMIN：擴充／進階／核心＝經濟系統，其他 MOD 的槽位＝免費。
-local SLOT_MODE_KEY = { ext = "SlotExt", adv = "SlotAdv", core = "SlotCore", addon = "SlotAddon" }
+W.SLOT_MODE_KEY = { ext = "SlotExt", adv = "SlotAdv", core = "SlotCore", addon = "SlotAddon" }
+function W.slotModeValue(slot) -- 沙盒原始值
+    local key = W.SLOT_MODE_KEY[slot.tier]
+    if not key then return 1 end
+    return W.sandbox(key, slot.tier == "addon" and 1 or 3)
+end
 function W.slotMode(slot)
-    local key = SLOT_MODE_KEY[slot.tier]
-    if not key then return "free" end
-    local v = W.sandbox(key, slot.tier == "addon" and 1 or 3)
+    local v = W.slotModeValue(slot)
     if v == 1 then return "free" end
     if v == 4 then return "off" end
+    if v == 3 and W.econStatus == "READY" then return "econ" end
     return "card"
 end
 
@@ -240,6 +245,7 @@ function W.slotValid(player, slot)
     local mode = W.slotMode(slot)
     if mode == "free" then return true end
     if mode == "off" then return false end
+    if mode == "econ" then return W.payValid(player, slot) end
     return W.isUnlocked(player, slot.id)
 end
 
@@ -635,7 +641,7 @@ function W.applyModuleChange(player, watchId, slotId, install, itemId)
 end
 
 -- ===== 解鎖卡（伺服器／單機）=====
--- 只在開啟方式是「解鎖卡」（含 Phase 6 前的經濟系統）、而且還沒開啟時收卡：免費、不開放、已開啟一律拒絕，卡不會被吃。
+-- 只在開啟方式是「解鎖卡」（含 Economy 不是 READY 時的經濟系統）、而且還沒開啟時收卡：免費、不開放、經濟系統、已開啟一律拒絕，卡不會被吃。
 -- 帳號無法驗證（W.account 回 nil）也拒絕。推播只送給本人、內容是本人帳號的名額（未驗證＝空表）。
 function W.pushUnlocks(player)
     if not isServer() then return end

@@ -15,7 +15,7 @@ Without this mod installed, the minimap stays fully available as before.
 [*] [b]Seven watches[/b]: ValuTech, Cat Paw, Aurora, Spiffo, Ranger, Luthex and the BB-3000 wrist computer. They only differ in looks: slots, battery use and features are identical. You can wear only one at a time
 [*] [b]How to get them[/b]: watches, modules and unlock cards turn up as loot in fitting places by rarity; Compass, Directory and Comms Modules can be crafted; zombies carry map watch items depending on their outfit. The BB-3000 screen switches between green and amber
 [*] [b]Modules and slots[/b]: 3 standard slots plus expansion, advanced and core slots; install modules to unlock navigation, points of interest, zombie detection, teammate sharing and more. Other mods can add their own modules and slots
-[*] [b]Paid slots[/b]: admins choose free, unlock card, Economy purchase or rental, or disabled
+[*] [b]Paid slots[/b]: admins choose free, unlock card, Economy purchase or rental, or disabled; a rental stops the moment it ends, with optional auto-renew
 [*] [b]Battery[/b]: drains in real time; by default it does not drain while you are offline or the singleplayer game is paused, and all features stop when it is empty. Each module's drain is adjustable. Admins can allow slow charging in a running vehicle or a powered building
 [*] [b]Admin settings[/b]: sandbox options, plus an admin-only "Map Watch" category in the minimap settings and its own settings window; zombie drop rules grouped by outfit
 [/list]
@@ -24,6 +24,7 @@ Without this mod installed, the minimap stays fully available as before.
 [list]
 [*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3763913359]Minidoracat MiniMap for B42[/url]
 [*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3789836701]Minidoracat UI for B42[/url]
+[*] Optional: [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3801482125]Minidoracat Economy[/url] (buying and renting paid slots on multiplayer servers)
 [/list]
 
 [h2]🔗 More Minidoracat mods[/h2]

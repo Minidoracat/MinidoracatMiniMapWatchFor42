@@ -7,6 +7,7 @@ require "ISUI/ISPanel"
 require "ISUI/ISButton"
 require "ISUI/ISContextMenu"
 require "MinidoracatWatch_Client"
+require "MinidoracatWatch_PayClient"
 local W, C = MinidoracatWatchCore, MinidoracatWatchClient
 
 local Panel = ISPanel:derive("MinidoracatWatchPanel")
@@ -83,13 +84,15 @@ local function drainText(def)
     return getText("IGUI_MinidoracatWatch_DrainPlus", tostring(d))
 end
 
--- 槽位狀態：empty／locked（解鎖卡未用）／off（不開放）／active／paused（槽位失效）／dead（錶沒電或沒電池）
+-- 槽位狀態：empty／locked（未開啟）／lapsed（經濟系統的租約到期、槽位空著）／off（不開放）／active／paused（槽位失效）／
+-- dead（錶沒電或沒電池）
 function C.slotStatus(player, watch, slot)
     local rec = W.slotRecord(watch, slot.id)
     local valid = W.slotValid(player, slot)
     if not rec then
         if valid then return "empty", nil end
-        return W.slotMode(slot) == "off" and "off" or "locked", nil
+        if W.slotMode(slot) == "off" then return "off", nil end
+        return C.Pay.lapsed(slot) and "lapsed" or "locked", nil
     end
     local c = W.charge(watch)
     if c == nil or c <= 0 then return "dead", rec end
@@ -102,6 +105,7 @@ function C.dropCheck(player, watch, slot, def)
     local st, rec = C.slotStatus(player, watch, slot)
     local name = C.slotName(slot)
     if st == "locked" then return false, getText("IGUI_MinidoracatWatch_Drop_Locked", name) end
+    if st == "lapsed" then return false, getText("IGUI_MinidoracatWatch_Drop_Lapsed", name) end
     if st == "off" then return false, getText("IGUI_MinidoracatWatch_Drop_Off", name) end
     if rec then return false, getText("IGUI_MinidoracatWatch_Drop_Full", name, C.moduleName(rec.id)) end
     if not slot.accepts[def.class] then
@@ -136,6 +140,25 @@ function Panel:createChildren()
     self.btnInstall = button(INSP_X, iy, 140, getText("IGUI_MinidoracatWatch_InstallModule"), Panel.onInstall)
     self.btnRemoveModule = button(INSP_X, iy, 140, getText("IGUI_MinidoracatWatch_RemoveModule"), Panel.onRemoveModule)
     self.btnCard = button(INSP_X, iy, 220, getText("IGUI_MinidoracatWatch_UseCard"), Panel.onCard)
+    -- 付費槽位的按鈕（Economy：租用、買斷、續租、自動續租、付款…）：標題與動作由 C.Pay.ui 決定，update 排位。
+    -- 用 UI 框架的 Button（API rev 7＋controls，§3.7）；框架缺席或太舊時退回原版 ISButton（fail-soft）
+    local UIv = MinidoracatUI and MinidoracatUI.v1
+    local caps = UIv and UIv.CAPABILITIES
+    local modern = UIv and UIv.API_MAJOR == 1 and type(UIv.API_REVISION) == "number" and UIv.API_REVISION >= 7
+        and caps and caps.controls == true and UIv.Button
+    self.payBtns = {}
+    for i = 1, 5 do
+        local b
+        if modern then
+            b = UIv.Button.new({ x = INSP_X, y = iy, width = 100, height = BTN_H, title = "", target = self,
+                onClick = Panel.onPayButton })
+            self:addChild(b)
+        else
+            b = button(INSP_X, iy, 100, "", Panel.onPayButton)
+        end
+        b:setVisible(false)
+        self.payBtns[i] = b
+    end
     local by = self.height - BTN_H - PAD
     self.btnInsert = button(PAD, by, 150, getText("IGUI_MinidoracatWatch_InsertBattery"), Panel.onInsert)
     self.btnRemove = button(PAD + 160, by, 150, getText("IGUI_MinidoracatWatch_RemoveBattery"), Panel.onRemove)
@@ -207,6 +230,7 @@ function Panel:scan(player, watch, slot)
     local list = C.cards(player, slot)
     self.cardCount = list and list:size() or 0
     self.hasBattery = C.bestBattery(player) ~= nil
+    self.payUi = C.Pay.ui(player, watch, slot)
 end
 
 function Panel:update()
@@ -216,6 +240,7 @@ function Panel:update()
     self.btnInstall:setVisible(false)
     self.btnRemoveModule:setVisible(false)
     self.btnCard:setVisible(false)
+    for _, b in ipairs(self.payBtns) do b:setVisible(false) end
     if player then self:scan(player, w, slot) end
     local c = w and W.charge(w)
     self.btnInsert:setTitle(getText(c ~= nil and "IGUI_MinidoracatWatch_ReplaceBattery" or "IGUI_MinidoracatWatch_InsertBattery"))
@@ -225,7 +250,10 @@ function Panel:update()
     if W.hasScreen(w) then self.btnScreen:setTitle(C.screenLabel(w)) end
     if not w or self:busyAction(player, w, slot) then return end
     local st = C.slotStatus(player, w, slot)
-    if st == "empty" then
+    local ui = self.payUi
+    if ui and not ui.keep then
+        self:placePay(ui.buttons)
+    elseif st == "empty" then
         self.btnInstall:setVisible(true)
     elseif st == "locked" then
         self.btnCard:setVisible(true)
@@ -249,6 +277,12 @@ local function para(el, s, x, y, width, r, g, b)
     return y
 end
 
+-- 付費槽位檢視區的文字（C.Pay.ui 的 lines：{ 文字, r, g, b }），回下一行的 y
+local function payLines(el, ui, x, y, width)
+    for _, l in ipairs(ui.lines) do y = para(el, l[1], x, y, width, l[2], l[3], l[4]) + 4 end
+    return y
+end
+
 local function drawLock(el, x, y)
     el:drawRectBorder(x + 3, y, 8, 8, 0.9, 0.75, 0.75, 0.75)
     el:drawRect(x, y + 6, 14, 10, 0.9, 0.75, 0.75, 0.75)
@@ -259,7 +293,7 @@ function Panel:drawSocket(i, player, watch, hover)
     local x, y, s = self:socketRect(i)
     local col = TIER_COLOR[slot.tier] or TIER_COLOR.std
     local st, rec = C.slotStatus(player, watch, slot)
-    local dim = (st == "locked" or st == "off") and 0.45 or 1
+    local dim = (st == "locked" or st == "off" or st == "lapsed") and 0.45 or 1
     self:drawRect(x, y, s, s, 0.9, 0.10, 0.11, 0.13)
     self:drawRectBorder(x, y, s, s, dim, col[1], col[2], col[3])
     self:drawRectBorder(x + 1, y + 1, s - 2, s - 2, dim, col[1], col[2], col[3])
@@ -269,12 +303,12 @@ function Panel:drawSocket(i, player, watch, hover)
         local is = math.floor(s * 0.6)
         local a = st == "active" and 1 or 0.4
         self:drawTextureScaled(icon.tex, x + (s - is) / 2, y + (s - is) / 2 - 3, is, is, a, icon.r, icon.g, icon.b)
-    elseif st == "locked" or st == "off" then
+    elseif st == "locked" or st == "off" or st == "lapsed" then
         drawLock(self, x + s / 2 - 7, y + s / 2 - 10)
     elseif st == "empty" then
         self:drawTextCentre("+", x + s / 2, y + s / 2 - fontH() / 2 - 3, 0.7, 0.7, 0.7, 1, UIFont.Medium)
     end
-    if st == "paused" or st == "dead" then self:drawRect(x + s - 10, y + 3, 7, 7, 1, 1, 0.65, 0.2) end
+    if st == "paused" or st == "dead" or st == "lapsed" then self:drawRect(x + s - 10, y + 3, 7, 7, 1, 1, 0.65, 0.2) end
     if slot.tier ~= "std" and s >= SOCK then
         self:drawTextCentre(getText("IGUI_MinidoracatWatch_Tag_" .. slot.tier), x + s / 2, y + s - fontH() - 1,
             col[1], col[2], col[3], 1, font())
@@ -325,7 +359,8 @@ function Panel:drawInspector(player, watch, slot)
     text(self, getText("IGUI_MinidoracatWatch_Tag_" .. slot.tier), x, y, col[1], col[2], col[3])
     local tagW = getTextManager():MeasureStringX(font(), getText("IGUI_MinidoracatWatch_Tag_" .. slot.tier))
     local busy = self:busyAction(player, watch, slot)
-    local stKey = busy and (busy.install and "Installing" or "Removing") or st
+    local ui = self.payUi
+    local stKey = busy and (busy.install and "Installing" or "Removing") or (ui and ui.chip) or st
     text(self, getText("IGUI_MinidoracatWatch_St_" .. stKey), x + tagW + 12, y, 0.75, 0.75, 0.75)
     y = y + fh + 6
     if busy then
@@ -345,14 +380,20 @@ function Panel:drawInspector(player, watch, slot)
         y = para(self, getText("IGUI_MinidoracatWatch_Desc_Accepts", acceptsText(slot)), x, y, width) + 4
         if slot.tier == "core" then y = para(self, getText("IGUI_MinidoracatWatch_Desc_Core"), x, y, width) + 4 end
         if slot.tier == "addon" then y = para(self, getText("IGUI_MinidoracatWatch_Desc_Addon"), x, y, width) + 4 end
+        if ui and not ui.keep then
+            payLines(self, ui, x, y, width)
+            return
+        end
         if st == "locked" then
             y = para(self, getText("IGUI_MinidoracatWatch_Desc_Card", C.cardName(slot), name), x, y, width, 0.85, 0.8, 0.6) + 4
             local note = self.cardCount > 0 and getText("IGUI_MinidoracatWatch_CardCount", tostring(self.cardCount))
                 or getText("IGUI_MinidoracatWatch_CardNone", C.cardName(slot))
-            para(self, note, x, y, width, 0.6, 0.6, 0.6)
+            y = para(self, note, x, y, width, 0.6, 0.6, 0.6) + 4
+            if ui then payLines(self, ui, x, y, width) end
             return
         end
         y = para(self, getText("IGUI_MinidoracatWatch_Desc_Empty"), x, y, width) + 4
+        if ui then y = payLines(self, ui, x, y, width) end
     else
         local def = W.modules[rec.id]
         self:drawText(def and C.moduleName(def.id) or rec.item, x, y, 1, 1, 1, 1, UIFont.Medium)
@@ -370,11 +411,12 @@ function Panel:drawInspector(player, watch, slot)
         y = y + fh + 4
         if slot.orphan then
             y = para(self, getText("IGUI_MinidoracatWatch_Desc_Orphan"), x, y, width, 1, 0.65, 0.2) + 4
-        elseif st == "paused" then
-            y = para(self, getText("IGUI_MinidoracatWatch_Desc_Paused", name), x, y, width, 1, 0.65, 0.2) + 4
         elseif st == "dead" then
             y = para(self, getText("IGUI_MinidoracatWatch_Desc_Dead"), x, y, width, 1, 0.65, 0.2) + 4
+        elseif st == "paused" and not (ui and not ui.keep) then
+            y = para(self, getText("IGUI_MinidoracatWatch_Desc_Paused", name), x, y, width, 1, 0.65, 0.2) + 4
         end
+        if ui then y = payLines(self, ui, x, y, width) end
     end
     if cardNote then para(self, getText("IGUI_MinidoracatWatch_Desc_CardOpened"), x, y, width, 0.6, 0.6, 0.6) end
 end
@@ -430,6 +472,9 @@ function Panel:banner(player, watch)
         return getText("IGUI_MinidoracatWatch_Banner_Low", tostring(C.percent(c)), C.timeText(c, C.fullRuntime(player, watch))),
             1, 0.75, 0.3
     end
+    -- 經濟系統的租約到期、自動續租還在重試（設計稿 banner grace）
+    local retry = C.Pay.bannerText(player, watch)
+    if retry then return retry, 1, 0.75, 0.3 end
     return nil
 end
 
@@ -528,6 +573,44 @@ end
 function Panel:onCard()
     local player = self:target()
     C.requestUnlock(player, self:selectedSlot().id)
+end
+
+-- 付費按鈕排位：由左到右、放不下換行；最後一列貼齊原本按鈕那一列（FEAT_Y 上方），多的列往上長
+function Panel:placePay(list)
+    local tm, right, gap, rowH = getTextManager(), self.width - PAD, 6, BTN_H + 6
+    local rows, x = 1, INSP_X
+    for i, spec in ipairs(list) do
+        local bw = tm:MeasureStringX(font(), spec[2]) + 20
+        if i > 1 and x + bw > right then rows, x = rows + 1, INSP_X end
+        x = x + bw + gap
+    end
+    local y = FEAT_Y - BTN_H - 12 - (rows - 1) * rowH
+    x = INSP_X
+    for i, spec in ipairs(list) do
+        local b = self.payBtns[i]
+        if not b then return end
+        local bw = tm:MeasureStringX(font(), spec[2]) + 20
+        if i > 1 and x + bw > right then x, y = INSP_X, y + rowH end
+        b:setX(x)
+        b:setY(y)
+        b:setWidth(bw)
+        b:setTitle(spec[2])
+        if b.setEnabled then b:setEnabled(spec[3]) else b:setEnable(spec[3]) end
+        if b.setStyle then b:setStyle(spec[4] or "normal") end
+        b.internal = spec[1]
+        b:setVisible(true)
+        x = x + bw + gap
+    end
+end
+
+function Panel:onPayButton(b)
+    local id = b and b.internal
+    if id == "remove" then return self:onRemoveModule() end
+    if id == "install" then return self:onInstall() end
+    local player = self:target()
+    if not (player and id) then return end
+    C.Pay.press(id, player, self:selectedSlot())
+    self.scanAt = nil -- 下一幀重算檢視區
 end
 
 function Panel:onInsert()

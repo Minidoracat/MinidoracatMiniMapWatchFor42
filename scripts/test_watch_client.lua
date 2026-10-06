@@ -43,7 +43,8 @@ ISButton = {}
 function ISButton:new(x, y, w, h, title, target, onclick)
     return { title = title, target = target, onclick = onclick, enabled = true, visible = true, initialise = function() end,
         setTitle = function(b, t) b.title = t end, setEnable = function(b, e) b.enabled = e end,
-        setVisible = function(b, v) b.visible = v end }
+        setVisible = function(b, v) b.visible = v end, setX = function(b, v) b.x = v end, setY = function(b, v) b.y = v end,
+        setWidth = function(b, v) b.w = v end }
 end
 -- ISContextMenu：addOption 回選項；getNew＋addSubMenu 建子選單；ISContextMenu.get 建面板用的浮動選單
 local Menu = {}
@@ -797,6 +798,59 @@ end
 check(bb:getVisual():getTextureChoice() == 1 and p.resets == 1, "找不到玩家、choice 不合法、pid 不是整數：忽略")
 F.unwear(p, bb)
 F.wear(p, watch)
+
+-- ===== 付費槽位（Economy，Phase 6）：面板按鈕走 C.Pay.ui，不是解鎖卡 =====
+local oldExt = SB.SlotExt
+SB.SlotExt = 3
+W.econStatus = "READY"
+W.clientPay.alice = {}
+local econEnv = { ok = true, available = true, entitlement = { permanent = 0, rentals = {}, revision = 1 },
+    balances = { survivor = { available = 1000 } },
+    plan = { permanentEnabled = true, permanentPrice = 400, permanentCurrency = "survivor", rentalEnabled = true,
+        rentalPrice = 60, rentalCurrency = "survivor", rentalDays = 7, graceHours = 24, autoRenewAllowed = true, revision = 2 } }
+local econQuote = nil
+MinidoracatEconomy = { v1 = { Client = { API_MAJOR = 1, API_REVISION = 2, CAPABILITIES = { entitlements = true, rentals = true },
+    Entitlements = { getState = function() return econEnv end, requestState = function() return 1 end,
+        quote = function(_, pid, kind) econQuote = { pid = pid, kind = kind }; return 1 end,
+        currencyName = function(id) return id end, errorText = function(c) return c end } } } }
+-- UI 框架 rev 7 的 Button（§3.7：onClick(target, button)、setEnabled、setStyle）
+local fwButtons = 0
+MinidoracatUI.v1.CAPABILITIES.controls = true
+MinidoracatUI.v1.Button = { new = function(o)
+    fwButtons = fwButtons + 1
+    return { fw = true, title = o.title, target = o.target, onClick = o.onClick, enabled = true, visible = true, style = "normal",
+        setTitle = function(b, t) b.title = t end, setEnabled = function(b, e) b.enabled = e end,
+        setStyle = function(b, s) b.style = s end, setVisible = function(b, v) b.visible = v end,
+        setX = function(b, v) b.x = v end, setY = function(b, v) b.y = v end, setWidth = function(b, v) b.w = v end }
+end }
+C.Pay.views = {}
+C.openPanel(0, watch)
+panel = F.lastPanel
+check(fwButtons == 5 and panel.payBtns[1].fw, "付費按鈕用 UI 框架的 Button")
+selectSlot("ext")
+local function payIds()
+    local ids = {}
+    for _, b in ipairs(panel.payBtns) do if b.visible then ids[#ids + 1] = b.internal end end
+    return table.concat(ids, ",")
+end
+check(payIds() == "rent,buy" and not panel.btnCard.visible and not panel.btnInstall.visible,
+    "經濟系統、未開啟：租用與買斷按鈕（不是解鎖卡）")
+check(panel.payBtns[1].x == panel.payBtns[2].x and panel.payBtns[2].y > panel.payBtns[1].y,
+    "付費按鈕放不下一列：第二顆換到下一列（測試的假字寬很寬）")
+check(panel.payBtns[1].style == "primary" and panel.payBtns[2].style == "normal", "租用是主要按鈕、買斷是一般按鈕")
+panel.payBtns[2].onClick(panel, panel.payBtns[2])
+panel:update()
+check(payIds() == "pay,cancel", "按買斷：確認頁（付款、取消）")
+F.texts = {}
+panel:prerender()
+local sheetShown = false
+for _, t in ipairs(F.texts) do if t:find("PaySheet_permanent", 1, true) then sheetShown = true end end
+check(sheetShown, "檢視區畫出買斷確認頁")
+panel.payBtns[1].onClick(panel, panel.payBtns[1])
+check(econQuote and econQuote.pid == "watch_ext" and econQuote.kind == "permanent", "付款鈕：先向 Economy 報價")
+C.closePanel()
+MinidoracatEconomy, W.econStatus, C.Pay.sheet, C.Pay.busy, SB.SlotExt = nil, nil, nil, {}, oldExt
+MinidoracatUI.v1.CAPABILITIES.controls, MinidoracatUI.v1.Button = nil, nil
 
 -- ===== UI 框架版本不足：不登記、不出錯 =====
 MinidoracatUI.v1.API_REVISION = 12

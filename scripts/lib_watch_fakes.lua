@@ -22,7 +22,15 @@ function isAdmin() return F.admin == true end
 F.steam = false
 function getSteamModeActive() return F.steam end -- LuaManager.java:9359-9364
 function getItemNameFromFullType(t) return "item:" .. t end
-function getText(key, a, b) return key .. (a and ("|" .. a) or "") .. (b and ("|" .. b) or "") end
+function getText(key, ...)
+    local out = key
+    for i = 1, select("#", ...) do
+        local a = select(i, ...)
+        if a == nil then break end
+        out = out .. "|" .. tostring(a)
+    end
+    return out
+end
 function instanceof(o, cls) return type(o) == "table" and o._class == cls end
 local realPrint = print
 function print(...)
@@ -331,6 +339,9 @@ local MODULES = {
     MinidoracatWatch_Action = F.MEDIA .. "/client/MinidoracatWatch_Action.lua",
     MinidoracatWatch_Client = F.MEDIA .. "/client/MinidoracatWatch_Client.lua",
     MinidoracatWatch_Config = F.MEDIA .. "/server/MinidoracatWatch_Config.lua",
+    MinidoracatWatch_Pay = F.MEDIA .. "/shared/MinidoracatWatch_Pay.lua",
+    MinidoracatWatch_PayClient = F.MEDIA .. "/client/MinidoracatWatch_PayClient.lua",
+    MinidoracatWatch_Economy = F.MEDIA .. "/server/MinidoracatWatch_Economy.lua",
 }
 local loaded = {}
 function require(name)

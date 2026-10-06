@@ -50,6 +50,72 @@ option MinidoracatWatch.SlotCore
 option MinidoracatWatch.SlotAddon
 {type = enum, numValues = 4, default = 1, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAddon,}
 
+/* 經濟系統（Phase 6，Minidoracat Economy 選用）：開啟方式是「經濟系統」的槽位的買斷與租用，價格照設計稿 data.mjs PRICES，其他 MOD 的槽位共用 SlotAddon*；開服與改設定後 5 秒內用 setPlan 推給 Economy */
+option MinidoracatWatch.SlotExtBuy
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_SlotExtBuy,}
+
+option MinidoracatWatch.SlotExtBuyPrice
+{type = integer, min = 1, max = 1000000000, default = 400, page = MinidoracatWatch, translation = MinidoracatWatch_SlotExtBuyPrice,}
+
+option MinidoracatWatch.SlotExtRent
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_SlotExtRent,}
+
+option MinidoracatWatch.SlotExtRentPrice
+{type = integer, min = 1, max = 1000000000, default = 60, page = MinidoracatWatch, translation = MinidoracatWatch_SlotExtRentPrice,}
+
+option MinidoracatWatch.SlotAdvBuy
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAdvBuy,}
+
+option MinidoracatWatch.SlotAdvBuyPrice
+{type = integer, min = 1, max = 1000000000, default = 1200, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAdvBuyPrice,}
+
+option MinidoracatWatch.SlotAdvRent
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAdvRent,}
+
+option MinidoracatWatch.SlotAdvRentPrice
+{type = integer, min = 1, max = 1000000000, default = 150, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAdvRentPrice,}
+
+option MinidoracatWatch.SlotCoreBuy
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_SlotCoreBuy,}
+
+option MinidoracatWatch.SlotCoreBuyPrice
+{type = integer, min = 1, max = 1000000000, default = 2400, page = MinidoracatWatch, translation = MinidoracatWatch_SlotCoreBuyPrice,}
+
+option MinidoracatWatch.SlotCoreRent
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_SlotCoreRent,}
+
+option MinidoracatWatch.SlotCoreRentPrice
+{type = integer, min = 1, max = 1000000000, default = 300, page = MinidoracatWatch, translation = MinidoracatWatch_SlotCoreRentPrice,}
+
+option MinidoracatWatch.SlotAddonBuy
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAddonBuy,}
+
+option MinidoracatWatch.SlotAddonBuyPrice
+{type = integer, min = 1, max = 1000000000, default = 600, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAddonBuyPrice,}
+
+option MinidoracatWatch.SlotAddonRent
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAddonRent,}
+
+option MinidoracatWatch.SlotAddonRentPrice
+{type = integer, min = 1, max = 1000000000, default = 80, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAddonRentPrice,}
+
+/* 1 倖存幣（survivor）、2 貓幣（cat）：Economy EC.CURRENCY_ORDER */
+option MinidoracatWatch.PayCurrency
+{type = enum, numValues = 2, default = 1, page = MinidoracatWatch, translation = MinidoracatWatch_PayCurrency,}
+
+option MinidoracatWatch.PayRentDays
+{type = integer, min = 1, max = 365, default = 7, page = MinidoracatWatch, translation = MinidoracatWatch_PayRentDays,}
+
+/* Economy 的 graceHours：到期立刻停用，這段時間內每小時重試自動續租（使用者裁定：寬限期視為停用） */
+option MinidoracatWatch.PayRetryHours
+{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatch, translation = MinidoracatWatch_PayRetryHours,}
+
+option MinidoracatWatch.PayReminderHours
+{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatch, translation = MinidoracatWatch_PayReminderHours,}
+
+option MinidoracatWatch.PayAutoRenew
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_PayAutoRenew,}
+
 option MinidoracatWatch.NeedScrewdriver
 {type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_NeedScrewdriver,}
 
