@@ -13,5 +13,18 @@
     "MinidoracatWatch.Module_Eco": "省電力コア",
     "MinidoracatWatch.UnlockCard_Ext": "拡張スロットのアンロックカード",
     "MinidoracatWatch.UnlockCard_Adv": "上級スロットのアンロックカード",
-    "MinidoracatWatch.UnlockCard_Core": "コアスロットのアンロックカード"
+    "MinidoracatWatch.UnlockCard_Core": "コアスロットのアンロックカード",
+    "MinidoracatWatch.MapWatch_Paws_Left": "肉球マップウォッチ",
+    "MinidoracatWatch.MapWatch_Paws_Right": "肉球マップウォッチ",
+    "MinidoracatWatch.MapWatch_Nexus_Left": "オーロラ マップウォッチ",
+    "MinidoracatWatch.MapWatch_Nexus_Right": "オーロラ マップウォッチ",
+    "MinidoracatWatch.MapWatch_Spiffo_Left": "Spiffo キッズウォッチ",
+    "MinidoracatWatch.MapWatch_Spiffo_Right": "Spiffo キッズウォッチ",
+    "MinidoracatWatch.MapWatch_Ranger_Left": "レンジャー タクティカルウォッチ",
+    "MinidoracatWatch.MapWatch_Ranger_Right": "レンジャー タクティカルウォッチ",
+    "MinidoracatWatch.MapWatch_Luthex_Left": "Luthex ゴールドウォッチ",
+    "MinidoracatWatch.MapWatch_Luthex_Right": "Luthex ゴールドウォッチ",
+    "MinidoracatWatch.MapWatch_BB3000_Left": "BB-3000 リストコンピューター",
+    "MinidoracatWatch.MapWatch_BB3000_Right": "BB-3000 リストコンピューター",
+    "MinidoracatWatch.Module_Light": "ライトモジュール"
 }

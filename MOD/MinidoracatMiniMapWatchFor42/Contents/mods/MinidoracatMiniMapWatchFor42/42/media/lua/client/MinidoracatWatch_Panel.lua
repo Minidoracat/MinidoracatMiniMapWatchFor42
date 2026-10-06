@@ -139,6 +139,7 @@ function Panel:createChildren()
     local by = self.height - BTN_H - PAD
     self.btnInsert = button(PAD, by, 150, getText("IGUI_MinidoracatWatch_InsertBattery"), Panel.onInsert)
     self.btnRemove = button(PAD + 160, by, 150, getText("IGUI_MinidoracatWatch_RemoveBattery"), Panel.onRemove)
+    self.btnScreen = button(PAD + 320, by, 170, getText("IGUI_MinidoracatWatch_ScreenAmber"), Panel.onScreen)
 end
 
 -- 面板對象：從右鍵選單開的那支（還在玩家身上時），否則是戴著的那支
@@ -220,6 +221,8 @@ function Panel:update()
     self.btnInsert:setTitle(getText(c ~= nil and "IGUI_MinidoracatWatch_ReplaceBattery" or "IGUI_MinidoracatWatch_InsertBattery"))
     self.btnInsert:setEnable(w ~= nil and self.hasBattery == true)
     self.btnRemove:setEnable(w ~= nil and c ~= nil)
+    self.btnScreen:setVisible(W.hasScreen(w))
+    if W.hasScreen(w) then self.btnScreen:setTitle(C.screenLabel(w)) end
     if not w or self:busyAction(player, w, slot) then return end
     local st = C.slotStatus(player, w, slot)
     if st == "empty" then
@@ -535,6 +538,11 @@ end
 function Panel:onRemove()
     local player, w = self:target()
     C.requestBattery(player, w, false)
+end
+
+function Panel:onScreen()
+    local player, w = self:target()
+    C.requestScreen(player, w)
 end
 
 function Panel:onClose() C.closePanel() end

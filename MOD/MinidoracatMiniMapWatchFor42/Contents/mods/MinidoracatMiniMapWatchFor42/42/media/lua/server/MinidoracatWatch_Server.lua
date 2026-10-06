@@ -42,6 +42,9 @@ local HANDLERS = {
     [W.CMD_UNLOCK] = function(player, args)
         return W.applyUnlock(player, args.slotId, args.cardId)
     end,
+    [W.CMD_SCREEN] = function(player, args)
+        return W.applyScreen(player, args.watchId, args.choice)
+    end,
 }
 
 -- OnClientCommand(module, command, player, args)：player 是伺服器用連線反查出來的（LuaManager.java:8940、

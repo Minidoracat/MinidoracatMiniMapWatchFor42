@@ -13,5 +13,18 @@
     "MinidoracatWatch.Module_Eco": "Power-Saver Core",
     "MinidoracatWatch.UnlockCard_Ext": "Expansion Slot Unlock Card",
     "MinidoracatWatch.UnlockCard_Adv": "Advanced Slot Unlock Card",
-    "MinidoracatWatch.UnlockCard_Core": "Core Slot Unlock Card"
+    "MinidoracatWatch.UnlockCard_Core": "Core Slot Unlock Card",
+    "MinidoracatWatch.MapWatch_Paws_Left": "Cat Paw Map Watch",
+    "MinidoracatWatch.MapWatch_Paws_Right": "Cat Paw Map Watch",
+    "MinidoracatWatch.MapWatch_Nexus_Left": "Aurora Map Watch",
+    "MinidoracatWatch.MapWatch_Nexus_Right": "Aurora Map Watch",
+    "MinidoracatWatch.MapWatch_Spiffo_Left": "Spiffo Kids' Watch",
+    "MinidoracatWatch.MapWatch_Spiffo_Right": "Spiffo Kids' Watch",
+    "MinidoracatWatch.MapWatch_Ranger_Left": "Ranger Tactical Watch",
+    "MinidoracatWatch.MapWatch_Ranger_Right": "Ranger Tactical Watch",
+    "MinidoracatWatch.MapWatch_Luthex_Left": "Luthex Gold Watch",
+    "MinidoracatWatch.MapWatch_Luthex_Right": "Luthex Gold Watch",
+    "MinidoracatWatch.MapWatch_BB3000_Left": "BB-3000 Wrist Computer",
+    "MinidoracatWatch.MapWatch_BB3000_Right": "BB-3000 Wrist Computer",
+    "MinidoracatWatch.Module_Light": "Light Module"
 }

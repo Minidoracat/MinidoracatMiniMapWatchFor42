@@ -9,12 +9,41 @@ Project Zomboid Build 42 MOD，[Minidoracat MiniMap for B42](https://steamcommun
 ## 規劃中的功能
 
 - **地圖錶**：戴上地圖錶才能用小地圖；沒有安裝本 MOD 時，小地圖照舊全部開放
-- **七款錶**：ValuTech、貓爪、極光、Spiffo、遊騎兵、盧瑟斯、嗶嗶腕機 BB-3000；外觀不同，槽位、耗電與功能完全相同；同時只能戴一支
+- **七款錶**：ValuTech、貓爪、極光、Spiffo、遊騎兵、盧瑟斯、嗶嗶腕機 BB-3000；外觀不同，槽位、耗電與功能完全相同；同時只能戴一支。嗶嗶腕機的螢幕可以切換綠色或琥珀色（純外觀）
+- **取得方式**：錶、模組、解鎖卡依稀有度出現在對應地點的容器裡；羅盤、名錄、通訊模組可以製作；殭屍依服裝帶地圖錶相關物品（屍體第一次被翻找時）
 - **模組與槽位**：3 個標準槽，另有擴充、進階、核心槽；裝上模組才解鎖導航、資源點、殭屍偵測、隊友分享等功能。其他 MOD 也能加入自己的模組與槽位
 - **付費槽位**：管理員可設為免費開放、解鎖卡、Economy 買斷或租用、不開放
 - **電池**：以現實時間計算；預設離線與單人暫停時不耗電，沒電時所有功能停用；各模組耗電可調；管理員可開放在發動中的車上或有電的建築裡慢慢充電
 - **管理員設定**：沙盒選項，加上小地圖設定裡只有管理員看得到的「地圖錶管理」分類與獨立設定視窗；殭屍掉落規則依服裝分組
 - **不受限制**：世界地圖底圖、搜尋、自己的座標不需要戴錶
+
+## 管理員：殭屍掉落規則檔
+
+數值（掉落總開關、每隻最多幾件、各款錶／模組／解鎖卡是否出現在戰利品）在沙盒「地圖錶」分頁；掉落規則是清單，放在伺服器設定檔：
+
+- 位置：`Zomboid/Lua/MinidoracatWatch/<伺服器名>/server-settings.json`（單人遊戲是 `sp_<存檔名>`，非英數字換成底線）。不存在時自動寫一份預設（10 條）。
+- 改檔後 10 秒內生效，不必重開伺服器。檔案不是合法 JSON、或任何一條規則不合法時，整份規則不採用、保留上一份有效的，伺服器 log 會寫出是第幾條、哪裡不對。
+- 屍體第一次被翻找時，依規則順序擲機率，掉到「每隻最多幾件」就停；已經翻找過的屍體不受影響。
+
+```json
+{
+  "version": 1,
+  "zombieDrops": [
+    { "group": "army", "item": "watch:ranger", "chance": 2 },
+    { "group": "custom", "outfits": ["HazardSuit", "Bandit"], "item": "mod:any", "chance": 1.5 }
+  ]
+}
+```
+
+| 欄位 | 值 |
+|---|---|
+| `group` | `all`（所有殭屍）、`army`、`police`、`fire`、`medic`、`worker`、`office`、`student`、`survivalist`、`rich`、`spiffo`、`outdoor`，或 `custom`（搭配 `outfits`：原版 `clothing.xml` 的服裝名稱清單，MOD 加的殭屍也能用） |
+| `item` | `watch:any`、`watch:valutech`／`paws`／`nexus`／`spiffo`／`ranger`／`luthex`／`crt`（嗶嗶腕機）、`mod:any`（隨機一般模組）、`mod:<模組 id>`（含其他 MOD 註冊的模組）、`card:ext`／`adv`／`core`、`battery` |
+| `chance` | 每隻的機率，百分比 0–100（可以有小數） |
+
+各分組包含的服裝：軍人 `ArmyCamoGreen` `ArmyCamoDesert` `ArmyInstructor` `ArmyServiceUniform` `Ghillie` `PrivateMilitia`；警察與警衛 `Police` `PoliceState` `Police_SWAT` `PoliceRiot` `PrisonGuard`；消防員 `Fireman` `FiremanFullSuit`；醫護 `Doctor` `Nurse` `AmbulanceDriver` `Pharmacist`；技工與工人 `Mechanic` `MetalWorker` `ConstructionWorker` `Foreman`；上班族 `OfficeWorker` `OfficeWorkerSkirt` `Trader`；學生 `Student` `HonorStudent`；生存狂 `Survivalist`、`Survivalist02`–`05` 與各自的 `_Mid`／`_Late`；富人 `Classy` `Gaudy`；Spiffo `Spiffo` `Waiter_Spiffo` `Cook_Spiffos`；獵人與巡山員 `Hunter` `Ranger` `Camper`。
+
+這個設定檔之後也會存其他 MOD 模組的耗電設定（新的鍵，不影響既有的 `zombieDrops`）。
 
 ## 需求
 
@@ -89,6 +118,10 @@ end
 - `link_workshop.bat`：手動同步、唯讀狀態與歸檔卸載；MOD 以實體副本放入 `Zomboid\Workshop\` 與 `Zomboid\mods\`，不使用目錄連結
 - `PZ_Test.bat`：暗色點選視窗，啟動前增量同步目前 MOD 與家族依賴；首次預設 no-Steam，之後記住各專案的選擇。需要換檔但遊戲仍在執行時拒絕同步與新啟動，不停止既有遊戲；完整驗證與資料邊界見 `../pz-family-docs/tools.md`
 - `Publish_Workshop.bat`：發布到 Steam Workshop（需 Steam 用戶端已登入；可選擇只更新內容／封面／簡介；首發仍走遊戲內上傳器）
+
+## 美術
+
+手腕模型、貼圖與物品圖示都是本 MOD 自製（MIT，產生器在 `scripts/blender/`），沒有使用原版的模型或貼圖檔；`scripts/blender/fonts/` 的字型（OFL）只用來產生貼圖，不在 MOD 裡。
 
 ## 版本
 

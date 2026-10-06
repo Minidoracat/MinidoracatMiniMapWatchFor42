@@ -140,5 +140,7 @@
     "IGUI_MinidoracatWatch_OpenSlot": "開啟%1",
     "IGUI_MinidoracatWatch_NoModuleToInstall": "背包裡沒有這個槽位裝得下的模組",
     "IGUI_MinidoracatWatch_SlotAndModule": "%1：%2",
-    "IGUI_MinidoracatWatch_WatchAndSlot": "%1：%2"
+    "IGUI_MinidoracatWatch_WatchAndSlot": "%1：%2",
+    "IGUI_MinidoracatWatch_ScreenAmber": "螢幕改成琥珀色",
+    "IGUI_MinidoracatWatch_ScreenGreen": "螢幕改成綠色"
 }

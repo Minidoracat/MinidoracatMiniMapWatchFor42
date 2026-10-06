@@ -74,6 +74,17 @@ function Item:getContainer() return self.container end
 function Item:getDisplayName() return self.fullType end
 function Item:isBroken() return self.broken == true end
 function Item:getTex() return "tex:" .. self.fullType end
+-- ItemVisual：textureChoice 初值 -1（ItemVisual.java:31）；setTextureChoice 只賦值（:735-740）
+local Visual = {}
+Visual.__index = Visual
+function Visual:getTextureChoice() return self.choice end
+function Visual:setTextureChoice(c) self.choice = c end
+function Visual:getItemType() return self.fullType end
+function F.visual(fullType, choice) return setmetatable({ fullType = fullType, choice = choice or -1 }, Visual) end
+function Item:getVisual()
+    self.visual = self.visual or F.visual(self.fullType)
+    return self.visual
+end
 -- Battery：UseDelta 是 Java float 0.007f（Lua 讀到 0.007000000216066837）；uses 是整數格
 function Item:getUseDelta() return self.useDelta end
 function Item:getMaxUses() return math.floor(1 / self.useDelta) end
@@ -127,7 +138,9 @@ local function javaInt(n)
     if n <= -2147483648 then return -2147483648 end
     return n >= 0 and math.floor(n) or -math.floor(-n)
 end
+-- AddItem 也收字串（ItemContainer.AddItem(String) 建一件再放進來）
 function Container:AddItem(item)
+    if type(item) == "string" then item = F.item(item) end
     if item.container then item.container:DoRemoveItem(item) end
     table.insert(self.items, item)
     item.container = self
@@ -200,6 +213,13 @@ function Player:removeFromHands() end
 function Player:isTimedActionInstant() return false end
 function Player:getX() return self.x or 0 end
 function Player:getY() return self.y or 0 end
+function Player:resetModelNextFrame() self.resets = (self.resets or 0) + 1 end
+-- 遠端玩家畫的是 remotePlayerItemVisuals（IsoPlayer.java:7679-7689）；測試直接放 visual
+function Player:getItemVisuals() return F.javaList(self.remoteVisuals or {}) end
+function getPlayerByOnlineID(id)
+    for _, p in ipairs(F.players) do if p.onlineId == id then return p end end
+    return nil
+end
 function Player:getWornItems()
     local list = {}
     for _, w in ipairs(self.worn) do list[#list + 1] = { getItem = function() return w.item end } end
@@ -244,8 +264,13 @@ function sendRemoveItemFromContainer(c, item) if F.mode == "server" then F.remov
 function sendClientCommand(player, module, command, args)
     F.clientCmds[#F.clientCmds + 1] = { player = player, module = module, command = command, args = args }
 end
+-- 有 player 的多載只送那位玩家；沒有 player 的多載廣播給所有連線（LuaManager.java:8956-8970）
 function sendServerCommand(player, module, command, args)
-    F.serverCmds[#F.serverCmds + 1] = { player = player, module = module, command = command, args = args }
+    if type(player) == "string" then
+        player, module, command, args = nil, player, module, command
+    end
+    F.serverCmds[#F.serverCmds + 1] = { player = player, module = module, command = command, args = args,
+        broadcast = player == nil }
 end
 
 -- ===== 原版穿戴動作（只留 isValid／complete 的形狀）=====
@@ -305,6 +330,7 @@ local MODULES = {
     MinidoracatWatch_Modules = F.MEDIA .. "/shared/MinidoracatWatch_Modules.lua",
     MinidoracatWatch_Action = F.MEDIA .. "/client/MinidoracatWatch_Action.lua",
     MinidoracatWatch_Client = F.MEDIA .. "/client/MinidoracatWatch_Client.lua",
+    MinidoracatWatch_Config = F.MEDIA .. "/server/MinidoracatWatch_Config.lua",
 }
 local loaded = {}
 function require(name)

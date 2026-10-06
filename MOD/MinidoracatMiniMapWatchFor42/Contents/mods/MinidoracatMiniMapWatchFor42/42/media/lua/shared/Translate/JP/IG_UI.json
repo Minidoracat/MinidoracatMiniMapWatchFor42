@@ -140,5 +140,7 @@
     "IGUI_MinidoracatWatch_OpenSlot": "%1を開放",
     "IGUI_MinidoracatWatch_NoModuleToInstall": "このスロットに装着できるモジュールを持っていません",
     "IGUI_MinidoracatWatch_SlotAndModule": "%1：%2",
-    "IGUI_MinidoracatWatch_WatchAndSlot": "%1：%2"
+    "IGUI_MinidoracatWatch_WatchAndSlot": "%1：%2",
+    "IGUI_MinidoracatWatch_ScreenAmber": "画面を琥珀色にする",
+    "IGUI_MinidoracatWatch_ScreenGreen": "画面を緑色にする"
 }

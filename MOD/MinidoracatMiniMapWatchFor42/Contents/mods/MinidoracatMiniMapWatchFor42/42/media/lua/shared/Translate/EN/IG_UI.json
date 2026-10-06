@@ -140,5 +140,7 @@
     "IGUI_MinidoracatWatch_OpenSlot": "Open %1",
     "IGUI_MinidoracatWatch_NoModuleToInstall": "No modules in your inventory fit this slot",
     "IGUI_MinidoracatWatch_SlotAndModule": "%1: %2",
-    "IGUI_MinidoracatWatch_WatchAndSlot": "%1: %2"
+    "IGUI_MinidoracatWatch_WatchAndSlot": "%1: %2",
+    "IGUI_MinidoracatWatch_ScreenAmber": "Switch screen to amber",
+    "IGUI_MinidoracatWatch_ScreenGreen": "Switch screen to green"
 }

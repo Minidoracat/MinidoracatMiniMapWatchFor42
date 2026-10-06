@@ -188,9 +188,49 @@ function C.requestUnlock(player, slotId)
     if not ok then W.notify(player, reason) end
 end
 
+-- 嗶嗶腕機的螢幕顏色（純外觀，不經計時動作）：MP 送純量、單機直接套用；外觀由伺服器／單機的 W.showScreen 套
+function C.requestScreen(player, watch)
+    if not player or not W.hasScreen(watch) then return end
+    local choice = 1 - W.screenOf(watch)
+    if isClient() then
+        sendClientCommand(player, W.MODULE, W.CMD_SCREEN, { watchId = watch:getID(), choice = choice })
+        return
+    end
+    local ok, reason = W.applyScreen(player, watch:getID(), choice)
+    if not ok then W.notify(player, reason) end
+end
+
+function C.screenLabel(watch)
+    return getText(W.screenOf(watch) == 1 and "IGUI_MinidoracatWatch_ScreenGreen" or "IGUI_MinidoracatWatch_ScreenAmber")
+end
+
+-- 伺服器廣播的螢幕顏色（沒有 to：所有連線都收）。pid 找不到＝那位玩家還沒載入，之後的 ConnectedPacket 會帶伺服器的外觀。
+-- 遠端玩家畫的是 remotePlayerItemVisuals（IsoPlayer.java:7684-7689），本機玩家畫 WornItems 的 visual：兩邊都改，
+-- 有改才 resetModelNextFrame。
+function C.onScreen(args)
+    local choice = args.choice
+    if not W.isFiniteInt(args.pid) or (choice ~= 0 and choice ~= 1) then return end
+    local p = getPlayerByOnlineID(args.pid) -- LuaManager.java:3940-3945
+    if not p then return end
+    local changed = false
+    local worn = p:getWornItems()
+    for i = 0, (worn and worn:size() or 0) - 1 do
+        local it = worn:get(i):getItem()
+        if W.hasScreen(it) and W.setChoice(it:getVisual(), choice) then changed = true end
+    end
+    local vis = p:getItemVisuals()
+    for i = 0, (vis and vis:size() or 0) - 1 do
+        local v = vis:get(i)
+        if W.SCREEN_TYPES[v:getItemType()] and W.setChoice(v, choice) then changed = true end
+    end
+    if changed then p:resetModelNextFrame() end
+end
+
 -- 伺服器回報：失敗只認白名單內的鍵；解鎖狀態只收「槽位 id＝true」。依 to 找本機玩家（分割畫面共用連線）
 Events.OnServerCommand.Add(function(module, command, args)
-    if module ~= W.MODULE or type(args) ~= "table" or type(args.to) ~= "string" then return end
+    if module ~= W.MODULE or type(args) ~= "table" then return end
+    if command == W.CMD_SCREEN then return C.onScreen(args) end
+    if type(args.to) ~= "string" then return end
     if command == W.CMD_FAILED then
         if not W.FAIL_KEYS[args.reason] then return end
         for pn = 0, getNumActivePlayers() - 1 do
@@ -337,6 +377,7 @@ local function subMenu(context, text)
 end
 
 local function onOpen(watch, pn) C.openPanel(pn, watch) end
+local function onScreen(watch, pn) C.requestScreen(getSpecificPlayer(pn), watch) end
 local function onBattery(watch, pn, install) C.requestBattery(getSpecificPlayer(pn), watch, install) end
 local function onModule(watch, pn, slotId, item) C.requestModule(getSpecificPlayer(pn), watch, slotId, item) end
 local function onUnlock(slotId, pn) C.requestUnlock(getSpecificPlayer(pn), slotId) end
@@ -351,6 +392,7 @@ local function watchMenu(context, player, pn, item)
     if hasBattery then
         context:addOption(getText("IGUI_MinidoracatWatch_RemoveBattery"), item, onBattery, pn, false)
     end
+    if W.hasScreen(item) then context:addOption(C.screenLabel(item), item, onScreen, pn) end
     local sub = nil
     local function addRemove(slot)
         local rec = W.slotRecord(item, slot.id)

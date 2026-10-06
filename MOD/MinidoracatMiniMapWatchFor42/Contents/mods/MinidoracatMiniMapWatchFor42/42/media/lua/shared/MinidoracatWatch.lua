@@ -20,10 +20,15 @@ W.CMD_FAILED = "failed"
 W.KEY = "MinidoracatWatchBattery"
 W.NO_BATTERY = -1
 W.BATTERY_TYPE = "Base.Battery"
-W.WATCH_TYPES = {
-    ["MinidoracatWatch.MapWatch_ValuTech_Right"] = true,
-    ["MinidoracatWatch.MapWatch_ValuTech_Left"] = true,
-}
+-- 七款錶（外觀只影響外觀：槽位、耗電、功能完全相同）。每款左右手各一個物品（ClothingItemExtra 互換）。
+W.STYLES = { "ValuTech", "Paws", "Nexus", "Spiffo", "Ranger", "Luthex", "BB3000" }
+W.WATCH_TYPES = {}
+for _, s in ipairs(W.STYLES) do
+    W.WATCH_TYPES["MinidoracatWatch.MapWatch_" .. s .. "_Left"] = true
+    W.WATCH_TYPES["MinidoracatWatch.MapWatch_" .. s .. "_Right"] = true
+end
+-- 戰利品、殭屍掉落產生的那一隻：左手（原版分佈表也只放 WristWatch_Left_*；嗶嗶腕機照原作戴左前臂）
+function W.watchType(style) return "MinidoracatWatch.MapWatch_" .. style .. "_Left" end
 
 W.SETTLE_MS = 60000 -- 每分鐘把累積的耗電寫進 modData 並同步一次
 -- 單一 tick 最多計入的時間：伺服器卡頓、系統時鐘往前跳、單機在沒有 tick 的時段都只算這麼多。
@@ -267,6 +272,51 @@ function W.applyBatteryChange(player, watchId, install, batteryId)
     return true
 end
 
+-- ===== 嗶嗶腕機的螢幕顏色（純外觀）=====
+-- 選擇存錶的 modData（nil／0＝綠、1＝琥珀＝clothing xml 的 textureChoices 索引），跟著錶走（換手時整份 modData
+-- 複製過去，ISClothingExtraAction.lua:107-108）。ItemVisual 才是畫面用的值：
+-- - textureChoice＝-1 時引擎會隨機挑一張並寫回（ItemVisual.java:185-194），物品一生成就已隨機定色
+--   （Item.java:1909-1913 → InventoryItem.synchWithVisual → getVisual → pickUninitializedValues），所以戴著時一律照 modData 改。
+-- - SyncClothing 雖帶 textureChoice，但同 ID、同部位的既有衣物不套用（SyncClothingPacket.java:193-213）；SyncVisuals
+--   不帶 textureChoice（SyncVisualsPacket.java:56-128）。所以伺服器改好自己的 ItemVisual 後，用沒有 player 參數的
+--   sendServerCommand 廣播給所有連線（LuaManager.java:8956-8959 → GameServer.java:3521-3524），各客戶端自己改。
+-- - 之後才連進來的玩家由 ConnectedPacket 帶伺服器的 ItemVisuals（ConnectedPacket.java:269-271）；存檔照存 textureChoice
+--   （InventoryItem.java:1678-1680、ItemVisual.java:302-304）。
+W.SCREEN_KEY = "MinidoracatWatchScreen"
+W.CMD_SCREEN = "screen"
+W.SCREEN_TYPES = {
+    ["MinidoracatWatch.MapWatch_BB3000_Left"] = true,
+    ["MinidoracatWatch.MapWatch_BB3000_Right"] = true,
+}
+
+function W.hasScreen(item) return item ~= nil and W.SCREEN_TYPES[item:getFullType()] == true end
+
+function W.screenOf(item)
+    return (item:hasModData() and item:getModData()[W.SCREEN_KEY] == 1) and 1 or 0
+end
+
+-- 套到一個 ItemVisual；有改才回 true。setTextureChoice 只賦值、不刷新模型也不同步（ItemVisual.java:735-740）
+function W.setChoice(visual, choice)
+    if not visual or visual:getTextureChoice() == choice then return false end
+    visual:setTextureChoice(choice)
+    return true
+end
+
+-- 伺服器（MP）／單機的唯一突變點：只收純量 watchId、choice；錶只從這位玩家自己的背包樹依 ID 解析。
+-- 外觀由 W.showScreen 套用（扣電迴圈每秒一次，這裡也立刻呼叫）。
+function W.applyScreen(player, watchId, choice)
+    if isClient() then return false, W.FAIL_GENERIC end
+    if not W.isFiniteInt(watchId) or (choice ~= 0 and choice ~= 1) then return false, W.FAIL_GENERIC end
+    if not player or player:isDead() then return false, W.FAIL_GENERIC end
+    local inv = player:getInventory()
+    local watch = inv and inv:getItemWithIDRecursiv(watchId)
+    if not W.hasScreen(watch) then return false, W.FAIL_GENERIC end
+    watch:getModData()[W.SCREEN_KEY] = choice
+    if isServer() then syncItemModData(player, watch) end
+    W.showScreen(player)
+    return true
+end
+
 -- ===== 扣電（伺服器與單機；MP 客戶端不跑）=====
 -- 一個全域的「有效時間」計數器 activeMs：每幀加上 tickDelta（暫停、時鐘倒退、大跳躍只在這一處處理）。
 -- 每位玩家記下「上次入帳時的 activeMs」與「那時戴著的錶」。每秒入帳一次（只寫伺服器記憶體裡的 modData），
@@ -283,7 +333,7 @@ end
 W.POLL_MS = 1000
 W.SEEN_TABLE = "MinidoracatWatchSeen"
 local activeMs, lastTickMs, lastPollMs, lastSyncMs = 0, nil, nil, nil
-local state = {} -- [IsoPlayer] = { mark = 上次入帳時的 activeMs, watch = 那時戴著的錶或 false, dirty = 有沒同步的變動 }
+local state = {} -- [IsoPlayer] = { mark = 上次入帳時的 activeMs, watch = 那時戴著的錶或 false, dirty = 有沒同步的變動, screen = 上次套用的螢幕鍵 }
 
 function W.seenKey(player)
     return tostring(player:getUsername()) .. "|" .. tostring(player:getPlayerNum())
@@ -318,6 +368,28 @@ function W.settleNow(player)
     if s then accrue(player, s, W.fullHours(), W.enabled()) end
 end
 
+-- 讓戴著的嗶嗶腕機外觀等於 modData（伺服器／單機）：同一支錶、同一個選擇只套一次（每次戴上、切換時各一次）。
+-- 伺服器的 ItemVisual 可能是 nil（clothing 資產沒載入時 getVisual 回 nil，InventoryItem.java:2323-2338），照樣廣播。
+-- 單機直接 resetModelNextFrame（IsoGameCharacter.java:1783-1789 → ModelManager.ResetNextFrame）。
+local function showScreen(player, s)
+    local w = W.wornWatch(player)
+    if not W.hasScreen(w) then s.screenId = nil return end
+    local choice = W.screenOf(w)
+    if s.screenId == w:getID() and s.screenChoice == choice then return end
+    s.screenId, s.screenChoice = w:getID(), choice
+    W.setChoice(w:getVisual(), choice)
+    if isServer() then
+        sendServerCommand(W.MODULE, W.CMD_SCREEN, { pid = player:getOnlineID(), id = w:getID(), choice = choice })
+    else
+        player:resetModelNextFrame()
+    end
+end
+
+function W.showScreen(player)
+    local s = not isClient() and player and state[player]
+    if s then showScreen(player, s) end -- 還沒有狀態（登入第一秒）：下一次扣電迴圈會套
+end
+
 local function visit(player, now, doSync, seen, drainOffline, fullHours, enabled)
     if player:isDead() then return nil end
     local key = W.seenKey(player)
@@ -341,6 +413,7 @@ local function visit(player, now, doSync, seen, drainOffline, fullHours, enabled
         sync(player, w)
         s.dirty = false
     end
+    showScreen(player, s)
     seen[key] = now
     -- 第三方模組的 onStateChanged：MP 伺服器在這裡比對；客戶端與單機在客戶端迴圈（MinidoracatWatch_Client.lua）
     if isServer() then W.pollStateCallbacks(player, player) end

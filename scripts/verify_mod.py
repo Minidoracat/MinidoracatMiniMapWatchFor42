@@ -43,6 +43,10 @@
  16. Lua 字串字面值只有 ASCII — Kahlua LexState 以 (byte)c 存 token（LexState.java:194-199），中文字面值變亂碼；
                           luac 與標準 Lua 測試都照 UTF-8 處理、攔不住。只掃字串，註解不限
  17. Lua 單元測試          — scripts/test_*.lua 自動全跑（非零碼＝FAIL）；PATH 沒有 lua 則 SKIP
+ 18. craftRecipe 腳本      — module Base、輸入 token（mode／flags／tags 照 InputScript 的 throw 路徑）、物品引用存在、
+                          OnTest 有 Lua 實作、四語 Recipes.json；任一錯誤整條配方靜默消失
+ 19. 七款錶資產完整        — 每款左右手物品、自己的 clothing xml＋GUID、模型與貼圖檔、圖示、四語說明、全名不含 Classic、
+                          自製圖示不帶 Color*（會被染色）
 
 新增檢查時：同步把對應的坑記進 AGENTS.md 踩坑錄，並依「踩坑進化協議」回流到
 pz-mod-template（見 AGENTS.md）。
@@ -778,6 +782,243 @@ for f in LUA_FILES:
             bad.append(f"{os.path.relpath(f, REPO)}:{src.count(chr(10), 0, mm.start()) + 1} {body[:30]}")
 fail("Lua 字串字面值只有 ASCII（玩家文字放翻譯檔）", bad) if bad \
     else ok("Lua 字串字面值只有 ASCII（玩家文字放翻譯檔）")
+
+# ---- 18. craftRecipe 腳本 ----
+# 引擎逐 token 解析輸入行（InputScript.java:617-766）：mode 的 key 字面大小寫敏感（:666）、值不分大小寫，非法值與
+# 不認得的 token 當下 throw（:687、:762）；flags 走 InputFlag.valueOf，無 trim、大小寫敏感（:744-748）。任一 throw
+# 整條配方消失、玩家端零訊息。配方必須在 module Base（短名引用只查 Base，家族 pitfalls.md「CraftRecipe 學習管線」）；
+# 引用的物品要真的存在（本 MOD 的看 scripts、Base.* 看原版 scripts，找不到原版就只驗本 MOD）；OnTest 的「表.函式」
+# 要有 Lua 實作；配方名在四語 Recipes.json 都有翻譯（Translator.getRecipeName，Translator.java:691-699）。
+# 名單抄 AutoDrive verify_mod.py（42.20.4 InputFlag.java 逐字）；引擎升版新增 flag 時這裡會假紅——補名單即可。
+VALID_ITEM_MODES = {"use", "keep", "destroy", "useprop1", "useprop2", "keepprop1", "keepprop2", "prop1", "prop2"}
+INPUT_FLAGS = {
+    "HandcraftOnly", "AutomationOnly", "IsFull", "NotFull", "ItemIsUses", "ItemIsFluid", "ItemIsEnergy", "IsEmpty",
+    "NotEmpty", "Prop1", "Prop2", "ToolLeft", "ToolRight", "IsDamaged", "IsUndamaged", "IsWholeFoodItem",
+    "IsEmptyContainer", "IsUncookedFoodItem", "IsCookedFoodItem", "IsNotDull", "IsHeadPart", "IsSharpenable",
+    "DontPutBack", "InheritColor", "InheritCondition", "InheritEquipped", "InheritSharpness", "InheritHeadCondition",
+    "MayDegrade", "MayDegradeLight", "MayDegradeVeryLight", "MayDegradeHeavy", "SharpnessCheck", "InheritUses",
+    "InheritUsesAndEmpty", "InheritFood", "InheritFoodAge", "InheritCooked", "InheritModelVariation", "InheritWeight",
+    "InheritName", "InheritFreezingTime", "DontInheritCondition", "AllowFrozenItem", "AllowRottenItem", "NoBrokenItems",
+    "AllowDestroyedItem", "IsWorn", "IsNotWorn", "InheritAmmunition", "CopyClothing", "AllowFavorite", "InheritFavorite",
+    "FakeOutput", "DontReplace", "CanBeDoneFromFloor", "ItemCount", "IsExclusive", "RecordInput", "DontRecordInput",
+    "ResearchInput", "IsBlunt", "HasOneUse", "HasNoUses", "IsSealed", "IsNotSealed", "Unseal", "EquipSecondary",
+    "SetActivated",
+}
+RECIPE_REQUIRED = ("timedAction", "time", "category")
+
+
+def recipe_input_errors(rest):
+    """一條輸入行數量之後的 token；回錯誤清單（空＝引擎載得進來）。"""
+    errs = []
+    for tok in rest.split():
+        t = tok.rstrip(",")
+        if not t:
+            continue
+        lb, rb = t.find("["), t.find("]")
+        if t.startswith("mode:"):
+            if t[5:].lower() not in VALID_ITEM_MODES:
+                errs.append(f"`{t}` 非法 mode（InputScript.java:687 throw）")
+        elif t.startswith("[") or t.startswith("tags") or t.startswith("flags") or t.startswith("mappers"):
+            if lb < 0 or rb < lb:
+                errs.append(f"`{t}` 缺括號（substring 越界 throw）")
+            elif t.startswith("flags"):
+                errs += [f"flags 值 `{e}` 不在 InputFlag（valueOf throw，:748）"
+                         for e in t[lb + 1:rb].split(";") if e not in INPUT_FLAGS]
+            elif t.startswith("tags"):
+                errs += [f"tags 項 `{e}` 空值或空 namespace（ResourceLocation.of throw）"
+                         for e in t[lb + 1:rb].split(";") if not e or e.startswith(":") or e.endswith(":")]
+        elif t.startswith("categories") or t.startswith("apply:"):
+            errs.append(f"`{t}` 不能用在物品輸入（InputScript.java:663、:735 throw）")
+        elif not t.startswith("overlayMapper") and not t.startswith("shapedIndex:"):
+            errs.append(f"`{t}` 不認得的參數（InputScript.java:762 throw）")
+    return errs
+
+
+def script_blocks(text, kind):
+    """(module, 名稱, 內文) 清單；內文含巢狀 inputs/outputs。text 已去掉註解。"""
+    out = []
+    for mm in re.finditer(r"(?m)^\s*module\s+(\w+)\s*\{", text):
+        depth, i, start = 1, mm.end(), mm.end()
+        while i < len(text) and depth:
+            depth += {"{": 1, "}": -1}.get(text[i], 0)
+            i += 1
+        body = text[start:i - 1]
+        for bm in re.finditer(rf"(?m)^\s*{kind}\s+(\w+)\s*\{{", body):
+            d, j = 1, bm.end()
+            while j < len(body) and d:
+                d += {"{": 1, "}": -1}.get(body[j], 0)
+                j += 1
+            out.append((mm.group(1), bm.group(1), body[bm.end():j - 1]))
+    return out
+
+
+# 原版物品（Base.*）：掃一次原版 scripts；找不到遊戲就不驗 Base.*（寫進標籤）
+_vanilla_items = None
+_vs = os.path.join(PZ_PATH, "media", "scripts")
+if os.path.isdir(_vs):
+    _vanilla_items = set()
+    for f in iter_files(_vs, {".txt"}):
+        with open(f, encoding="utf-8", errors="replace") as fh:
+            _vanilla_items.update(re.findall(r"(?m)^\s*item\s+(\w+)\s*\{?\s*$", fh.read()))
+
+_lua_src = ""
+for f in LUA_FILES:
+    with open(f, encoding="utf-8") as fh:
+        _lua_src += fh.read() + "\n"
+
+recipe_bad, recipe_names, mod_items = [], [], set()
+for m in MEDIA_DIRS:
+    sdir = os.path.join(m, "scripts")
+    if not os.path.isdir(sdir):
+        continue
+    texts = []
+    for f in iter_files(sdir, {".txt"}):
+        with open(f, encoding="utf-8") as fh:
+            texts.append((os.path.relpath(f, REPO), re.sub(r"/\*.*?\*/", "", fh.read(), flags=re.S)))
+    for _, txt in texts:
+        for module, name, _ in script_blocks(txt, "item"):
+            mod_items.add(f"{module}.{name}")
+    for rel, txt in texts:
+        for module, name, body in script_blocks(txt, "craftRecipe"):
+            recipe_names.append(name)
+            where = f"{rel} craftRecipe {name}"
+            if module != "Base":
+                recipe_bad.append(f"{where}：在 module {module}，要放 module Base")
+            for key in RECIPE_REQUIRED:
+                if not re.search(rf"(?m)^\s*{key}\s*=", body):
+                    recipe_bad.append(f"{where}：缺 {key}")
+            ot = re.search(r"(?m)^\s*OnTest\s*=\s*([\w.]+)\s*,", body)
+            if ot and not re.search(rf"function\s+{re.escape(ot.group(1))}\s*\(|{re.escape(ot.group(1))}\s*=\s*function",
+                                    _lua_src):
+                recipe_bad.append(f"{where}：OnTest {ot.group(1)} 在 Lua 裡找不到")
+            for k in ("inputs", "outputs"):
+                sm = re.search(rf"(?ms)^\s*{k}\s*\{{(.*?)^\s*\}}", body)
+                if not sm:
+                    recipe_bad.append(f"{where}：缺 {k}")
+                    continue
+                lines = [l.strip() for l in sm.group(1).splitlines() if l.strip()]
+                if not lines:
+                    recipe_bad.append(f"{where}：{k} 是空的")
+                for line in lines:
+                    im = re.match(r"item\s+(\S+)\s+(.*?),?$", line)
+                    if not im:
+                        recipe_bad.append(f"{where}：{k} 這行看不懂 `{line}`")
+                        continue
+                    try:
+                        float(im.group(1))
+                    except ValueError:
+                        recipe_bad.append(f"{where}：數量 `{im.group(1)}` 不是數字")
+                    rest = im.group(2)
+                    if k == "inputs":
+                        recipe_bad += [f"{where}：{e}" for e in recipe_input_errors(rest)]
+                        refs = [t.strip() for sel in re.findall(r"(?:^|\s)\[([^\]]+)\]", rest) for t in sel.split(";")]
+                    else:
+                        refs = rest.split()[:1]
+                    for ref in refs:
+                        mod_name, _, short = ref.rpartition(".")
+                        if not mod_name:
+                            recipe_bad.append(f"{where}：`{ref}` 要寫完整類型（module.名稱）")
+                        elif mod_name == "Base":
+                            if _vanilla_items is not None and short not in _vanilla_items:
+                                recipe_bad.append(f"{where}：原版沒有 {ref}")
+                        elif ref not in mod_items:
+                            recipe_bad.append(f"{where}：本 MOD 沒有 {ref}")
+    for lang in ("EN", "CH", "CN", "JP"):
+        rp = os.path.join(m, "lua", "shared", "Translate", lang, "Recipes.json")
+        keys = set()
+        if os.path.isfile(rp):
+            with open(rp, encoding="utf-8") as fh:
+                keys = set(json.load(fh))
+        recipe_bad += [f"{lang}/Recipes.json 缺 {n}" for n in recipe_names if n not in keys]
+_rl = f"craftRecipe 腳本（{len(recipe_names)} 條：module Base、輸入 token、物品引用、OnTest、四語配方名" + \
+      ("" if _vanilla_items is not None else "；找不到原版 scripts，Base.* 未驗") + "）"
+fail(_rl, recipe_bad) if recipe_bad else ok(_rl)
+
+# ---- 19. 七款錶資產完整 ----
+# 每款（shared/MinidoracatWatch.lua 的 W.STYLES）左右手兩個物品：ClothingItem 指向自己的 xml（共用原版名稱會讓殭屍的
+# 原版錶變成地圖錶，ScriptManager.java:1883-1892）、xml 的 GUID 登記在 42/media/fileGuidTable.xml（OutfitManager 依
+# GUID 載入）、模型與 textureChoices 貼圖檔存在、圖示貼圖存在、說明有四語翻譯、物品全名不含 Classic
+# （AlarmClockClothing.java:54-66 會當成指針錶）。自製圖示的物品不可寫 ColorRed/Green/Blue（UIElement.java:548-551 染色）。
+asset_bad, n_styles = [], 0
+for m in MEDIA_DIRS:
+    core = os.path.join(m, "lua", "shared", "MinidoracatWatch.lua")
+    if not os.path.isfile(core):
+        continue
+    with open(core, encoding="utf-8") as fh:
+        sm = re.search(r"W\.STYLES\s*=\s*\{([^}]*)\}", fh.read())
+    styles = re.findall(r'"(\w+)"', sm.group(1)) if sm else []
+    n_styles = len(styles)
+    if not styles:
+        asset_bad.append("shared/MinidoracatWatch.lua 找不到 W.STYLES")
+    item_bodies = {}
+    for f in iter_files(os.path.join(m, "scripts"), {".txt"}):
+        with open(f, encoding="utf-8") as fh:
+            txt = re.sub(r"/\*.*?\*/", "", fh.read(), flags=re.S)
+        for module, name, body in script_blocks(txt, "item"):
+            item_bodies[f"{module}.{name}"] = body
+    guids = {}
+    guid_path = os.path.join(m, "fileGuidTable.xml")
+    if os.path.isfile(guid_path):
+        with open(guid_path, encoding="utf-8") as fh:
+            for p, g in re.findall(r"<path>([^<]+)</path>\s*<guid>([^<]+)</guid>", fh.read()):
+                guids[p.replace("\\", "/")] = g
+    tips = {}
+    for lang in ("EN", "CH", "CN", "JP"):
+        tp = os.path.join(m, "lua", "shared", "Translate", lang, "Tooltip.json")
+        tips[lang] = set()
+        if os.path.isfile(tp):
+            with open(tp, encoding="utf-8") as fh:
+                tips[lang] = set(json.load(fh))
+
+    def tex(name, m=m):
+        return os.path.isfile(os.path.join(m, "textures", name + ".png"))
+
+    for s in styles:
+        if not tex(f"Item_MinidoracatWatch_{s}"):
+            asset_bad.append(f"{s}：缺圖示 textures/Item_MinidoracatWatch_{s}.png")
+        for lang, keys in tips.items():
+            if f"Tooltip_MinidoracatWatch_{s}" not in keys:
+                asset_bad.append(f"{s}：{lang}/Tooltip.json 缺 Tooltip_MinidoracatWatch_{s}")
+        for side, other in (("Left", "Right"), ("Right", "Left")):
+            full = f"MinidoracatWatch.MapWatch_{s}_{side}"
+            body = item_bodies.get(full)
+            if body is None:
+                asset_bad.append(f"缺物品 {full}")
+                continue
+            want = {"ClothingItem": f"MinidoracatWatch_{s}_{side}", "Icon": f"MinidoracatWatch_{s}",
+                    "ClothingItemExtra": f"MinidoracatWatch.MapWatch_{s}_{other}",
+                    "Tooltip": f"Tooltip_MinidoracatWatch_{s}", "BodyLocation": f"base:{side.lower()}wrist"}
+            for k, v in want.items():
+                got = re.search(rf"(?m)^\s*{k}\s*=\s*([^,\r\n]+)", body)
+                if not got or got.group(1).strip() != v:
+                    asset_bad.append(f"{full}：{k} 應為 {v}（實得 {got.group(1).strip() if got else '未宣告'}）")
+            xml_rel = f"media/clothing/clothingItems/MinidoracatWatch_{s}_{side}.xml"
+            xml_path = os.path.join(m, "clothing", "clothingItems", f"MinidoracatWatch_{s}_{side}.xml")
+            if not os.path.isfile(xml_path):
+                asset_bad.append(f"{full}：缺 {xml_rel}")
+                continue
+            with open(xml_path, encoding="utf-8") as fh:
+                x = fh.read()
+            g = re.search(r"<m_GUID>([^<]+)</m_GUID>", x)
+            if not g or guids.get(xml_rel) != g.group(1):
+                asset_bad.append(f"{xml_rel}：GUID 沒有登記在 42/media/fileGuidTable.xml（或不一致）")
+            for mdl in re.findall(r"<m_(?:Male|Female)Model>([^<]+)</m_(?:Male|Female)Model>", x):
+                rel = mdl.replace("\\", "/")
+                if not rel.startswith("media/") or not os.path.isfile(os.path.join(m, rel[len("media/"):])):
+                    asset_bad.append(f"{xml_rel}：模型 {mdl} 不在本 MOD")
+            for t in re.findall(r"<textureChoices>([^<]+)</textureChoices>", x):
+                if not tex(t):
+                    asset_bad.append(f"{xml_rel}：貼圖 textures/{t}.png 不存在")
+    for full, body in item_bodies.items():
+        if "Classic" in full and full.startswith("MinidoracatWatch.MapWatch_"):
+            asset_bad.append(f"{full}：錶的物品全名不可含 Classic")
+        icon = re.search(r"(?m)^\s*Icon\s*=\s*(MinidoracatWatch_\w+)", body)
+        if icon and re.search(r"(?m)^\s*Color(Red|Green|Blue)\s*=", body):
+            asset_bad.append(f"{full}：自製圖示不可再寫 ColorRed/Green/Blue（會被染色）")
+        if icon and not tex("Item_" + icon.group(1)):
+            asset_bad.append(f"{full}：圖示 textures/Item_{icon.group(1)}.png 不存在")
+_al = f"七款錶資產完整（{n_styles} 款 × 左右手：物品、clothing xml、GUID、模型、貼圖、圖示、說明）"
+fail(_al, asset_bad) if asset_bad else ok(_al)
 
 # ---- 17. Lua 單元測試（scripts/test_*.lua 自動全跑）----
 # 每支測試失敗時以非零碼結束、最後一行印摘要；沒有 lua 直譯器＝SKIP（防線沒跑到，不能列 PASS）。

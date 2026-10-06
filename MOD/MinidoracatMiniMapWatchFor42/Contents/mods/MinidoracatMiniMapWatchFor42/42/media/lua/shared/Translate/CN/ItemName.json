@@ -13,5 +13,18 @@
     "MinidoracatWatch.Module_Eco": "节能核心",
     "MinidoracatWatch.UnlockCard_Ext": "扩展槽解锁卡",
     "MinidoracatWatch.UnlockCard_Adv": "进阶槽解锁卡",
-    "MinidoracatWatch.UnlockCard_Core": "核心槽解锁卡"
+    "MinidoracatWatch.UnlockCard_Core": "核心槽解锁卡",
+    "MinidoracatWatch.MapWatch_Paws_Left": "猫爪 地图表",
+    "MinidoracatWatch.MapWatch_Paws_Right": "猫爪 地图表",
+    "MinidoracatWatch.MapWatch_Nexus_Left": "极光 地图表",
+    "MinidoracatWatch.MapWatch_Nexus_Right": "极光 地图表",
+    "MinidoracatWatch.MapWatch_Spiffo_Left": "Spiffo 儿童表",
+    "MinidoracatWatch.MapWatch_Spiffo_Right": "Spiffo 儿童表",
+    "MinidoracatWatch.MapWatch_Ranger_Left": "游骑兵 战术表",
+    "MinidoracatWatch.MapWatch_Ranger_Right": "游骑兵 战术表",
+    "MinidoracatWatch.MapWatch_Luthex_Left": "卢瑟斯 金表",
+    "MinidoracatWatch.MapWatch_Luthex_Right": "卢瑟斯 金表",
+    "MinidoracatWatch.MapWatch_BB3000_Left": "哔哔腕机 BB-3000",
+    "MinidoracatWatch.MapWatch_BB3000_Right": "哔哔腕机 BB-3000",
+    "MinidoracatWatch.Module_Light": "照明模块"
 }

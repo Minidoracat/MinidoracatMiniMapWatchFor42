@@ -748,6 +748,56 @@ C.requestModule(p, watch, "nope", nil)
 check(not F.queues[p][1], "沒有紀錄的未知槽位：不排動作")
 C.closePanel()
 
+-- ===== 嗶嗶腕機的螢幕顏色：右鍵、面板按鈕、MP 送純量、伺服器廣播 =====
+local BB = "MinidoracatWatch.MapWatch_BB3000_Left"
+local bb = F.item(BB)
+p.inv:AddItem(bb)
+local function screenOpt(list)
+    for _, o in ipairs(list) do if o.name:find("IGUI_MinidoracatWatch_Screen", 1, true) then return o end end
+end
+local scr = screenOpt(context({ bb }))
+check(scr and scr.name == "IGUI_MinidoracatWatch_ScreenAmber", "嗶嗶腕機的右鍵：螢幕改成琥珀色")
+check(screenOpt(context({ watch })) == nil, "其他款沒有螢幕選項")
+F.reset()
+if scr then pick(scr) end
+local sc = F.clientCmds[1]
+check(#F.clientCmds == 1 and sc.command == W.CMD_SCREEN and sc.args.choice == 1 and sc.args.watchId == bb:getID(),
+    "MP：送純量指令（watchId、choice 1）")
+bb:getModData()[W.SCREEN_KEY] = 1
+scr = screenOpt(context({ bb }))
+check(scr and scr.name == "IGUI_MinidoracatWatch_ScreenGreen", "琥珀色時：選項改成「螢幕改成綠色」")
+C.openPanel(0, bb)
+panel = F.lastPanel
+panel:update()
+check(panel.btnScreen.visible and panel.btnScreen.title == "IGUI_MinidoracatWatch_ScreenGreen", "面板：嗶嗶腕機有螢幕按鈕")
+F.reset()
+panel.btnScreen.onclick(panel)
+check(F.clientCmds[1] and F.clientCmds[1].args.choice == 0, "面板按鈕：送 choice 0（改回綠色）")
+C.openPanel(0, watch)
+panel = F.lastPanel
+panel:update()
+check(not panel.btnScreen.visible, "面板：其他款沒有螢幕按鈕")
+C.closePanel()
+-- 伺服器廣播：本機玩家改 WornItems 的 visual、遠端玩家改 remotePlayerItemVisuals，有改才 resetModelNextFrame
+p.onlineId = 7
+F.wear(p, bb)
+local remoteVis = F.visual(BB, 0)
+local hat = F.visual("Base.Hat_Beret", 0)
+p.remoteVisuals = { remoteVis, hat }
+p.resets = 0
+bb:getVisual():setTextureChoice(0)
+F.fire("OnServerCommand", W.MODULE, W.CMD_SCREEN, { pid = 7, id = bb:getID(), choice = 1 })
+check(bb:getVisual():getTextureChoice() == 1 and remoteVis.choice == 1 and hat.choice == 0 and p.resets == 1,
+    "廣播：穿著的錶與遠端 visual 都改成琥珀、其他衣物不動、模型重建一次")
+F.fire("OnServerCommand", W.MODULE, W.CMD_SCREEN, { pid = 7, id = bb:getID(), choice = 1 })
+check(p.resets == 1, "同樣的值再來一次：不重建模型")
+for _, args in ipairs({ { pid = 99, choice = 0 }, { pid = 7, choice = 2 }, { pid = 7, choice = "0" }, { pid = 7.5, choice = 0 } }) do
+    F.fire("OnServerCommand", W.MODULE, W.CMD_SCREEN, args)
+end
+check(bb:getVisual():getTextureChoice() == 1 and p.resets == 1, "找不到玩家、choice 不合法、pid 不是整數：忽略")
+F.unwear(p, bb)
+F.wear(p, watch)
+
 -- ===== UI 框架版本不足：不登記、不出錯 =====
 MinidoracatUI.v1.API_REVISION = 12
 dockSpec = nil

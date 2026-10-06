@@ -97,3 +97,41 @@ option MinidoracatWatch.DrainLongComm
 
 option MinidoracatWatch.DrainRelay
 {type = integer, min = 0, max = 1000, default = 25, page = MinidoracatWatch, translation = MinidoracatWatch_DrainRelay,}
+
+/* 取得方式（Phase 5）：每款錶、模組、解鎖卡是否出現在戰利品（改了會重排分佈表，server/MinidoracatWatch_Loot.lua） */
+option MinidoracatWatch.LootValuTech
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_LootValuTech,}
+
+option MinidoracatWatch.LootPaws
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_LootPaws,}
+
+option MinidoracatWatch.LootNexus
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_LootNexus,}
+
+option MinidoracatWatch.LootSpiffo
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_LootSpiffo,}
+
+option MinidoracatWatch.LootRanger
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_LootRanger,}
+
+option MinidoracatWatch.LootLuthex
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_LootLuthex,}
+
+option MinidoracatWatch.LootBB3000
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_LootBB3000,}
+
+option MinidoracatWatch.LootModules
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_LootModules,}
+
+option MinidoracatWatch.LootCards
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_LootCards,}
+
+option MinidoracatWatch.AllowCraft
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_AllowCraft,}
+
+/* 殭屍掉落：總開關與每隻上限；規則清單在伺服器設定檔（server/MinidoracatWatch_Config.lua） */
+option MinidoracatWatch.ZombieDrops
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_ZombieDrops,}
+
+option MinidoracatWatch.ZombieDropCap
+{type = integer, min = 1, max = 5, default = 1, page = MinidoracatWatch, translation = MinidoracatWatch_ZombieDropCap,}

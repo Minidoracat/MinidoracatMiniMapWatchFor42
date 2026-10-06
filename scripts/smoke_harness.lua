@@ -287,6 +287,50 @@ W.setCharge(W.wornWatch(sender), 0)
 check(shareTarget(sender, team, 1, 2) == "", "分享者的錶沒電：誰都收不到")
 SB.SlotAdv = nil
 
+F.print("情境十：取得方式 → 第一次翻找殭屍屍體時依預設規則放物品（缺檔寫預設）；嗶嗶腕機切螢幕經伺服器廣播")
+local files = {}
+function getFileReader(path)
+    local text = files[path]
+    if not text then return nil end
+    local done = false
+    return { readLine = function() if done then return nil end; done = true; return text end, close = function() end }
+end
+function cacheFileExists(path) return files[path] ~= nil end
+function getFileWriter(path)
+    local buf = {}
+    return { write = function(_, s) buf[#buf + 1] = s end, close = function() files[path] = table.concat(buf):gsub("\n", " ") end }
+end
+function getServerName() return "servertest" end
+function ZombRand() return 0 end -- 每一擲都中：上限決定掉幾件
+F.load("server/MinidoracatWatch_Config.lua")
+F.load("server/MinidoracatWatch_Drops.lua")
+local corpse = F.container()
+corpse._class = "ItemContainer"
+F.fire("OnFillContainer", "Zombie", "Cook_Spiffos", corpse)
+check(files["MinidoracatWatch/servertest/server-settings.json"] ~= nil, "設定檔不存在：寫一份預設")
+check(#corpse.items == 1 and corpse.items[1].fullType == "MinidoracatWatch.MapWatch_ValuTech_Left",
+    "Spiffo 廚師屍體：上限 1，照規則順序先中「所有殭屍 ValuTech」")
+local bag = F.container()
+bag._class = "ItemContainer"
+F.fire("OnFillContainer", "Zombie Bag", "Cook_Spiffos", bag)
+check(#bag.items == 0, "殭屍身上的袋子（Zombie Bag）：不放")
+local carol = F.player("carol", 0)
+carol.onlineId = 9
+local bb = F.item("MinidoracatWatch.MapWatch_BB3000_Left")
+carol.inv:AddItem(bb)
+F.action(ISWearClothing, carol, bb):complete()
+tick(1000, 500)
+F.reset()
+F.now = F.now + 1000
+F.fire("OnClientCommand", W.MODULE, W.CMD_SCREEN, carol, { watchId = bb:getID(), choice = 1 })
+local cast = F.serverCmds[#F.serverCmds]
+check(cast and cast.broadcast and cast.command == W.CMD_SCREEN and cast.args.pid == 9 and cast.args.choice == 1
+    and bb:getVisual():getTextureChoice() == 1, "切螢幕：伺服器改外觀並廣播給所有連線")
+F.reset()
+F.now = F.now + 1000
+F.fire("OnClientCommand", W.MODULE, W.CMD_SCREEN, carol, { watchId = watch:getID(), choice = 1 })
+check(F.serverCmds[1] and F.serverCmds[1].command == W.CMD_FAILED, "別人的錶／不是嗶嗶腕機：拒絕並回報")
+
 F.print()
 if F.failures > 0 then
     F.print(F.failures .. " 項失敗")

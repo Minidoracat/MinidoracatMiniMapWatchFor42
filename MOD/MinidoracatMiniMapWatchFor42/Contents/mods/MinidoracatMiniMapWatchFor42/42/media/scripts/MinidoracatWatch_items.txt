@@ -1,45 +1,30 @@
 module MinidoracatWatch
 {
     /*
-        ValuTech 地圖錶：照原版 WristWatch_Right/Left_DigitalBlack（generated/items/alarmclockclothing.txt:155-191）。
+        地圖錶七款：ValuTech、貓爪（Paws）、極光（Nexus）、Spiffo、遊騎兵（Ranger）、盧瑟斯（Luthex）、嗶嗶腕機（BB3000）。
+        外觀只影響外觀：七款欄位相同，只差 Icon、ClothingItem 與說明。照原版 WristWatch_Left/Right_DigitalBlack
+        （generated/items/alarmclockclothing.txt:155-191）每款兩個物品，用 ClothingItemExtra 切換左右手。
         - ItemType base:alarmclockclothing 建 AlarmClockClothing（Item.java:1578-1610）；base:digital 讓原版時鐘多顯示
           日期與氣溫（Clock.java:342、:375、:118-186），條件是戴著或手持（Clock.java:327-400）。
         - 電量不在 Java：AlarmClockClothing 與 DrainableComboItem 都是 final（AlarmClockClothing.java:36、
           DrainableComboItem.java:32），電量存 modData（shared/MinidoracatWatch.lua）。
         - ClothingItem 必須用自己的 xml：clothingToItemMap 以 ClothingItem 名為鍵、後載入者覆蓋
           （ScriptManager.java:1883-1892），共用原版名稱會讓殭屍服裝裡的原版數位錶（HumanVisual.java:853）
-          變成地圖錶。xml 只換 GUID，模型與貼圖照用原版（media/fileGuidTable.xml）。
-        - Icon 是全域貼圖名（Item.java:1988-1991）；WorldStaticModel 沒有 module 前綴時會找遍所有 module
+          變成地圖錶。模型、貼圖、圖示都是自製（scripts/blender/build_watch_art.py），GUID 在 media/fileGuidTable.xml。
+        - 嗶嗶腕機的 xml 有綠、琥珀兩個 textureChoices；螢幕顏色存錶的 modData，由伺服器套到 ItemVisual（shared/MinidoracatWatch.lua）。
+        - Icon 是全域貼圖名（Item.java:1988-1991）；WorldStaticModel（地上的模型）沒有 module 前綴時會找遍所有 module
           （ScriptManager.java:1926-1948），解析成 Base.DigitalWatchBlack。
         - 物品全名不可含 "Classic"：AlarmClockClothing 以全名含 Classic 判定指針錶（AlarmClockClothing.java:54-66）。
-        - 不加 base:morewhennozombies 與戰利品分佈（取得方式在 Phase 5）。
+        - 戰利品與殭屍掉落一律用 _Left（原版分佈表也只放 WristWatch_Left_*）；取得方式在 server/MinidoracatWatch_Loot.lua、_Drops.lua。
         - 物品名碰到正式服之後只加不改：改名或刪除會讓世界裡的錶永久消失（InventoryItemFactory.java:179-184）。
     */
-    item MapWatch_ValuTech_Right
-    {
-        DisplayCategory = Accessory,
-        ItemType = base:alarmclockclothing,
-        Weight = 0.1,
-        Icon = DigitalWatch_Black,
-        AlarmSound = WatchAlarmLoop,
-        BodyLocation = base:rightwrist,
-        ClothingExtraSubmenu = RightWrist,
-        ClothingItem = MinidoracatWatch_ValuTech_Right,
-        ClothingItemExtra = MinidoracatWatch.MapWatch_ValuTech_Left,
-        ClothingItemExtraOption = LeftWrist,
-        Cosmetic = true,
-        MetalValue = 3.0,
-        SoundRadius = 7,
-        WorldStaticModel = DigitalWatchBlack,
-        Tags = base:digital;base:hasmetal,
-    }
-
     item MapWatch_ValuTech_Left
     {
         DisplayCategory = Accessory,
         ItemType = base:alarmclockclothing,
         Weight = 0.1,
-        Icon = DigitalWatch_Black,
+        Icon = MinidoracatWatch_ValuTech,
+        Tooltip = Tooltip_MinidoracatWatch_ValuTech,
         AlarmSound = WatchAlarmLoop,
         BodyLocation = base:leftwrist,
         ClothingExtraSubmenu = LeftWrist,
@@ -53,21 +38,278 @@ module MinidoracatWatch
         Tags = base:digital;base:hasmetal,
     }
 
+    item MapWatch_ValuTech_Right
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:alarmclockclothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_ValuTech,
+        Tooltip = Tooltip_MinidoracatWatch_ValuTech,
+        AlarmSound = WatchAlarmLoop,
+        BodyLocation = base:rightwrist,
+        ClothingExtraSubmenu = RightWrist,
+        ClothingItem = MinidoracatWatch_ValuTech_Right,
+        ClothingItemExtra = MinidoracatWatch.MapWatch_ValuTech_Left,
+        ClothingItemExtraOption = LeftWrist,
+        Cosmetic = true,
+        MetalValue = 3.0,
+        SoundRadius = 7,
+        WorldStaticModel = DigitalWatchBlack,
+        Tags = base:digital;base:hasmetal,
+    }
+
+    item MapWatch_Paws_Left
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:alarmclockclothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Paws,
+        Tooltip = Tooltip_MinidoracatWatch_Paws,
+        AlarmSound = WatchAlarmLoop,
+        BodyLocation = base:leftwrist,
+        ClothingExtraSubmenu = LeftWrist,
+        ClothingItem = MinidoracatWatch_Paws_Left,
+        ClothingItemExtra = MinidoracatWatch.MapWatch_Paws_Right,
+        ClothingItemExtraOption = RightWrist,
+        Cosmetic = true,
+        MetalValue = 3.0,
+        SoundRadius = 7,
+        WorldStaticModel = DigitalWatchBlack,
+        Tags = base:digital;base:hasmetal,
+    }
+
+    item MapWatch_Paws_Right
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:alarmclockclothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Paws,
+        Tooltip = Tooltip_MinidoracatWatch_Paws,
+        AlarmSound = WatchAlarmLoop,
+        BodyLocation = base:rightwrist,
+        ClothingExtraSubmenu = RightWrist,
+        ClothingItem = MinidoracatWatch_Paws_Right,
+        ClothingItemExtra = MinidoracatWatch.MapWatch_Paws_Left,
+        ClothingItemExtraOption = LeftWrist,
+        Cosmetic = true,
+        MetalValue = 3.0,
+        SoundRadius = 7,
+        WorldStaticModel = DigitalWatchBlack,
+        Tags = base:digital;base:hasmetal,
+    }
+
+    item MapWatch_Nexus_Left
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:alarmclockclothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Nexus,
+        Tooltip = Tooltip_MinidoracatWatch_Nexus,
+        AlarmSound = WatchAlarmLoop,
+        BodyLocation = base:leftwrist,
+        ClothingExtraSubmenu = LeftWrist,
+        ClothingItem = MinidoracatWatch_Nexus_Left,
+        ClothingItemExtra = MinidoracatWatch.MapWatch_Nexus_Right,
+        ClothingItemExtraOption = RightWrist,
+        Cosmetic = true,
+        MetalValue = 3.0,
+        SoundRadius = 7,
+        WorldStaticModel = DigitalWatchBlack,
+        Tags = base:digital;base:hasmetal,
+    }
+
+    item MapWatch_Nexus_Right
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:alarmclockclothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Nexus,
+        Tooltip = Tooltip_MinidoracatWatch_Nexus,
+        AlarmSound = WatchAlarmLoop,
+        BodyLocation = base:rightwrist,
+        ClothingExtraSubmenu = RightWrist,
+        ClothingItem = MinidoracatWatch_Nexus_Right,
+        ClothingItemExtra = MinidoracatWatch.MapWatch_Nexus_Left,
+        ClothingItemExtraOption = LeftWrist,
+        Cosmetic = true,
+        MetalValue = 3.0,
+        SoundRadius = 7,
+        WorldStaticModel = DigitalWatchBlack,
+        Tags = base:digital;base:hasmetal,
+    }
+
+    item MapWatch_Spiffo_Left
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:alarmclockclothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Spiffo,
+        Tooltip = Tooltip_MinidoracatWatch_Spiffo,
+        AlarmSound = WatchAlarmLoop,
+        BodyLocation = base:leftwrist,
+        ClothingExtraSubmenu = LeftWrist,
+        ClothingItem = MinidoracatWatch_Spiffo_Left,
+        ClothingItemExtra = MinidoracatWatch.MapWatch_Spiffo_Right,
+        ClothingItemExtraOption = RightWrist,
+        Cosmetic = true,
+        MetalValue = 3.0,
+        SoundRadius = 7,
+        WorldStaticModel = DigitalWatchBlack,
+        Tags = base:digital;base:hasmetal,
+    }
+
+    item MapWatch_Spiffo_Right
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:alarmclockclothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Spiffo,
+        Tooltip = Tooltip_MinidoracatWatch_Spiffo,
+        AlarmSound = WatchAlarmLoop,
+        BodyLocation = base:rightwrist,
+        ClothingExtraSubmenu = RightWrist,
+        ClothingItem = MinidoracatWatch_Spiffo_Right,
+        ClothingItemExtra = MinidoracatWatch.MapWatch_Spiffo_Left,
+        ClothingItemExtraOption = LeftWrist,
+        Cosmetic = true,
+        MetalValue = 3.0,
+        SoundRadius = 7,
+        WorldStaticModel = DigitalWatchBlack,
+        Tags = base:digital;base:hasmetal,
+    }
+
+    item MapWatch_Ranger_Left
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:alarmclockclothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Ranger,
+        Tooltip = Tooltip_MinidoracatWatch_Ranger,
+        AlarmSound = WatchAlarmLoop,
+        BodyLocation = base:leftwrist,
+        ClothingExtraSubmenu = LeftWrist,
+        ClothingItem = MinidoracatWatch_Ranger_Left,
+        ClothingItemExtra = MinidoracatWatch.MapWatch_Ranger_Right,
+        ClothingItemExtraOption = RightWrist,
+        Cosmetic = true,
+        MetalValue = 3.0,
+        SoundRadius = 7,
+        WorldStaticModel = DigitalWatchBlack,
+        Tags = base:digital;base:hasmetal,
+    }
+
+    item MapWatch_Ranger_Right
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:alarmclockclothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Ranger,
+        Tooltip = Tooltip_MinidoracatWatch_Ranger,
+        AlarmSound = WatchAlarmLoop,
+        BodyLocation = base:rightwrist,
+        ClothingExtraSubmenu = RightWrist,
+        ClothingItem = MinidoracatWatch_Ranger_Right,
+        ClothingItemExtra = MinidoracatWatch.MapWatch_Ranger_Left,
+        ClothingItemExtraOption = LeftWrist,
+        Cosmetic = true,
+        MetalValue = 3.0,
+        SoundRadius = 7,
+        WorldStaticModel = DigitalWatchBlack,
+        Tags = base:digital;base:hasmetal,
+    }
+
+    item MapWatch_Luthex_Left
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:alarmclockclothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Luthex,
+        Tooltip = Tooltip_MinidoracatWatch_Luthex,
+        AlarmSound = WatchAlarmLoop,
+        BodyLocation = base:leftwrist,
+        ClothingExtraSubmenu = LeftWrist,
+        ClothingItem = MinidoracatWatch_Luthex_Left,
+        ClothingItemExtra = MinidoracatWatch.MapWatch_Luthex_Right,
+        ClothingItemExtraOption = RightWrist,
+        Cosmetic = true,
+        MetalValue = 3.0,
+        SoundRadius = 7,
+        WorldStaticModel = DigitalWatchBlack,
+        Tags = base:digital;base:hasmetal,
+    }
+
+    item MapWatch_Luthex_Right
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:alarmclockclothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Luthex,
+        Tooltip = Tooltip_MinidoracatWatch_Luthex,
+        AlarmSound = WatchAlarmLoop,
+        BodyLocation = base:rightwrist,
+        ClothingExtraSubmenu = RightWrist,
+        ClothingItem = MinidoracatWatch_Luthex_Right,
+        ClothingItemExtra = MinidoracatWatch.MapWatch_Luthex_Left,
+        ClothingItemExtraOption = LeftWrist,
+        Cosmetic = true,
+        MetalValue = 3.0,
+        SoundRadius = 7,
+        WorldStaticModel = DigitalWatchBlack,
+        Tags = base:digital;base:hasmetal,
+    }
+
+    item MapWatch_BB3000_Left
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:alarmclockclothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_BB3000,
+        Tooltip = Tooltip_MinidoracatWatch_BB3000,
+        AlarmSound = WatchAlarmLoop,
+        BodyLocation = base:leftwrist,
+        ClothingExtraSubmenu = LeftWrist,
+        ClothingItem = MinidoracatWatch_BB3000_Left,
+        ClothingItemExtra = MinidoracatWatch.MapWatch_BB3000_Right,
+        ClothingItemExtraOption = RightWrist,
+        Cosmetic = true,
+        MetalValue = 3.0,
+        SoundRadius = 7,
+        WorldStaticModel = DigitalWatchBlack,
+        Tags = base:digital;base:hasmetal,
+    }
+
+    item MapWatch_BB3000_Right
+    {
+        DisplayCategory = Accessory,
+        ItemType = base:alarmclockclothing,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_BB3000,
+        Tooltip = Tooltip_MinidoracatWatch_BB3000,
+        AlarmSound = WatchAlarmLoop,
+        BodyLocation = base:rightwrist,
+        ClothingExtraSubmenu = RightWrist,
+        ClothingItem = MinidoracatWatch_BB3000_Right,
+        ClothingItemExtra = MinidoracatWatch.MapWatch_BB3000_Left,
+        ClothingItemExtraOption = LeftWrist,
+        Cosmetic = true,
+        MetalValue = 3.0,
+        SoundRadius = 7,
+        WorldStaticModel = DigitalWatchBlack,
+        Tags = base:digital;base:hasmetal,
+    }
+
     /*
-        模組（Phase 3）：一般物品，安裝時物品離開背包、紀錄進錶的 modData（shared/MinidoracatWatch_Modules.lua）。
-        圖示暫借原版電子零件（Receiver／MotionSensor／Amplifier，Icon 是全域貼圖名，Item.java:1988-1991），
-        ColorRed/Green/Blue 染色區分種類（原版 RadioReceiver／RadioTransmitter 同款做法）；自製美術是 Phase 9。
-        取得方式（戰利品、配方、殭屍掉落）是 Phase 5：目前只能用除錯或管理員工具取得。
+        模組：一般物品，安裝時物品離開背包、紀錄進錶的 modData（shared/MinidoracatWatch_Modules.lua）。
+        圖示自製（Item_MinidoracatWatch_Module_*）；不可再寫 ColorRed/Green/Blue，否則圖示會被染色
+        （UIElement.DrawItemIcon 取 item.getR()，UIElement.java:548-551）。地上的模型暫借原版電子零件。
+        取得方式：戰利品（server/MinidoracatWatch_Loot.lua）、製作（MinidoracatWatch_recipes.txt）、殭屍掉落。
     */
     item Module_Compass
     {
         DisplayCategory = Electronics,
         ItemType = base:normal,
         Weight = 0.1,
-        Icon = Receiver,
-        ColorRed = 230,
-        ColorGreen = 200,
-        ColorBlue = 90,
+        Icon = MinidoracatWatch_Module_Compass,
         MetalValue = 3.0,
         WorldStaticModel = Receiver,
         Tags = base:hasmetal,
@@ -78,10 +320,7 @@ module MinidoracatWatch
         DisplayCategory = Electronics,
         ItemType = base:normal,
         Weight = 0.1,
-        Icon = Receiver,
-        ColorRed = 215,
-        ColorGreen = 130,
-        ColorBlue = 60,
+        Icon = MinidoracatWatch_Module_Ledger,
         MetalValue = 3.0,
         WorldStaticModel = Receiver,
         Tags = base:hasmetal,
@@ -92,10 +331,7 @@ module MinidoracatWatch
         DisplayCategory = Electronics,
         ItemType = base:normal,
         Weight = 0.1,
-        Icon = Receiver,
-        ColorRed = 90,
-        ColorGreen = 200,
-        ColorBlue = 110,
+        Icon = MinidoracatWatch_Module_GPS,
         MetalValue = 3.0,
         WorldStaticModel = Receiver,
         Tags = base:hasmetal,
@@ -106,10 +342,7 @@ module MinidoracatWatch
         DisplayCategory = Electronics,
         ItemType = base:normal,
         Weight = 0.1,
-        Icon = Receiver,
-        ColorRed = 80,
-        ColorGreen = 140,
-        ColorBlue = 230,
+        Icon = MinidoracatWatch_Module_Comm,
         MetalValue = 3.0,
         WorldStaticModel = Receiver,
         Tags = base:hasmetal,
@@ -120,10 +353,7 @@ module MinidoracatWatch
         DisplayCategory = Electronics,
         ItemType = base:normal,
         Weight = 0.1,
-        Icon = Receiver,
-        ColorRed = 60,
-        ColorGreen = 200,
-        ColorBlue = 200,
+        Icon = MinidoracatWatch_Module_Scan,
         MetalValue = 3.0,
         WorldStaticModel = Receiver,
         Tags = base:hasmetal,
@@ -134,10 +364,7 @@ module MinidoracatWatch
         DisplayCategory = Electronics,
         ItemType = base:normal,
         Weight = 0.1,
-        Icon = Receiver,
-        ColorRed = 225,
-        ColorGreen = 80,
-        ColorBlue = 80,
+        Icon = MinidoracatWatch_Module_Detect,
         MetalValue = 3.0,
         WorldStaticModel = Receiver,
         Tags = base:hasmetal,
@@ -148,10 +375,7 @@ module MinidoracatWatch
         DisplayCategory = Electronics,
         ItemType = base:normal,
         Weight = 0.1,
-        Icon = MotionSensor,
-        ColorRed = 150,
-        ColorGreen = 170,
-        ColorBlue = 80,
+        Icon = MinidoracatWatch_Module_MilDetect,
         MetalValue = 3.0,
         WorldStaticModel = MotionSensor,
         Tags = base:hasmetal,
@@ -162,10 +386,7 @@ module MinidoracatWatch
         DisplayCategory = Electronics,
         ItemType = base:normal,
         Weight = 0.1,
-        Icon = MotionSensor,
-        ColorRed = 80,
-        ColorGreen = 140,
-        ColorBlue = 230,
+        Icon = MinidoracatWatch_Module_LongComm,
         MetalValue = 3.0,
         WorldStaticModel = MotionSensor,
         Tags = base:hasmetal,
@@ -176,10 +397,7 @@ module MinidoracatWatch
         DisplayCategory = Electronics,
         ItemType = base:normal,
         Weight = 0.1,
-        Icon = Amplifier,
-        ColorRed = 170,
-        ColorGreen = 110,
-        ColorBlue = 240,
+        Icon = MinidoracatWatch_Module_Relay,
         MetalValue = 3.0,
         WorldStaticModel = Amplifier,
         Tags = base:hasmetal,
@@ -190,12 +408,23 @@ module MinidoracatWatch
         DisplayCategory = Electronics,
         ItemType = base:normal,
         Weight = 0.1,
-        Icon = Amplifier,
-        ColorRed = 110,
-        ColorGreen = 220,
-        ColorBlue = 140,
+        Icon = MinidoracatWatch_Module_Eco,
         MetalValue = 3.0,
         WorldStaticModel = Amplifier,
+        Tags = base:hasmetal,
+    }
+
+    /*
+        照明模組（Phase 8 才有功能）：物品先存在，但本階段不登記成可安裝的模組、不進戰利品、配方與殭屍掉落。
+    */
+    item Module_Light
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Module_Light,
+        MetalValue = 3.0,
+        WorldStaticModel = Receiver,
         Tags = base:hasmetal,
     }
 
@@ -207,10 +436,7 @@ module MinidoracatWatch
         DisplayCategory = Junk,
         ItemType = base:normal,
         Weight = 0.01,
-        Icon = CreditCard,
-        ColorRed = 63,
-        ColorGreen = 178,
-        ColorBlue = 127,
+        Icon = MinidoracatWatch_UnlockCard_Ext,
         WorldStaticModel = CreditCard,
     }
 
@@ -219,10 +445,7 @@ module MinidoracatWatch
         DisplayCategory = Junk,
         ItemType = base:normal,
         Weight = 0.01,
-        Icon = CreditCard,
-        ColorRed = 76,
-        ColorGreen = 141,
-        ColorBlue = 246,
+        Icon = MinidoracatWatch_UnlockCard_Adv,
         WorldStaticModel = CreditCard,
     }
 
@@ -231,10 +454,7 @@ module MinidoracatWatch
         DisplayCategory = Junk,
         ItemType = base:normal,
         Weight = 0.01,
-        Icon = CreditCard,
-        ColorRed = 169,
-        ColorGreen = 112,
-        ColorBlue = 240,
+        Icon = MinidoracatWatch_UnlockCard_Core,
         WorldStaticModel = CreditCard,
     }
 }
