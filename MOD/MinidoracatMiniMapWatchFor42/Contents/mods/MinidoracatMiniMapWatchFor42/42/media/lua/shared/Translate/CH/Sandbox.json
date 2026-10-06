@@ -172,7 +172,7 @@
     "Sandbox_MinidoracatWatch_ZombieDropCap": "每隻殭屍最多掉落（件）",
     "Sandbox_MinidoracatWatch_ZombieDropCap_tooltip": "一隻殭屍符合好幾條規則時，依序擲機率，掉到這個數量就停。",
     "Sandbox_MinidoracatWatch_RuleLight": "功能：照明",
-    "Sandbox_MinidoracatWatch_RuleLight_tooltip": "照明模組的燈：開燈照亮身邊，所有玩家都看得到。\n需要模組：要把照明模組裝在戴著、有電的錶的有效槽位上。\n關閉：任何人都不能開燈，開著的燈會熄滅。",
+    "Sandbox_MinidoracatWatch_RuleLight_tooltip": "照明模組的燈：開燈照亮身邊，附近、看得到你的玩家都看得到（和原版手電筒相同）。\n需要模組：要把照明模組裝在戴著、有電的錶的有效槽位上。\n關閉：任何人都不能開燈，開著的燈會熄滅。",
     "Sandbox_MinidoracatWatch_RuleLight_option1": "需要模組",
     "Sandbox_MinidoracatWatch_RuleLight_option2": "關閉",
     "Sandbox_MinidoracatWatch_LightRadius": "照明半徑（格）",

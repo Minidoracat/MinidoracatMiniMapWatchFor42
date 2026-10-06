@@ -221,7 +221,7 @@
     "IGUI_MinidoracatWatch_ScreenAmber": "画面を琥珀色にする",
     "IGUI_MinidoracatWatch_ScreenGreen": "画面を緑色にする",
     "IGUI_MinidoracatWatch_Module_light": "ライトモジュール",
-    "IGUI_MinidoracatWatch_ModuleDesc_light": "ウォッチのライト：点灯すると周囲約 %1 マスを照らし、近くのプレイヤーにも見えます。消灯中は電力を消費しません。",
+    "IGUI_MinidoracatWatch_ModuleDesc_light": "ウォッチのライト：点灯すると周囲約 %1 マスを照らし、近くにいてあなたが見えるプレイヤーにも見えます（バニラの懐中電灯と同じ）。消灯中は電力を消費しません。",
     "IGUI_MinidoracatWatch_Reason_Need_light": "ライトモジュールが必要",
     "IGUI_MinidoracatWatch_Feature_light": "ライト",
     "IGUI_MinidoracatWatch_LightOn": "点灯",

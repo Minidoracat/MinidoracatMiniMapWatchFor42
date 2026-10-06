@@ -172,7 +172,7 @@
     "Sandbox_MinidoracatWatch_ZombieDropCap": "ゾンビ 1 体あたりの最大ドロップ数",
     "Sandbox_MinidoracatWatch_ZombieDropCap_tooltip": "1 体のゾンビが複数のルールに当てはまるときは順に確率を判定し、この数に達したら止めます。",
     "Sandbox_MinidoracatWatch_RuleLight": "機能：ライト",
-    "Sandbox_MinidoracatWatch_RuleLight_tooltip": "ライトモジュールの明かり：点灯すると周囲を照らし、すべてのプレイヤーに見えます。\nモジュール必須：身に着けた、電池のあるウォッチの有効なスロットにライトモジュールを装着する必要があります。\nオフ：誰も点灯できず、点灯中のライトは消えます。",
+    "Sandbox_MinidoracatWatch_RuleLight_tooltip": "ライトモジュールの明かり：点灯すると周囲を照らし、近くにいてあなたが見えるプレイヤーにも見えます（バニラの懐中電灯と同じ）。\nモジュール必須：身に着けた、電池のあるウォッチの有効なスロットにライトモジュールを装着する必要があります。\nオフ：誰も点灯できず、点灯中のライトは消えます。",
     "Sandbox_MinidoracatWatch_RuleLight_option1": "モジュール必須",
     "Sandbox_MinidoracatWatch_RuleLight_option2": "オフ",
     "Sandbox_MinidoracatWatch_LightRadius": "ライトの半径（マス）",

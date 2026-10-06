@@ -172,7 +172,7 @@
     "Sandbox_MinidoracatWatch_ZombieDropCap": "Max drops per zombie",
     "Sandbox_MinidoracatWatch_ZombieDropCap_tooltip": "When a zombie matches several rules, chances are rolled in order and stop once this many items dropped.",
     "Sandbox_MinidoracatWatch_RuleLight": "Feature: Light",
-    "Sandbox_MinidoracatWatch_RuleLight_tooltip": "The Light Module's lamp: lights up the area around you, and every player can see it.\nModule required: the Light Module must sit in a valid slot of a worn, charged watch.\nOff: nobody can turn the light on; lights that are on go out.",
+    "Sandbox_MinidoracatWatch_RuleLight_tooltip": "The Light Module's lamp: lights up the area around you; nearby players who can see you see it too (same as a vanilla flashlight).\nModule required: the Light Module must sit in a valid slot of a worn, charged watch.\nOff: nobody can turn the light on; lights that are on go out.",
     "Sandbox_MinidoracatWatch_RuleLight_option1": "Module required",
     "Sandbox_MinidoracatWatch_RuleLight_option2": "Off",
     "Sandbox_MinidoracatWatch_LightRadius": "Light radius (tiles)",

@@ -221,7 +221,7 @@
     "IGUI_MinidoracatWatch_ScreenAmber": "螢幕改成琥珀色",
     "IGUI_MinidoracatWatch_ScreenGreen": "螢幕改成綠色",
     "IGUI_MinidoracatWatch_Module_light": "照明模組",
-    "IGUI_MinidoracatWatch_ModuleDesc_light": "錶上的燈：開燈後照亮身邊約 %1 格，周圍的玩家也看得到。關燈時不耗電。",
+    "IGUI_MinidoracatWatch_ModuleDesc_light": "錶上的燈：開燈後照亮身邊約 %1 格，附近、看得到你的玩家也看得到（和原版手電筒相同）。關燈時不耗電。",
     "IGUI_MinidoracatWatch_Reason_Need_light": "需要照明模組",
     "IGUI_MinidoracatWatch_Feature_light": "照明",
     "IGUI_MinidoracatWatch_LightOn": "開燈",
