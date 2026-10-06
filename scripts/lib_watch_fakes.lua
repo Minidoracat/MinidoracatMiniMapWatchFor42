@@ -370,6 +370,7 @@ local MODULES = {
     MinidoracatWatch_Pay = F.MEDIA .. "/shared/MinidoracatWatch_Pay.lua",
     MinidoracatWatch_PayClient = F.MEDIA .. "/client/MinidoracatWatch_PayClient.lua",
     MinidoracatWatch_Economy = F.MEDIA .. "/server/MinidoracatWatch_Economy.lua",
+    MinidoracatWatch_Skins = F.MEDIA .. "/client/MinidoracatWatch_Skins.lua",
 }
 local loaded = {}
 function require(name)
@@ -378,6 +379,113 @@ function require(name)
     if MODULES[name] then dofile(MODULES[name]) end
 end
 function F.load(rel) dofile(F.MEDIA .. "/" .. rel) end
+
+-- ===== 家族 UI 框架的替身（面板、Dock、Toast 用到的面）=====
+-- 形狀照框架 ARCHITECTURE §3.2／§3.7／§3.10：Button.new 回已 initialise 的元素（_focusKind="button"、自動寬度＝
+-- 標題寬＋20、有圖示再加 22）、Window（contentTop、close→onClose、keyboardTargets＝可見的 _focusKind 子元件依閱讀順序）、
+-- Theme.create（框架 token＋consumer 自帶 token）、Toast.show／setAvoid。F.draws 計所有繪製、F.texts 收文字、F.icons 收圖示 key。
+F.draws, F.texts, F.icons, F.toasts, F.avoid = 0, {}, {}, {}, {}
+UIFont = UIFont or { Small = "S", Medium = "M", Code = "C" }
+Keyboard = Keyboard or {}
+for k, v in pairs({ KEY_LEFT = 203, KEY_RIGHT = 205, KEY_UP = 200, KEY_DOWN = 208, KEY_RETURN = 28, KEY_NUMPADENTER = 156,
+    KEY_SPACE = 57, KEY_TAB = 15 }) do Keyboard[k] = Keyboard[k] or v end
+function getTexture(path) return "tex:" .. path end
+F.layouts = {}
+ISLayoutManager = { RegisterWindow = function(name, funcs, target) F.layouts[name] = { funcs = funcs, target = target } end }
+
+local Element = {}
+Element.__index = Element
+F.Element = Element
+local function draw() F.draws = F.draws + 1 end
+function Element:drawText(t) draw(); F.texts[#F.texts + 1] = t end
+Element.drawTextCentre, Element.drawRect, Element.drawRectBorder, Element.drawTextureScaled = draw, draw, draw, draw
+function Element:derive(name) local c = setmetatable({ Type = name }, { __index = self }); c.__index = c; return c end
+function Element:new(x, y, w, h) return setmetatable({ x = x, y = y, width = w, height = h, visible = true }, self) end
+function Element:initialise() end
+function Element:setX(v) self.x = v end
+function Element:setY(v) self.y = v end
+function Element:getX() return self.x end
+function Element:getY() return self.y end
+function Element:setWidth(v) self.width = v end
+function Element:setHeight(v) self.height = v end
+function Element:setVisible(v) self.visible = v end
+function Element:getIsVisible() return self.visible end
+function Element:isMouseOver() return self.mouseOver == true end
+function Element:getMouseX() return self.mx or 0 end
+function Element:getMouseY() return self.my or 0 end
+function Element:getAbsoluteX() return self.x end
+function Element:getAbsoluteY() return self.y end
+function Element:addChild(c) self.children = self.children or {}; c.parent = self; table.insert(self.children, c) end
+function Element:update() end
+function Element:prerender() end
+function Element:render() end
+ISUIElement = Element
+
+function F.installUI(rev)
+    local Theme = { __index = {} }
+    function Theme.__index:fill(el, x, y, w, h, c, shape) draw(); F.fills = F.fills or {}; F.fills[#F.fills + 1] = c end
+    Theme.__index.border, Theme.__index.dot = draw, draw
+    local TOKENS = { "surface", "surfaceTitle", "well", "border", "text", "textMuted", "textFaint", "textDisabled", "accent",
+        "hover", "selected", "errorSurface", "errorText", "onAccent", "titleText", "titleMuted" }
+    local Button = Element:derive("FakeUIButton")
+    function Button:setTitle(t) if t ~= self.title then self.title = t; self:fit() end end
+    function Button:setIcon(i) if i ~= self.icon then self.icon = i; self:fit() end end
+    function Button:fit() self.width = #(self.title or "") * 7 + 20 + (self.icon and 22 or 0) end
+    function Button:setStyle(s) self.style = s end
+    function Button:setEnabled(e) self.enable = e ~= false end
+    function Button:isEnabled() return self.enable == true end
+    function Button:setActive(a) self.active = a == true end
+    function Button:forceClick() if self.visible and self.enable then self.onClick(self.target, self) end end
+    local Window = Element:derive("FakeUIWindow")
+    function Window:contentTop() return 26 end
+    function Window:setTitle(t) self.title = t end
+    function Window:prerender() draw() end
+    function Window:render() draw() end
+    function Window:addToUIManager() self.inUI = true; F.lastPanel = self end
+    function Window:removeFromUIManager() self.inUI = false end
+    function Window:close() self:setVisible(false); if self.onClose then self.onClose(self) end end
+    function Window:keyboardTargets()
+        local out = {}
+        for _, c in ipairs(self.children or {}) do
+            if c._focusKind and c.visible then out[#out + 1] = c end
+        end
+        table.sort(out, function(a, b) if a.y ~= b.y then return a.y < b.y end return a.x < b.x end)
+        return out
+    end
+    function Window.new(o)
+        local w = Element.new(Window, o.x, o.y, o.width, o.height)
+        w.title, w.icon, w.theme, w.closable, w.onClose = o.title, o.icon, o.theme, o.closable, o.onClose
+        return w
+    end
+    F.uiButtons = {}
+    local UI = { API_MAJOR = 1, API_REVISION = rev or 15,
+        CAPABILITIES = { controls = true, window = true, toast = true, toastAvoid = true, dock = true, focus = true },
+        Theme = { create = function(o)
+            o = o or {}
+            local colors = {}
+            for _, t in ipairs(TOKENS) do colors[t] = { r = 1, g = 1, b = 1, a = 1 } end
+            for k, v in pairs(o.colors or {}) do colors[k] = v end
+            return setmetatable({ colors = colors, variant = o.variant, radius = o.radius, opts = o }, Theme)
+        end },
+        Skin = { fill = draw, border = draw, dot = draw },
+        Icons = { draw = function(el, name) draw(); F.icons[#F.icons + 1] = name; return true end },
+        Window = Window,
+        Button = { new = function(o)
+            local b = Element.new(Button, o.x or 0, o.y or 0, 0, 26)
+            b.title, b.icon, b.style, b.theme, b.target, b.onClick = o.title or "", o.icon, o.style or "normal", o.theme, o.target, o.onClick
+            b.enable, b._focusKind = true, "button"
+            b:fit()
+            F.uiButtons[#F.uiButtons + 1] = b
+            return b
+        end },
+        Toast = { show = function(o) F.toasts[#F.toasts + 1] = o.message end,
+            setAvoid = function(owner, fn) F.avoid[owner] = fn end },
+        Dock = { register = function(spec) F.dockSpec = spec; return true end },
+    }
+    if UI.API_REVISION >= 15 then UI.Skin.shapeOf = function() return nil end end
+    MinidoracatUI = { v1 = UI }
+    return UI
+end
 
 -- ===== 斷言 =====
 F.failures, F.count = 0, 0

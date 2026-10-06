@@ -255,42 +255,15 @@ check(W.applyLight(s, false) == true and emitters(s) == 0 and s:getAttachedItem(
 -- ===== 客戶端 =====
 F.mode = "client"
 F.players = {}
-UIFont = { Small = "S", Medium = "M" }
 F.keys = {}
 function getCore()
     return { getScreenWidth = function() return 1920 end, getScreenHeight = function() return 1080 end,
         getKey = function(_, name) return F.keys[name] end }
 end
 keyBinding = {}
-Keyboard = { KEY_COMMA = 51 }
+Keyboard.KEY_COMMA = 51
 function getTextManager()
     return { MeasureStringX = function(_, _, s2) return #s2 * 7 end, getFontHeight = function() return 16 end }
-end
-local Element = {}
-F.texts = {}
-function Element:drawText(t) F.texts[#F.texts + 1] = t end
-function Element:drawTextCentre() end
-function Element:drawRect() end
-function Element:drawRectBorder() end
-function Element:drawTextureScaled() end
-ISPanel = setmetatable({}, { __index = Element })
-function ISPanel.new(cls, x, y, w, h)
-    local o = setmetatable({ x = x, y = y, width = w, height = h }, cls)
-    cls.__index = cls
-    return o
-end
-function ISPanel:derive(name) local c = setmetatable({ Type = name }, { __index = self }); c.__index = c; return c end
-function ISPanel:initialise() end
-function ISPanel:prerender() end
-function ISPanel:update() end
-function ISPanel:addChild() end
-function ISPanel:addToUIManager() if self.createChildren then self:createChildren() end end
-function ISPanel:removeFromUIManager() end
-ISButton = {}
-function ISButton:new(x, y, w, h, title, target, onclick)
-    return { title = title, onclick = onclick, target = target, enabled = true, visible = true, initialise = function() end,
-        setTitle = function(b, t) b.title = t end, setEnable = function(b, e) b.enabled = e end,
-        setVisible = function(b, v) b.visible = v end }
 end
 local Menu = {}
 Menu.__index = Menu
@@ -308,17 +281,8 @@ function getScriptManager()
 end
 ISMouseDrag = {}
 ISInventoryPane = { getActualItems = function(items) return items end }
--- 家族 UI 框架的 Button（API rev 14 controls：chip、setActive、lightbulb 圖示）：面板的照明按鈕只用它
-F.uiButtons = {}
-MinidoracatUI = { v1 = { API_MAJOR = 1, API_REVISION = 14, CAPABILITIES = { controls = true }, Button = { new = function(o)
-    local b = { title = o.title, target = o.target, onclick = o.onClick, icon = o.icon, style = o.style, active = false,
-        enabled = true, visible = true,
-        setTitle = function(b, t) b.title = t end, setEnabled = function(b, e) b.enabled = e end,
-        isEnabled = function(b) return b.enabled end, setVisible = function(b, v) b.visible = v end,
-        setActive = function(b, a) b.active = a end }
-    F.uiButtons[#F.uiButtons + 1] = b
-    return b
-end } } }
+-- 家族 UI 框架的替身（lib_watch_fakes 的 F.installUI）：面板與照明按鈕只用框架元件
+F.installUI(14)
 local function lightButtons()
     local n = 0
     for _, b in ipairs(F.uiButtons) do if b.icon == "lightbulb" then n = n + 1 end end
@@ -439,42 +403,36 @@ local panel = C.panel()
 check(lightButtons() == 1 and panel.btnLight.icon == "lightbulb" and panel.btnLight.style == "chip",
     "照明按鈕是 UI 框架的 chip Button（燈泡圖示）")
 panel:update()
-check(panel.btnLight.visible and panel.btnLight.title == "IGUI_MinidoracatWatch_LightOn" and panel.btnLight.enabled
+check(panel.btnLight.visible and panel.btnLight.title == "IGUI_MinidoracatWatch_LightOn" and panel.btnLight.enable
     and panel.btnLight.active == false, "面板：照明按鈕「開燈」、未啟用")
 local on2 = give(c, LIGHT)
 on2:setActivated(true)
 panel:update()
-check(panel.btnLight.title == "IGUI_MinidoracatWatch_LightOff" and panel.btnLight.enabled and panel.btnLight.active == true,
+check(panel.btnLight.title == "IGUI_MinidoracatWatch_LightOff" and panel.btnLight.enable and panel.btnLight.active == true,
     "燈開著：按鈕「關燈」、chip 啟用")
-F.texts = {}
-panel:drawFooter(c, cw)
-local note = false
-for _, t in ipairs(F.texts) do if t:find("Foot_LightOn", 1, true) then note = true end end
-check(note, "燈開著：電量列註明「燈開著」")
+F.draws = 0
+panel:prerender()
+check(F.draws > 20 and panel.footText:find("Foot_LightOn", 1, true) ~= nil, "燈開著：電量列註明「燈開著」")
 F.reset()
-panel:onLight()
+panel.btnLight:forceClick()
 check(F.clientCmds[1] and F.clientCmds[1].args.on == false, "面板按鈕：關燈")
 c.inv:DoRemoveItem(on2)
 W.setCharge(cw, 0)
 W.invalidate()
 panel:update()
-check(panel.btnLight.visible and not panel.btnLight.enabled, "沒電：按鈕停用")
+check(panel.btnLight.visible and not panel.btnLight.enable, "沒電：按鈕停用")
 F.mode = "sp"
 W.applyModuleChange(c, cw:getID(), "std1", false)
 F.mode = "client"
 panel:update()
 check(not panel.btnLight.visible, "拆掉照明模組：按鈕消失")
 C.closePanel()
-MinidoracatUI.v1.API_REVISION = 13
+F.installUI(13)
 C.openPanel(0, nil)
-C.panel():update()
-check(C.panel().btnLight == nil and lightButtons() == 1, "框架 rev 13（沒有 chip 燈泡圖示）：不放照明按鈕、面板照常")
-C.closePanel()
-MinidoracatUI.v1.API_REVISION = 14
+check(C.panel() == nil and lightButtons() == 0, "框架 rev 13：面板不開（照明照樣能用右鍵與快捷鍵開關）")
+F.installUI(14)
 MinidoracatUI.v1.CAPABILITIES.controls = false
 C.openPanel(0, nil)
-C.panel():update()
-check(C.panel().btnLight == nil and lightButtons() == 1, "框架沒有 controls：不放照明按鈕、面板照常")
-C.closePanel()
+check(C.panel() == nil, "框架沒有 controls：面板不開、不出錯")
 
 F.finish("test_watch_light")

@@ -96,7 +96,7 @@
     "IGUI_MinidoracatWatch_Desc_Core": "中继核心和节能核心只能装在这里。",
     "IGUI_MinidoracatWatch_Desc_Addon": "这个槽位由其他 MOD 添加。",
     "IGUI_MinidoracatWatch_Desc_Orphan": "加入这个槽位的 MOD 已经移除：模块停用、不耗电，可以拆下来放回背包；MOD 装回来后，槽位与开启记录都会恢复。",
-    "IGUI_MinidoracatWatch_Desc_Empty": "把背包里的模块拖到这里、点「安装模块」，或在模块上右键选「安装到地图表」。拆装约 3 秒，需要螺丝刀；走动会打断，模块留在背包里。",
+    "IGUI_MinidoracatWatch_Desc_Empty": "把背包里的模块拖到这里、点下面的模块按钮，或在模块上右键选「安装到地图表」。拆装约 3 秒，需要螺丝刀；走动会打断，模块留在背包里。",
     "IGUI_MinidoracatWatch_Desc_Card": "这个服务器用解锁卡开启槽位。用掉一张%1，就能永久开启%2；名额绑定你的账号，换戴其他地图表也能用。",
     "IGUI_MinidoracatWatch_Desc_CardOpened": "已用解锁卡开启：名额绑定你的账号，换戴其他地图表也能用。",
     "IGUI_MinidoracatWatch_Desc_Off": "这个服务器没有开放%1。",
@@ -228,5 +228,8 @@
     "IGUI_MinidoracatWatch_LightOff": "关灯",
     "IGUI_MinidoracatWatch_LightFailed": "开不了灯：照明模块没有运作或表没电。",
     "IGUI_MinidoracatWatch_DrainLight": "开灯时 +%1%%",
-    "IGUI_MinidoracatWatch_Foot_LightOn": "灯开着。%1"
+    "IGUI_MinidoracatWatch_Foot_LightOn": "灯开着。%1",
+    "IGUI_MinidoracatWatch_UiTooOld": "地图表面板需要较新版的 Minidoracat UI 框架（API rev 14 以上），请更新 UI 框架。",
+    "IGUI_MinidoracatWatch_Foot_ChargingCar": "车上充电中，大约 %2 后充满。%1",
+    "IGUI_MinidoracatWatch_Foot_ChargingHouse": "在有电的建筑里充电中，大约 %2 后充满。%1"
 }

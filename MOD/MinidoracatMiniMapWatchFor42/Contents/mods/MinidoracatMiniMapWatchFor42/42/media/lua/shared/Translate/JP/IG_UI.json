@@ -96,7 +96,7 @@
     "IGUI_MinidoracatWatch_Desc_Core": "中継コアと省電力コアはここにしか装着できません。",
     "IGUI_MinidoracatWatch_Desc_Addon": "このスロットは他の MOD によって追加されました。",
     "IGUI_MinidoracatWatch_Desc_Orphan": "このスロットを追加したMODは削除されています。モジュールは停止中で電力を消費しません。取り外してバッグに戻せます。MODを入れ直すと、スロットと開放の記録も元に戻ります。",
-    "IGUI_MinidoracatWatch_Desc_Empty": "持ち物のモジュールをここにドラッグするか、「モジュールを装着」を押すか、モジュールを右クリックして「マップウォッチに装着」を選んでください。着脱には約 3 秒かかり、ドライバーが必要です。移動すると中断され、モジュールは持ち物に残ります。",
+    "IGUI_MinidoracatWatch_Desc_Empty": "持ち物のモジュールをここにドラッグするか、下のモジュールボタンを押すか、モジュールを右クリックして「マップウォッチに装着」を選んでください。着脱には約 3 秒かかり、ドライバーが必要です。移動すると中断され、モジュールは持ち物に残ります。",
     "IGUI_MinidoracatWatch_Desc_Card": "このサーバーではアンロックカードでスロットを開放します。%1を1枚使うと、%2が永久に開放されます。開放はアカウントに紐づくため、別のマップウォッチに着け替えても有効です。",
     "IGUI_MinidoracatWatch_Desc_CardOpened": "アンロックカードで開放済み：開放はアカウントに紐づくため、別のマップウォッチに着け替えても有効です。",
     "IGUI_MinidoracatWatch_Desc_Off": "このサーバーでは%1を使えません。",
@@ -228,5 +228,8 @@
     "IGUI_MinidoracatWatch_LightOff": "消灯",
     "IGUI_MinidoracatWatch_LightFailed": "点灯できません：ライトモジュールが動作していないか、ウォッチの電池が切れています。",
     "IGUI_MinidoracatWatch_DrainLight": "点灯中 +%1%%",
-    "IGUI_MinidoracatWatch_Foot_LightOn": "点灯中。%1"
+    "IGUI_MinidoracatWatch_Foot_LightOn": "点灯中。%1",
+    "IGUI_MinidoracatWatch_UiTooOld": "マップウォッチのパネルには新しい Minidoracat UI フレームワーク（API rev 14 以上）が必要です。UI フレームワークを更新してください。",
+    "IGUI_MinidoracatWatch_Foot_ChargingCar": "車内で充電中、満充電まで約 %2。%1",
+    "IGUI_MinidoracatWatch_Foot_ChargingHouse": "電気の通った建物で充電中、満充電まで約 %2。%1"
 }

@@ -96,7 +96,7 @@
     "IGUI_MinidoracatWatch_Desc_Core": "The Relay Core and Power-Saver Core can only go here.",
     "IGUI_MinidoracatWatch_Desc_Addon": "This slot was added by another mod.",
     "IGUI_MinidoracatWatch_Desc_Orphan": "The mod that added this slot has been removed: the module is paused and draws no power. You can still take it out; when the mod is back, the slot and its unlock come back too.",
-    "IGUI_MinidoracatWatch_Desc_Empty": "Drag a module from your inventory here, press \"Install Module\", or right-click a module and choose \"Install to Map Watch\". Takes about 3 seconds and needs a screwdriver; moving cancels it and the module stays in your inventory.",
+    "IGUI_MinidoracatWatch_Desc_Empty": "Drag a module from your inventory here, press a module button below, or right-click a module and choose \"Install to Map Watch\". Takes about 3 seconds and needs a screwdriver; moving cancels it and the module stays in your inventory.",
     "IGUI_MinidoracatWatch_Desc_Card": "This server opens slots with unlock cards. Use one %1 to open the %2 permanently. It's tied to your account, so it still counts when you wear a different map watch.",
     "IGUI_MinidoracatWatch_Desc_CardOpened": "Opened with an unlock card. It's tied to your account, so it still counts when you wear a different map watch.",
     "IGUI_MinidoracatWatch_Desc_Off": "This server doesn't allow the %1.",
@@ -228,5 +228,8 @@
     "IGUI_MinidoracatWatch_LightOff": "Light off",
     "IGUI_MinidoracatWatch_LightFailed": "Couldn't turn on the light: the Light Module isn't working or the watch has no charge.",
     "IGUI_MinidoracatWatch_DrainLight": "+%1%% while on",
-    "IGUI_MinidoracatWatch_Foot_LightOn": "Light is on. %1"
+    "IGUI_MinidoracatWatch_Foot_LightOn": "Light is on. %1",
+    "IGUI_MinidoracatWatch_UiTooOld": "The Map Watch panel needs a newer Minidoracat UI framework (API rev 14 or later). Please update the UI framework.",
+    "IGUI_MinidoracatWatch_Foot_ChargingCar": "Charging in the car, full in about %2. %1",
+    "IGUI_MinidoracatWatch_Foot_ChargingHouse": "Charging in a powered building, full in about %2. %1"
 }

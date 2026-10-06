@@ -292,6 +292,26 @@ fail("Kahlua 禁用全域（next/xpcall）", hits_forbidden) if hits_forbidden \
 fail("無 table.sort（用迭代 sortSafe，見 AGENTS.md）", hits_sort) if hits_sort \
     else ok("無 table.sort")
 
+# ---- 6b. 原版 UI 元件禁用（本 repo）----
+# 規劃書 §0 使用者裁定：面板、按鈕與所有控制項一律用家族 UI 框架（MinidoracatUIFor42）的元件，不用原版外觀。
+# 允許的例外：ISContextMenu（物品右鍵選單，引擎的選單，不是面板控制項）；ISUIElement（槽位區這種自繪元件的
+# 基底，外觀全由 theme token＋Skin＋Icons 畫，不帶原版外觀）。
+BANNED_UI = ("ISButton", "ISPanel", "ISPanelJoypad", "ISCollapsableWindow", "ISModalDialog", "ISModalRichText",
+             "ISTickBox", "ISComboBox", "ISScrollingListBox", "ISTextEntryBox", "ISRadioButtons", "ISSliderPanel")
+hits_ui = []
+for f in LUA_FILES:
+    if os.sep + "client" + os.sep not in f:
+        continue
+    rel = os.path.relpath(f, REPO)
+    with open(f, encoding="utf-8") as fh:
+        for lineno, line in enumerate(fh, 1):
+            code = line.split("--", 1)[0]
+            for name in BANNED_UI:
+                if re.search(rf"(?<![\w_]){name}(?![\w_])", code):
+                    hits_ui.append(f"{rel}:{lineno} 用了 {name}")
+fail("原版 UI 元件禁用（用 UI 框架；例外 ISContextMenu／ISUIElement）", hits_ui) if hits_ui \
+    else ok("原版 UI 元件禁用（用 UI 框架；例外 ISContextMenu／ISUIElement）")
+
 # ---- 7. MOD/ 樹雜物 ----
 # .gitkeep 也算雜物：引擎會把 MOD 樹內任何檔案列舉成 mod 資源（console 出現
 # "overrides media/lua/client/.gitkeep"），且 Workshop 上傳整包不看 .gitignore。

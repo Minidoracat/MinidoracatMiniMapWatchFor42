@@ -1,51 +1,19 @@
 -- 地圖錶客戶端：主 MOD 版本守衛、功能閘門矩陣（模組 × 狀態 × 規則 × surface、nav 的 AutoDrive OR）、快取零配置、
--- Dock、計時動作請求（換電池／裝卸模組）、解鎖卡請求、伺服器回報、面板（槽位、拖曳、按鈕）、右鍵選單。
+-- Dock、計時動作請求（換電池／裝卸模組）、解鎖卡請求、伺服器回報、面板（UI 框架元件、槽位 Focus 導覽、拖曳、按鈕、
+-- Toast、皮膚套用）、右鍵選單、沒有原版按鈕殘留。
 -- 用法（repo 根目錄）：lua scripts/test_watch_client.lua
 local F = dofile("scripts/lib_watch_fakes.lua")
 local check = F.check
 F.mode = "client"
 
--- ===== 客戶端 UI 假物件 =====
-UIFont = { Small = "S", Medium = "M" }
+-- ===== 客戶端 UI 假物件（家族 UI 框架的替身在 lib_watch_fakes 的 F.installUI）=====
 function getCore() return { getScreenWidth = function() return 1920 end, getScreenHeight = function() return 1080 end } end
 function getTextManager()
     return { MeasureStringX = function(_, _, s) return #s * 7 end, getFontHeight = function() return 16 end }
 end
 function getMouseX() return 100 end
 function getMouseY() return 100 end
-F.draws = 0
-local Element = {}
-F.texts = {}
-function Element:drawText(t) F.draws = F.draws + 1; F.texts[#F.texts + 1] = t end
-function Element:drawTextCentre() F.draws = F.draws + 1 end
-function Element:drawRect() F.draws = F.draws + 1 end
-function Element:drawRectBorder() F.draws = F.draws + 1 end
-function Element:drawTextureScaled() F.draws = F.draws + 1 end
-function Element:getMouseX() return self.mx or 0 end
-function Element:getMouseY() return self.my or 0 end
-ISPanel = setmetatable({}, { __index = Element })
-function ISPanel.new(cls, x, y, w, h)
-    local o = { x = x, y = y, width = w, height = h }
-    setmetatable(o, cls)
-    cls.__index = cls
-    return o
-end
-function ISPanel:derive(name) local c = setmetatable({ Type = name }, { __index = self }); c.__index = c; return c end
-function ISPanel:initialise() end
-function ISPanel:prerender() end
-function ISPanel:update() end
-function ISPanel:onMouseDown() F.panelMoved = true; return true end
-function ISPanel:onMouseUp() return true end
-function ISPanel:addChild(c) self.children = self.children or {}; table.insert(self.children, c) end
-function ISPanel:addToUIManager() self.inUI = true; F.lastPanel = self; if self.createChildren then self:createChildren() end end
-function ISPanel:removeFromUIManager() self.inUI = false end
-ISButton = {}
-function ISButton:new(x, y, w, h, title, target, onclick)
-    return { title = title, target = target, onclick = onclick, enabled = true, visible = true, initialise = function() end,
-        setTitle = function(b, t) b.title = t end, setEnable = function(b, e) b.enabled = e end,
-        setVisible = function(b, v) b.visible = v end, setX = function(b, v) b.x = v end, setY = function(b, v) b.y = v end,
-        setWidth = function(b, v) b.w = v end }
-end
+local Element = F.Element
 -- ISContextMenu：addOption 回選項；getNew＋addSubMenu 建子選單；ISContextMenu.get 建面板用的浮動選單
 local Menu = {}
 Menu.__index = Menu
@@ -70,9 +38,7 @@ end
 ISMouseDrag = {}
 ISInventoryPane = { getActualItems = function(items) return items end }
 
-local dockSpec
-MinidoracatUI = { v1 = { API_MAJOR = 1, API_REVISION = 13, CAPABILITIES = { dock = true },
-    Dock = { register = function(spec) dockSpec = spec; return true end } } }
+F.installUI(15)
 
 require "MinidoracatWatch"
 local W = MinidoracatWatchCore
@@ -373,7 +339,8 @@ F.wear(p, watch)
 F.fire("OnClothingUpdated", p)
 
 -- ===== Dock =====
-check(C.docked == true and dockSpec and dockSpec.id == "minimapwatch", "UI 框架 rev 13 有 dock：登記")
+local dockSpec = F.dockSpec
+check(C.docked == true and dockSpec and dockSpec.id == "minimapwatch", "UI 框架 rev 14＋dock：登記")
 W.setCharge(watch, 0.5)
 check(dockSpec.getState() == nil and dockSpec.getBadge() == 0, "電量足夠：無警示")
 W.setCharge(watch, 0.1)
@@ -386,9 +353,9 @@ check(dockSpec.getStatus() == "IGUI_MinidoracatWatch_Status_Charge|50|IGUI_Minid
 W.setCharge(watch, 0.005)
 check(dockSpec.getStatus() == "IGUI_MinidoracatWatch_Status_ChargeUnderHour|1", "不到 1 小時用整句（不拼「大約還能用 不到 1 小時」）")
 W.setCharge(watch, 0.5)
-F.draws = 0
-dockSpec.drawIcon(setmetatable({}, { __index = Element }), 0, 0, 28)
-check(F.draws >= 3, "drawIcon 畫出電池")
+F.draws, F.icons, F.fills = 0, {}, {}
+dockSpec.drawIcon(setmetatable({}, Element), 0, 0, 28)
+check(F.icons[1] == "battery" and F.draws >= 2, "drawIcon：框架 Icons 的電池＋內框電量（不自己畫外框）")
 check(dockSpec.isActive() == false, "面板未開")
 dockSpec.onClick()
 check(dockSpec.isActive() == true, "點按鈕開面板")
@@ -518,51 +485,90 @@ F.players[1] = p
 tick(); C.poll()
 seen = {}
 
--- ===== 面板 =====
+-- ===== 面板（UI 框架元件）=====
 SB.SlotExt, SB.SlotAdv, SB.SlotCore = 2, 4, 1
 W.clientUnlocks.alice = {}
 sp(W.applyModuleChange, p, watch:getID(), "std1", true, compass:getID())
 C.openPanel(0, nil)
 local panel = F.lastPanel
-check(C.isPanelOpen() and panel.inUI, "開啟面板")
-local function slotIndex(id) for i, s in ipairs(W.slotList) do if s.id == id then return i end end end
+local UIv = MinidoracatUI.v1
+check(C.isPanelOpen() and panel.inUI and getmetatable(getmetatable(panel)).__index == UIv.Window,
+    "開啟面板：UI.Window 的子類別")
+check(F.layouts.MinidoracatWatchPanel and F.layouts.MinidoracatWatchPanel.target == panel
+    and F.layouts.MinidoracatWatchPanel.funcs == UIv.Window, "位置交給 ISLayoutManager（RegisterWindow(name, UI.Window, win)）")
+check(panel.title == watch:getDisplayName() and panel.icon == watch:getTex() and panel.closable, "標題＝錶名、圖示＝錶的貼圖、內建關閉鈕")
+local function slotIndex(id) for i, s in ipairs(panel:slots()) do if s.id == id then return i end end end
+local function center(id)
+    local x, y, s = panel.sockets:socketRect(slotIndex(id))
+    return x + s / 2, y + s / 2
+end
 local function selectSlot(id)
-    local x, y, s = panel:socketRect(slotIndex(id))
-    panel:onMouseDown(x + s / 2, y + s / 2)
+    panel.sockets:onMouseDown(center(id))
     tick()
     panel:update()
 end
-F.panelMoved = false
+local function acts()
+    local ids = {}
+    for _, b in ipairs(panel.actBtns) do if b.visible then ids[#ids + 1] = b.internal end end
+    return table.concat(ids, ",")
+end
+local function act(id) for _, b in ipairs(panel.actBtns) do if b.visible and b.internal == id then return b end end end
 selectSlot("std1")
-check(panel.sel == 1 and not F.panelMoved, "點槽位＝選取，不拖動面板")
-check(panel.btnRemoveModule.visible and not panel.btnInstall.visible and not panel.btnCard.visible,
-    "有模組的槽位：只有「拆下模組」")
-F.draws = 0
+check(panel.sel == 1, "點槽位＝選取")
+check(acts() == "remove" and act("remove").icon == "screwdriver", "有模組的槽位：只有「拆下模組」（螺絲起子圖示）")
+F.draws, F.icons = 0, {}
 panel:prerender()
-check(F.draws >= 40, "面板畫出錶面、槽位、檢視區、功能清單與電池區（" .. F.draws .. " 次繪製）")
+panel.sockets:prerender()
+check(F.draws >= 40, "面板畫出錶面、槽位、檢視區、功能清單與電量列（" .. F.draws .. " 次繪製）")
+local iconSet = {}
+for _, k in ipairs(F.icons) do iconSet[k] = true end
+check(iconSet.lock and iconSet.check and iconSet.battery, "鎖、功能勾、電池都用 UI.Icons，不自己畫")
 F.reset()
-panel.btnRemoveModule.onclick(panel)
+act("remove"):forceClick()
 check(F.queues[p][1] and F.queues[p][1].kind == "module" and F.queues[p][1].install == false
     and F.queues[p][1].slotId == "std1", "拆下模組按鈕：排拆卸動作")
 F.queues[p] = {}
 selectSlot("std3")
-check(panel.btnInstall.visible and not panel.btnRemoveModule.visible, "空槽：只有「安裝模組」")
-local menu = panel:onInstall()
-local names = {}
-for _, o in ipairs(menu.options) do names[#names + 1] = o.name end
-check(#menu.options >= 2 and not menu.options[1].notAvailable, "安裝模組：列出背包裡裝得下的模組（" .. table.concat(names, ",") .. "）")
+local mods = {}
+for _, b in ipairs(panel.actBtns) do if b.visible then mods[#mods + 1] = b end end
+check(#mods >= 2 and mods[1].internal == "module" and mods[1].icon == "tex", "空槽：檢視區列出裝得下的模組按鈕（圖示＝模組物品貼圖）")
 local noAdv = true
-for _, o in ipairs(menu.options) do if o.name == "IGUI_MinidoracatWatch_Module_mildetect" then noAdv = false end end
+for _, b in ipairs(mods) do if b.title == "IGUI_MinidoracatWatch_Module_mildetect" then noAdv = false end end
 check(noAdv, "標準槽不列進階模組")
-pick(menu.options[1])
-check(F.queues[p][1] and F.queues[p][1].slotId == "std3" and F.queues[p][1].install, "從清單選模組：排安裝動作")
+local picked = mods[1].def.item
+mods[1]:forceClick()
+check(F.queues[p][1] and F.queues[p][1].slotId == "std3" and F.queues[p][1].install
+    and F.queues[p][1].item:getFullType() == picked, "按模組按鈕：排安裝動作")
 F.queues[p] = {}
+-- Focus 導覽：閱讀順序＝槽位區 → 檢視區按鈕 → 電量列按鈕；方向鍵在槽位間移動游標、Enter 選取
+local targets = panel:keyboardTargets()
+local function indexOf(c) for i, t in ipairs(targets) do if t == c then return i end end end
+check(targets[1] == panel.sockets and targets[2] == mods[1] and indexOf(panel.btnInsert) > indexOf(mods[#mods])
+    and indexOf(panel.btnRemove) > indexOf(mods[#mods]), "焦點順序：槽位區、模組按鈕、電量列按鈕")
+local sk = panel.sockets
+sk.cur = slotIndex("std1")
+check(sk:onFocusKey(Keyboard.KEY_RIGHT) and sk.cur == slotIndex("std2") and panel.sel == slotIndex("std3"),
+    "→：游標移到右邊那格，選取不變")
+local fx, fy, fw = sk:focusRect()
+local rx, ry, rs = sk:socketRect(sk.cur)
+check(fx == rx and fy == ry and fw == rs, "焦點框只框游標那格")
+check(sk.layout == "row" and sk:onFocusKey(Keyboard.KEY_DOWN) == false, "ValuTech 一列排開：↓ 不處理（交給 Focus 移到下一個目標）")
+sk.cur = slotIndex("std1")
+check(sk:onFocusKey(Keyboard.KEY_LEFT) == false and sk.cur == slotIndex("std1"), "最左邊再 ←：不處理、游標不動")
+sk.cur = slotIndex("std2")
+check(sk:onFocusKey(Keyboard.KEY_RETURN) and panel.sel == slotIndex("std2"), "Enter：選取游標那格")
+check(sk._focusLabel == "IGUI_MinidoracatWatch_SlotAndModule|IGUI_MinidoracatWatch_Slot_std2|IGUI_MinidoracatWatch_St_empty",
+    "焦點說明：槽位名＋狀態")
+sk.cur = slotIndex("std3")
+sk:forceClick()
+check(panel.sel == slotIndex("std3"), "forceClick（手把 A）：選取")
 selectSlot("ext")
-check(panel.btnCard.visible and panel.btnCard.enabled
-    and panel.btnCard.title == "IGUI_MinidoracatWatch_UseSlotCard|item:MinidoracatWatch.UnlockCard_Ext",
-    "解鎖卡模式、未開啟：「使用擴充槽解鎖卡」（卡的物品名）可按（背包有卡）")
+local cardBtn = act("card")
+check(cardBtn and cardBtn.enable and cardBtn.style == "primary" and cardBtn.icon == "card"
+    and cardBtn.title == "IGUI_MinidoracatWatch_UseSlotCard|item:MinidoracatWatch.UnlockCard_Ext",
+    "解鎖卡模式、未開啟：「使用擴充槽解鎖卡」（卡的物品名）主要按鈕可按（背包有卡）")
 F.reset()
-panel.btnCard.onclick(panel)
+cardBtn:forceClick()
 check(F.clientCmds[1] and F.clientCmds[1].command == W.CMD_UNLOCK and F.clientCmds[1].args.slotId == "ext", "按鈕送解鎖")
 -- 其他 MOD 的槽位（解鎖卡模式）：要的是擴充槽解鎖卡，文案用卡的物品名、不是「槽位名＋解鎖卡」
 MinidoracatWatchAPI.registerWatchSlot({ id = "forecast", name = "IGUI_X_Forecast", accepts = { "standard" },
@@ -574,51 +580,56 @@ for _, c in ipairs(p.inv:getAllTypeRecurse("MinidoracatWatch.UnlockCard_Ext")._i
     savedCards[#savedCards + 1] = c
     c.container:DoRemoveItem(c)
 end
+tick()
+panel:update()
 selectSlot("forecast")
 F.texts = {}
 panel:prerender()
-check(panel.btnCard.visible and panel.btnCard.title == "IGUI_MinidoracatWatch_UseSlotCard|item:MinidoracatWatch.UnlockCard_Ext"
-    and not panel.btnCard.enabled, "其他 MOD 的槽位：按鈕寫擴充槽解鎖卡、背包沒卡時停用")
+check(act("card") and act("card").title == "IGUI_MinidoracatWatch_UseSlotCard|item:MinidoracatWatch.UnlockCard_Ext"
+    and not act("card").enable, "其他 MOD 的槽位：按鈕寫擴充槽解鎖卡、背包沒卡時停用")
 check(hasText("IGUI_MinidoracatWatch_Desc_Card|item:MinidoracatWatch.UnlockCard_Ext|IGUI_X_Forecast")
     and hasText("IGUI_MinidoracatWatch_CardNone|item:MinidoracatWatch.UnlockCard_Ext"),
     "其他 MOD 的槽位：說明與「背包裡沒有…」用卡的物品名，槽位名另外傳")
+local fsx, fsy, fss = panel.sockets:socketRect(slotIndex("forecast"))
+check(fss == 40 and fsy > panel.sockets:faceH() and panel.sockets.height >= fsy + fss, "其他 MOD 的槽位排在錶面下方（40px），槽位區跟著長高")
 for _, c in ipairs(savedCards) do p.inv:AddItem(c) end
 SB.SlotAddon = 1
 for i = #W.slotList, 1, -1 do if W.slotList[i].id == "forecast" then table.remove(W.slotList, i) end end
 W.slotById.forecast = nil
 W.invalidate()
 selectSlot("adv")
-check(not panel.btnCard.visible and not panel.btnInstall.visible and not panel.btnRemoveModule.visible, "不開放的槽位：沒有按鈕")
--- 拖曳：放到可以裝的槽位排動作；放到不能裝的槽位提示原因
+check(acts() == "", "不開放的槽位：沒有按鈕")
+-- 拖曳：放到可以裝的槽位排動作；放到不能裝的槽位以 Toast 提示原因（面板開著時 Toast 避開面板）
 local scan = give(MOD("Scan"))
 ISMouseDrag.dragging = { scan }
 F.reset()
-local x, y = panel:socketRect(slotIndex("std3"))
-panel:onMouseUp(x + 5, y + 5)
+F.toasts = {}
+sk:onMouseUp(center("std3"))
 check(F.queues[p][1] and F.queues[p][1].slotId == "std3" and F.queues[p][1].item == scan, "拖到空的標準槽：排安裝動作")
 F.queues[p] = {}
-x, y = panel:socketRect(slotIndex("std1"))
-panel:onMouseUp(x + 5, y + 5)
-check(not F.queues[p][1] and F.halos[1] and F.halos[1].text:find("Drop_Full", 1, true), "拖到已經有模組的槽位：提示、不排")
-F.reset()
-x, y = panel:socketRect(slotIndex("ext"))
-panel:onMouseUp(x + 5, y + 5)
-check(not F.queues[p][1] and F.halos[1] and F.halos[1].text:find("Drop_Locked", 1, true), "拖到未開啟的槽位：提示")
-F.reset()
+sk:onMouseUp(center("std1"))
+check(not F.queues[p][1] and F.toasts[1] and F.toasts[1]:find("Drop_Full", 1, true) and #F.halos == 0,
+    "拖到已經有模組的槽位：Toast 提示、不排")
+F.toasts = {}
+sk:onMouseUp(center("ext"))
+check(not F.queues[p][1] and F.toasts[1] and F.toasts[1]:find("Drop_Locked", 1, true), "拖到未開啟的槽位：提示")
+F.toasts = {}
 mil = p.inv:getAllTypeRecurse(MOD("MilDetect")):get(0)
 ISMouseDrag.dragging = { mil }
-x, y = panel:socketRect(slotIndex("std3"))
-panel:onMouseUp(x + 5, y + 5)
-check(not F.queues[p][1] and F.halos[1] and F.halos[1].text:find("Drop_Class", 1, true), "類別不符：提示")
-F.reset()
+sk:onMouseUp(center("std3"))
+check(not F.queues[p][1] and F.toasts[1] and F.toasts[1]:find("Drop_Class", 1, true), "類別不符：提示")
+F.toasts = {}
 ISMouseDrag.dragging = { watch }
-panel:onMouseUp(x + 5, y + 5)
-check(not F.queues[p][1] and #F.halos == 0, "拖的不是模組：照一般面板處理")
-panel.mx, panel.my = x + 5, y + 5
+sk:onMouseUp(center("std3"))
+check(not F.queues[p][1] and #F.toasts == 0, "拖的不是模組：不處理")
+local ax, ay, aw, ah = F.avoid.MinidoracatWatchPanel()
+check(ax == panel.x and ay == panel.y and aw == panel.width and ah == panel.height, "Toast 避開區＝面板矩形")
+sk.mouseOver, sk.mx, sk.my = true, center("std1")
 ISMouseDrag.dragging = { scan }
-F.draws = 0
-panel:prerender()
-check(F.draws > 0, "拖曳中滑過槽位：畫可否安裝的提示")
+F.texts = {}
+sk:prerender()
+check(hasText("Drop_Full"), "拖曳中滑過不能裝的槽位：錶面底部寫原因")
+sk.mouseOver = false
 ISMouseDrag.dragging = nil
 -- 槽位失效：模組留著、標示停用
 SB.SlotCore = 4
@@ -628,24 +639,86 @@ sp(W.applyModuleChange, p, watch:getID(), "core", true, eco:getID())
 SB.SlotCore = 4
 check(C.slotStatus(p, watch, W.slotById.core) == "paused", "核心槽改成不開放：模組 paused")
 selectSlot("core")
-check(panel.btnRemoveModule.visible, "失效槽位裡的模組隨時能拆")
+check(acts() == "remove", "失效槽位裡的模組隨時能拆")
 W.setCharge(watch, 0)
 check(C.slotStatus(p, watch, W.slotById.std1) == "dead", "沒電：模組 dead")
+tick()
+panel:update()
+check(panel.bannerMsg and panel.bannerMsg:find("Banner_Dead", 1, true) and panel.btnBanner.visible
+    and panel.btnBanner.style == "primary" and panel.btnBanner.icon == "battery", "沒電：橫幅＋主要的「更換電池」鈕")
+check(panel.btnInsert.style == "primary", "沒電：電量列的電池按鈕也是主要按鈕")
 W.setCharge(watch, 0.5)
+tick()
 panel:update()
 panel:prerender()
+check(not panel.btnBanner.visible and panel.btnInsert.style == "normal", "電量正常：沒有橫幅按鈕")
+-- 充電（另一個分支提供 W.chargeState／W.chargeHoursToFull）：有才顯示
+W.chargeState = function() return "car" end
+W.chargeHoursToFull = function() return 5 end
+panel:update()
+check(panel.footText:find("Foot_ChargingCar", 1, true) and panel.footText:find("TimeHours|5", 1, true), "車上充電：電量列寫充電中與充滿時間")
+W.chargeState, W.chargeHoursToFull = nil, nil
+panel:update()
+check(not panel.footText:find("Charging", 1, true), "沒有充電 API：照舊")
 p.inv:DoRemoveItem(watch)
 F.unwear(p, watch)
 F.fire("OnClothingUpdated", p)
 tick()
 panel:update()
 panel:prerender()
-check(not panel.btnInsert.enabled and not panel.btnRemove.enabled, "錶離開身上：按鈕停用、不出錯")
+check(not panel.btnInsert.enable and not panel.btnRemove.enable and acts() == "", "錶離開身上：按鈕停用、不出錯")
 p.inv:AddItem(watch)
 F.wear(p, watch)
 F.fire("OnClothingUpdated", p)
+tick()
+panel:update()
+local px, py = 333, 222
+panel.x, panel.y = px, py
+panel:close()
+check(not C.isPanelOpen() and not panel.inUI, "關閉鈕：關閉面板")
+check(F.avoid.MinidoracatWatchPanel() == nil, "關閉後 Toast 不再避開")
+C.openPanel(0, nil)
+check(F.lastPanel.x == px and F.lastPanel.y == py, "重開沿用這次的位置")
 C.closePanel()
-check(not C.isPanelOpen() and not panel.inUI, "關閉面板")
+
+-- ===== 七款皮膚：面板依戴著的款式換 theme、版面與槽位外形；框架 rev 14 退回預設 theme =====
+local function openStyle(style, amber)
+    local w = F.item("MinidoracatWatch.MapWatch_" .. style .. "_Left")
+    if amber then w:getModData()[W.SCREEN_KEY] = 1 end
+    p.inv:AddItem(w)
+    C.openPanel(0, w)
+    return F.lastPanel, w
+end
+local pp, pw = openStyle("Paws")
+check(pp.skinKey == "paws" and pp.sockets.layout == "ring" and pp.shape == "cat" and pp.theme.radius == 20
+    and pp.btnInsert.theme == pp.theme, "貓爪：環狀版面、貓頭槽、圓角 20，按鈕跟著換 theme")
+pp:update()
+F.draws = 0
+pp:prerender()
+pp.sockets:prerender()
+check(F.draws > 40, "貓爪面板畫得出來")
+pp, pw = openStyle("BB3000", true)
+check(pp.skinKey == "crt-amber" and pp.mono and pp.sockets.layout == "plates", "嗶嗶腕機琥珀：琥珀 theme、等寬讀數")
+pw:getModData()[W.SCREEN_KEY] = 0
+pp:update()
+check(pp.skinKey == "crt", "螢幕切回綠色：面板跟著換 theme")
+pp.sockets.cur = 1
+check(pp.sockets:onFocusKey(Keyboard.KEY_DOWN) and pp.sockets.cur == 4 and pp.sockets:onFocusKey(Keyboard.KEY_RIGHT)
+    and pp.sockets.cur == 5 and pp.sockets:onFocusKey(Keyboard.KEY_UP) and pp.sockets.cur == 2, "3×2 版面：↓ → ↑ 依位置走")
+pp, pw = openStyle("ValuTech")
+check(pp.actBtns[1].theme == pp.inspTheme and pp.inspTheme ~= pp.theme, "ValuTech：檢視區按鈕用液晶 theme")
+C.closePanel()
+F.installUI(14)
+C.openPanel(0, pw)
+check(F.lastPanel.theme.radius == nil and F.lastPanel.theme.colors.socket ~= nil, "框架 rev 14：預設 theme（沒有圓角）、自有 token 照樣在")
+C.closePanel()
+F.installUI(13)
+F.toasts, F.halos = {}, {}
+F.reset()
+C.openPanel(0, pw)
+check(not C.isPanelOpen() and #F.halos == 1 and F.halos[1].text == "IGUI_MinidoracatWatch_UiTooOld"
+    and F.logs[1]:find("rev 14", 1, true), "框架 rev 13：面板不開、提示並 log 一次")
+F.installUI(15)
 
 -- ===== 面板文字換行：英文在空格斷、中日文兩字之間直接斷（量字寬假物件：每字元 7px）=====
 local en = C.wrapText("open the expansion slot now", 90)
@@ -726,15 +799,13 @@ local orphanIdx
 for i, s in ipairs(panel.slots and panel:slots() or W.slotList) do if s.id == "gone" then orphanIdx = i end end
 check(orphanIdx ~= nil, "面板列出孤立槽位")
 if orphanIdx then
-    local ox, oy, os = panel:socketRect(orphanIdx)
-    panel:onMouseDown(ox + os / 2, oy + os / 2)
-    tick()
-    panel:update()
+    selectSlot("gone")
     F.draws = 0
     panel:prerender()
-    check(panel:selectedSlot().id == "gone" and panel.btnRemoveModule.visible and F.draws > 0,
+    panel.sockets:prerender()
+    check(panel:selectedSlot().id == "gone" and acts() == "remove" and F.draws > 0,
         "選孤立槽位：檢視區畫得出來、有「拆下模組」")
-    panel.btnRemoveModule.onclick(panel)
+    act("remove"):forceClick()
     check(F.queues[p][1] and F.queues[p][1].slotId == "gone", "面板拆下孤立槽位：排動作")
 end
 F.queues[p] = {}
@@ -772,7 +843,7 @@ panel = F.lastPanel
 panel:update()
 check(panel.btnScreen.visible and panel.btnScreen.title == "IGUI_MinidoracatWatch_ScreenGreen", "面板：嗶嗶腕機有螢幕按鈕")
 F.reset()
-panel.btnScreen.onclick(panel)
+panel.btnScreen:forceClick()
 check(F.clientCmds[1] and F.clientCmds[1].args.choice == 0, "面板按鈕：送 choice 0（改回綠色）")
 C.openPanel(0, watch)
 panel = F.lastPanel
@@ -813,51 +884,38 @@ MinidoracatEconomy = { v1 = { Client = { API_MAJOR = 1, API_REVISION = 2, CAPABI
     Entitlements = { getState = function() return econEnv end, requestState = function() return 1 end,
         quote = function(_, pid, kind) econQuote = { pid = pid, kind = kind }; return 1 end,
         currencyName = function(id) return id end, errorText = function(c) return c end } } } }
--- UI 框架 rev 7 的 Button（§3.7：onClick(target, button)、setEnabled、setStyle）
-local fwButtons = 0
-MinidoracatUI.v1.CAPABILITIES.controls = true
-MinidoracatUI.v1.Button = { new = function(o)
-    fwButtons = fwButtons + 1
-    return { fw = true, title = o.title, target = o.target, onClick = o.onClick, enabled = true, visible = true, style = "normal",
-        setTitle = function(b, t) b.title = t end, setEnabled = function(b, e) b.enabled = e end,
-        setStyle = function(b, s) b.style = s end, setVisible = function(b, v) b.visible = v end,
-        setX = function(b, v) b.x = v end, setY = function(b, v) b.y = v end, setWidth = function(b, v) b.w = v end }
-end }
 C.Pay.views = {}
 C.openPanel(0, watch)
 panel = F.lastPanel
-check(fwButtons == 5 and panel.payBtns[1].fw, "付費按鈕用 UI 框架的 Button")
 selectSlot("ext")
-local function payIds()
-    local ids = {}
-    for _, b in ipairs(panel.payBtns) do if b.visible then ids[#ids + 1] = b.internal end end
-    return table.concat(ids, ",")
-end
-check(payIds() == "rent,buy" and not panel.btnCard.visible and not panel.btnInstall.visible,
-    "經濟系統、未開啟：租用與買斷按鈕（不是解鎖卡）")
-check(panel.payBtns[1].x == panel.payBtns[2].x and panel.payBtns[2].y > panel.payBtns[1].y,
+check(acts() == "rent,buy" and act("rent").style == "primary" and act("rent").icon == "clock"
+    and act("buy").style == "normal" and act("buy").icon == "infinity", "經濟系統、未開啟：租用（主要、時鐘）與買斷（無限）按鈕，不是解鎖卡")
+check(act("rent").x == act("buy").x and act("buy").y > act("rent").y,
     "付費按鈕放不下一列：第二顆換到下一列（測試的假字寬很寬）")
-check(panel.payBtns[1].style == "primary" and panel.payBtns[2].style == "normal", "租用是主要按鈕、買斷是一般按鈕")
-panel.payBtns[2].onClick(panel, panel.payBtns[2])
+act("buy"):forceClick()
 panel:update()
-check(payIds() == "pay,cancel", "按買斷：確認頁（付款、取消）")
+check(acts() == "pay,cancel", "按買斷：確認頁（付款、取消）")
 F.texts = {}
 panel:prerender()
 local sheetShown = false
 for _, t in ipairs(F.texts) do if t:find("PaySheet_permanent", 1, true) then sheetShown = true end end
 check(sheetShown, "檢視區畫出買斷確認頁")
-panel.payBtns[1].onClick(panel, panel.payBtns[1])
+act("pay"):forceClick()
 check(econQuote and econQuote.pid == "watch_ext" and econQuote.kind == "permanent", "付款鈕：先向 Economy 報價")
 C.closePanel()
+-- 管理員收到改價提醒：Toast（付款相關通知）
+F.toasts = {}
+F.admin = true
+F.fire("OnServerCommand", W.MODULE, W.CMD_PLAN_WARN, { slot = "ext" })
+check(F.toasts[1] and F.toasts[1]:find("PlanTermsChanged", 1, true), "改價提醒：Toast")
 MinidoracatEconomy, W.econStatus, C.Pay.sheet, C.Pay.busy, SB.SlotExt = nil, nil, nil, {}, oldExt
-MinidoracatUI.v1.CAPABILITIES.controls, MinidoracatUI.v1.Button = nil, nil
 
 -- ===== UI 框架版本不足：不登記、不出錯 =====
-MinidoracatUI.v1.API_REVISION = 12
-dockSpec = nil
+F.installUI(13)
+F.dockSpec = nil
 F.reset()
 F.load("client/MinidoracatWatch_Client.lua")
-check(MinidoracatWatchClient.docked == false and dockSpec == nil, "rev 12：不登記 Dock")
+check(MinidoracatWatchClient.docked == false and F.dockSpec == nil, "rev 13（沒有 battery 圖示）：不登記 Dock")
 MinidoracatUI = nil
 F.load("client/MinidoracatWatch_Client.lua")
 check(MinidoracatWatchClient.docked == false, "沒有 UI 框架：照樣載入")

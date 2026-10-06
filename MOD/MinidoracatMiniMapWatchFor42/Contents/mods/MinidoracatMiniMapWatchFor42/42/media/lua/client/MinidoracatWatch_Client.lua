@@ -115,20 +115,26 @@ function C.statusText(watch, player)
     return getText("IGUI_MinidoracatWatch_Status_Charge", tostring(C.percent(c)), C.timeText(c, hours))
 end
 
--- ===== 電池圖示（Dock 與面板共用；不配置 table）=====
-function C.drawBattery(el, x, y, size, watch)
-    local c = watch and W.charge(watch)
-    local bw, bh = math.floor(size * 0.72), math.floor(size * 0.42)
-    local bx, by = x + math.floor((size - bw) / 2) - 1, y + math.floor((size - bh) / 2)
-    local a = watch and 1 or 0.4
-    el:drawRectBorder(bx, by, bw, bh, a, 0.85, 0.85, 0.85)
-    el:drawRect(bx + bw, by + math.floor(bh / 4), 2, math.floor(bh / 2), a, 0.85, 0.85, 0.85)
-    if c and c > 0 then
-        local r, g, b = 0.55, 0.85, 0.55
-        if c <= W.LOW_CHARGE then r, g, b = 1, 0.65, 0.2 end
-        el:drawRect(bx + 2, by + 2, math.max(1, math.floor((bw - 4) * c)), bh - 4, 1, r, g, b)
-    elseif watch then
-        el:drawRect(bx + 2, by + 2, bw - 4, bh - 4, 0.35, 0.9, 0.3, 0.3)
+-- ===== 家族 UI 框架 =====
+-- 面板、Dock、通知都用框架元件（規劃書 §0）：API rev 14（Window、Button 的 Texture 圖示與 setIcon、battery 等圖示、
+-- onAccent／titleText token）＋controls＋window。不足＝回 nil：面板開不了（提示一次）、沒有 Dock、通知退回 HaloText。
+function C.ui()
+    local UI = MinidoracatUI and MinidoracatUI.v1
+    local caps = UI and UI.CAPABILITIES
+    if UI and UI.API_MAJOR == 1 and type(UI.API_REVISION) == "number" and UI.API_REVISION >= 14 and caps
+            and caps.controls == true and caps.window == true and UI.Window and UI.Button and UI.Icons then
+        return UI
+    end
+    return nil
+end
+
+-- 面板與付款相關的通知：右上角 Toast（面板開著時避開面板，見 Panel 的 Toast.setAvoid）；框架缺席退回角色頭上的字
+function C.toast(player, text)
+    local UI = C.ui()
+    if UI and UI.CAPABILITIES.toast and UI.Toast then
+        UI.Toast.show({ message = text, maxLines = 3 })
+    elseif player and HaloTextHelper then
+        HaloTextHelper.addBadText(player, text)
     end
 end
 
@@ -279,13 +285,16 @@ end
 Events.OnTick.Add(C.poll)
 Events.OnCreatePlayer.Add(function() W.clearStatus() end) -- 重生是新的 IsoPlayer：舊的快取不留
 
--- ===== 家族工具列（Dock，UI 框架 API rev 13）=====
+-- ===== 家族工具列（Dock，UI 框架 API rev 13；電池圖示要 rev 14 的 Icons battery）=====
 -- 回呼可能每幀被叫：不建 table。框架缺席、版本不足或登記失敗＝沒有工具列按鈕，面板仍可從錶的右鍵選單開啟。
+-- 圖示畫法在 MinidoracatWatch_Panel.lua（C.drawBattery）、配色是預設 theme（MinidoracatWatch_Skins.lua）：呼叫時才取。
 local DOCK_SPEC = {
     id = "minimapwatch",
     order = 12,
     label = function() return getText("IGUI_MinidoracatWatch_DockLabel") end,
-    drawIcon = function(btn, x, y, size) C.drawBattery(btn, x, y, size, C.watchOf(0)) end,
+    drawIcon = function(btn, x, y, size)
+        C.drawBattery(btn, x, y, size, C.watchOf(0), C.Skins.defaultTheme(C.ui()))
+    end,
     getStatus = function() return C.statusText(C.watchOf(0), getSpecificPlayer(0)) end,
     getState = function()
         local w = C.watchOf(0)
@@ -307,10 +316,9 @@ local DOCK_SPEC = {
 }
 
 do
-    local ui = MinidoracatUI and MinidoracatUI.v1
+    local ui = C.ui()
     C.docked = false
-    if ui and ui.API_MAJOR == 1 and type(ui.API_REVISION) == "number" and ui.API_REVISION >= 13
-            and ui.CAPABILITIES and ui.CAPABILITIES.dock == true and ui.Dock then
+    if ui and ui.CAPABILITIES.dock == true and ui.Dock then
         local ok, res = pcall(ui.Dock.register, DOCK_SPEC)
         C.docked = ok and res == true
     end

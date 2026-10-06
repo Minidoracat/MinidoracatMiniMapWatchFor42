@@ -76,9 +76,7 @@ Events.OnServerCommand.Add(function(module, command, args)
         -- 管理員改了租金、幣別或天數（D3）：提醒在線管理員，已同意自動續租的玩家要重新同意
         local slot = type(args.slot) == "string" and W.slotById[args.slot]
         local p = getSpecificPlayer(0)
-        if slot and p and isAdmin() and HaloTextHelper then
-            HaloTextHelper.addBadText(p, T("PlanTermsChanged", C.slotName(slot)))
-        end
+        if slot and p and isAdmin() then C.toast(p, T("PlanTermsChanged", C.slotName(slot))) end
     end
 end)
 
@@ -177,12 +175,12 @@ function P.lapsed(slot)
 end
 
 -- ===== 檢視區：文字與按鈕（面板每 250ms 重算一次）=====
--- 回 nil＝不是付費相關的槽位；否則 { lines = { { 文字, r, g, b }... }, buttons = { { id, 標題, 可按 }... },
+-- 回 nil＝不是付費相關的槽位；否則 { lines = { { 文字, 顏色 token }... }, buttons = { { id, 標題, 可按 }... },
 -- chip＝狀態字鍵（St_<chip>）, keep＝保留面板原本的按鈕（解鎖卡）}
-local GOLD, RED, DIM, WHITE = { 0.95, 0.8, 0.4 }, { 1, 0.55, 0.45 }, { 0.65, 0.65, 0.65 }, { 0.9, 0.9, 0.9 }
+-- 顏色是面板 theme 的 token（MinidoracatWatch_Skins.lua）：警示、錯誤、次要、內文
+local GOLD, RED, DIM, WHITE = "warnText", "errorText", "textMuted", "text"
 local function line(ui, text, col)
-    col = col or WHITE
-    ui.lines[#ui.lines + 1] = { text, col[1], col[2], col[3] }
+    ui.lines[#ui.lines + 1] = { text, col or WHITE }
 end
 -- 按鈕 { id, 標題, 可按, 樣式 }；樣式是 UI 框架 Button 的 style（設計稿：租用、付款、同意、到期後的續租是主要按鈕）
 local PRIMARY = { pay = true, rent = true, agree = true }
