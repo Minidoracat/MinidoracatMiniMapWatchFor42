@@ -40,9 +40,12 @@ M.FIELDS = {
     { "LootBB3000", B, nil, nil, true }, { "LootModules", B, nil, nil, true }, { "LootCards", B, nil, nil, true },
     { "AllowCraft", B, nil, nil, true }, { "ZombieDrops", B, nil, nil, true }, { "ZombieDropCap", I, 1, 5, 1 },
     { "RuleLight", E, 1, 2, 1 }, { "LightRadius", I, 1, 20, 4 }, { "LightDrain", I, 0, 1000, 100 },
-    { "LootWatchAmount", E, 1, 4, 3 }, { "LootModuleAmount", E, 1, 4, 3 }, { "LootCardAmount", E, 1, 4, 3 },
+    { "LootWatchAmount", E, 1, 4, 3 }, { "LootModuleAmount", E, 1, 4, 3 }, { "LootCardAmount", E, 1, 4, 1 },
     { "ChargeCar", B, nil, nil, false }, { "CarHours", I, 1, 168, 6 },
     { "ChargeHouse", B, nil, nil, false }, { "HouseHours", I, 1, 168, 12 },
+    { "NeedBattery", B, nil, nil, true }, { "DeadMode", E, 1, 2, 1 },
+    { "SlotExtCard", B, nil, nil, false }, { "SlotAdvCard", B, nil, nil, false }, { "SlotCoreCard", B, nil, nil, false },
+    { "SlotAddonCard", B, nil, nil, false }, { "CraftLevel", I, 0, 10, 3 },
 }
 M.FIELD = {}
 for _, f in ipairs(M.FIELDS) do
@@ -111,7 +114,8 @@ function M.readBase(st)
     end
     for id, e in pairs(st and st.addonSlots or {}) do
         if type(id) == "string" and type(e) == "table" and W.MODE_VALUE[e.mode] then
-            s.addon[id] = { mode = e.mode, buy = e.buy, buyPrice = e.buyPrice, rent = e.rent, rentPrice = e.rentPrice }
+            s.addon[id] = { mode = e.mode, buy = e.buy, buyPrice = e.buyPrice, rent = e.rent, rentPrice = e.rentPrice,
+                card = e.card }
         end
     end
     return s
@@ -122,7 +126,8 @@ function M.copy(s)
     for k, v in pairs(s.sb) do out.sb[k] = v end
     for k, v in pairs(s.drains) do out.drains[k] = v end
     for k, e in pairs(s.addon) do
-        out.addon[k] = { mode = e.mode, buy = e.buy, buyPrice = e.buyPrice, rent = e.rent, rentPrice = e.rentPrice }
+        out.addon[k] = { mode = e.mode, buy = e.buy, buyPrice = e.buyPrice, rent = e.rent, rentPrice = e.rentPrice,
+            card = e.card }
     end
     return out
 end
@@ -151,7 +156,7 @@ function M.slotEntry(s, id)
     end
     return { mode = e.mode or M.MODES[s.sb.SlotAddon] or "free", buy = pick("buy", "SlotAddonBuy"),
         buyPrice = pick("buyPrice", "SlotAddonBuyPrice"), rent = pick("rent", "SlotAddonRent"),
-        rentPrice = pick("rentPrice", "SlotAddonRentPrice") }
+        rentPrice = pick("rentPrice", "SlotAddonRentPrice"), card = pick("card", "SlotAddonCard") }
 end
 function M.addonDrain(s, def)
     local v = s.drains[def.id]
@@ -188,19 +193,22 @@ end
 
 function M.currencyName(s) return getText("Sandbox_MinidoracatWatch_PayCurrency_option" .. tostring(s.sb.PayCurrency)) end
 
--- 一個付費槽位的開啟方式（白話）；e＝{ mode, buy, buyPrice, rent, rentPrice }
+-- 一個付費槽位的開啟方式（白話）；e＝{ mode, buy, buyPrice, rent, rentPrice, card }
 function M.tierText(s, e, econReady)
     if e.mode ~= "econ" then return T("Mode_" .. e.mode) end
     if not econReady then return T("Mode_noEcon") end
     local cur, days = M.currencyName(s), tostring(s.sb.PayRentDays)
-    if e.rent and e.buy then return T("Mode_rentBuy", days, M.num(e.rentPrice), cur, M.num(e.buyPrice)) end
-    if e.rent then return T("Mode_rent", days, M.num(e.rentPrice), cur) end
-    if e.buy then return T("Mode_buy", M.num(e.buyPrice), cur) end
-    return T("Mode_none")
+    local txt
+    if e.rent and e.buy then txt = T("Mode_rentBuy", days, M.num(e.rentPrice), cur, M.num(e.buyPrice))
+    elseif e.rent then txt = T("Mode_rent", days, M.num(e.rentPrice), cur)
+    elseif e.buy then txt = T("Mode_buy", M.num(e.buyPrice), cur)
+    else txt = T("Mode_none") end
+    if e.card then txt = T("Mode_cardAlso", txt) end
+    return txt
 end
 function M.tierEntry(s, key)
     return { mode = M.MODES[s.sb[key]] or "free", buy = s.sb[key .. "Buy"], buyPrice = s.sb[key .. "BuyPrice"],
-        rent = s.sb[key .. "Rent"], rentPrice = s.sb[key .. "RentPrice"] }
+        rent = s.sb[key .. "Rent"], rentPrice = s.sb[key .. "RentPrice"], card = s.sb[key .. "Card"] }
 end
 function M.slotName(slot) return getText(slot.name) end
 
@@ -271,7 +279,7 @@ function M.hoursText(h)
 end
 
 -- ===== 目前設定一覽（設計稿 summaryItems）=====
--- econReady＝伺服器的 Economy 整合是 READY（W.econStatus）；充電還沒實作，不列。
+-- econReady＝伺服器的 Economy 整合是 READY（W.econStatus）。
 function M.summary(s, econReady)
     if not s.sb.Enabled then return { T("Sum_Disabled") } end
     local out = {}
@@ -284,26 +292,31 @@ function M.summary(s, econReady)
     for _, slot in ipairs(M.addonSlots()) do
         out[#out + 1] = T("Sum_Line", M.slotName(slot), M.tierText(s, M.slotEntry(s, slot.id), econReady))
     end
-    out[#out + 1] = T("Sum_Battery", tostring(s.sb.FullHours), T(s.sb.DrainOffline and "Sum_OfflineOn" or "Sum_OfflineOff"),
-        T(s.sb.DrainPaused and "Sum_PauseOn" or "Sum_PauseOff"))
-    local tuned = 0
-    for _, d in ipairs(M.DRAINS) do
-        if s.sb[d[2]] ~= M.FIELD[d[2]].default then tuned = tuned + 1 end
+    if not s.sb.NeedBattery then
+        out[#out + 1] = T("Sum_NoBattery") -- 不扣電：耗電與充電都用不到
+    else
+        out[#out + 1] = T("Sum_Battery", tostring(s.sb.FullHours), T(s.sb.DrainOffline and "Sum_OfflineOn" or "Sum_OfflineOff"),
+            T(s.sb.DrainPaused and "Sum_PauseOn" or "Sum_PauseOff"))
+        out[#out + 1] = T("Sum_Dead", M.valueText("DeadMode", s.sb.DeadMode))
+        local tuned = 0
+        for _, d in ipairs(M.DRAINS) do
+            if s.sb[d[2]] ~= M.FIELD[d[2]].default then tuned = tuned + 1 end
+        end
+        for _, m in ipairs(M.addonModules()) do
+            if M.addonDrain(s, m) ~= m.drain then tuned = tuned + 1 end
+        end
+        if s.sb.LightDrain ~= M.FIELD.LightDrain.default then tuned = tuned + 1 end
+        out[#out + 1] = T("Sum_Drains", tuned > 0 and T("Sum_DrainsTuned", tostring(tuned)) or T("Sum_DrainsDefault"),
+            tostring(s.sb.LightDrain))
+        -- 充電（設計稿 summaryItems 的 charge）
+        local car, house = s.sb.ChargeCar, s.sb.ChargeHouse
+        local how
+        if car and house then how = T("Charge_both", tostring(s.sb.CarHours), tostring(s.sb.HouseHours))
+        elseif car then how = T("Charge_car", tostring(s.sb.CarHours))
+        elseif house then how = T("Charge_house", tostring(s.sb.HouseHours))
+        else how = T("Charge_none") end
+        out[#out + 1] = T("Sum_Charge", how)
     end
-    for _, m in ipairs(M.addonModules()) do
-        if M.addonDrain(s, m) ~= m.drain then tuned = tuned + 1 end
-    end
-    if s.sb.LightDrain ~= M.FIELD.LightDrain.default then tuned = tuned + 1 end
-    out[#out + 1] = T("Sum_Drains", tuned > 0 and T("Sum_DrainsTuned", tostring(tuned)) or T("Sum_DrainsDefault"),
-        tostring(s.sb.LightDrain))
-    -- 充電（設計稿 summaryItems 的 charge）
-    local car, house = s.sb.ChargeCar, s.sb.ChargeHouse
-    local how
-    if car and house then how = T("Charge_both", tostring(s.sb.CarHours), tostring(s.sb.HouseHours))
-    elseif car then how = T("Charge_car", tostring(s.sb.CarHours))
-    elseif house then how = T("Charge_house", tostring(s.sb.HouseHours))
-    else how = T("Charge_none") end
-    out[#out + 1] = T("Sum_Charge", how)
     local styles = 0
     for _, st in ipairs(M.LOOT_STYLES) do
         if s.sb["Loot" .. st] then styles = styles + 1 end
@@ -340,7 +353,7 @@ for _, f in ipairs(M.FEATURES) do RULE_KEYS[f.key] = f end
 local function sameEntry(a, b)
     if a == nil or b == nil then return a == b end
     return a.mode == b.mode and a.buy == b.buy and a.buyPrice == b.buyPrice and a.rent == b.rent
-        and a.rentPrice == b.rentPrice
+        and a.rentPrice == b.rentPrice and a.card == b.card
 end
 
 -- 回 lines（白話）, priceWarn（租約條款改了）, count（改了幾項，給「有 N 項修改」）
@@ -417,6 +430,7 @@ function M.applyPreset(s, id)
         if f.id ~= "minimap" and f.id ~= "light" then s.sb[f.key] = id == "easy" and 1 or 3 end
     end
     if id ~= "easy" then s.sb.RuleLight = 1 end
+    s.sb.DeadMode = id == "easy" and 2 or 1 -- 寬鬆：沒電時保留小地圖（設計稿 PRESETS）
     if id == "easy" then
         for _, t in ipairs(M.TIERS) do s.sb[t.key] = 1 end
         s.sb.SlotAddon = 1

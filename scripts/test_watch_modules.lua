@@ -324,6 +324,31 @@ check(W.slotValid(alice, W.slotById.adv) == true, "MP 客戶端只看伺服器�
 W.clientUnlocks.alice = nil
 F.mode = "server"
 check(F.globalModData[W.UNLOCK_TABLE].alice.n.adv == nil, "伺服器紀錄沒有被客戶端改到")
+-- 經濟系統也接受解鎖卡（Slot<級>Card）：付費或用卡都行；卡開過＝永久有效；沒開這個選項時經濟系統不收卡
+W.econStatus = "READY"
+local savedPay, savedCfg = W.payValid, W.addonSlotCfg
+W.payValid = function() return false end -- 付費這半邊在 test_watch_economy.lua
+SB.SlotCore = 3
+local core = W.slotById.core
+local coreCard = give(alice, "MinidoracatWatch.UnlockCard_Core")
+check(W.acceptsCard(core) == false and W.applyUnlock(alice, "core", coreCard:getID()) == false
+    and coreCard.container == alice.inv, "經濟系統（預設不收卡）：拒絕、卡不被吃")
+SB.SlotCoreCard = true
+check(W.acceptsCard(core) == true and W.slotValid(alice, core) == false, "也接受解鎖卡：沒付費也沒用卡前無效")
+check(W.applyUnlock(alice, "core", coreCard:getID()) == true and coreCard.container == nil, "也接受解鎖卡：用卡開啟")
+check(W.slotValid(alice, core) == true, "用卡開過：經濟系統槽位有效（不看付費）")
+SB.SlotCoreCard = nil
+check(W.slotValid(alice, core) == false, "管理員關掉「也接受解鎖卡」：卡的紀錄不再算數（只看付費）")
+SB.SlotCoreCard = true
+local paidCard = give(alice, "MinidoracatWatch.UnlockCard_Core")
+local r5, r6 = W.applyUnlock(alice, "core", paidCard:getID())
+check(r5 == false and r6 == W.FAIL_UNLOCKED and paidCard.container == alice.inv, "已經開著：不再吃卡")
+W.addonSlotCfg = (function(orig) return function(id) if id == "forecast" then return { mode = "econ", card = false } end
+    return orig(id) end end)(W.addonSlotCfg)
+SB.SlotAddonCard = true
+check(W.slotCardAlso(W.slotById.forecast) == false, "第三方槽位：逐槽設定的 card 優先於 SlotAddonCard")
+SB.SlotAddonCard, SB.SlotCoreCard, SB.SlotCore, W.econStatus = nil, nil, nil, nil
+W.payValid, W.addonSlotCfg = savedPay, savedCfg
 
 -- ===== 耗電倍率 =====
 local w3 = give(alice, F.RIGHT)
@@ -473,6 +498,23 @@ for i, r in ipairs(rows) do
     end
 end
 check(allRows, "getWatchModuleState 真值表 " .. #rows .. " 列")
+-- 需要電池關閉：沒電、沒電池都不算 unpowered（W.power＝1）
+SB.NeedBattery, SB.RuleArrow, SB.SlotExt = false, 3, 1
+st.worn = {}
+F.wear(st, tw)
+local slotsT = tw:getModData()[W.SLOTS_KEY]
+slotsT.ext = slotsT.ext or stash
+W.setCharge(tw, W.NO_BATTERY)
+W.invalidate()
+check(API.getWatchModuleState(st, "compass") == "active", "不需要電池：沒裝電池的錶模組照樣 active")
+W.setCharge(tw, 0)
+W.invalidate()
+check(select(1, W.featureDecision(st, "arrow")) == true, "不需要電池：沒電也放行功能")
+SB.NeedBattery = nil
+W.invalidate()
+check(API.getWatchModuleState(st, "compass") == "unpowered", "需要電池（預設）：沒電＝unpowered")
+st.worn = {}
+W.invalidate()
 SB.Enabled, SB.RuleArrow, SB.SlotExt = true, nil, 1
 check(API.getWatchModuleState(st, "nope") == "missing" and API.getWatchModuleState(nil, "compass") == "missing",
     "未登記的 id、沒有玩家＝missing")

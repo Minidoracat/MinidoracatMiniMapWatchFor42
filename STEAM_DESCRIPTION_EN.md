@@ -16,7 +16,7 @@ Without this mod installed, the minimap stays fully available as before.
 [*] [b]How to get them[/b]: watches, modules and unlock cards turn up as loot in fitting places by rarity; Compass, Directory and Comms Modules can be crafted; zombies carry map watch items depending on their outfit. The BB-3000 screen switches between green and amber
 [*] [b]Modules and slots[/b]: 3 standard slots plus expansion, advanced and core slots; install modules to unlock navigation, points of interest, zombie detection, teammate sharing and more. Other mods can add their own modules and slots
 [*] [b]Paid slots[/b]: admins choose free, unlock card, Economy purchase or rental, or disabled; a rental stops the moment it ends, with optional auto-renew
-[*] [b]Battery[/b]: drains in real time; by default it does not drain while you are offline or the singleplayer game is paused, and all features stop when it is empty. Each module's drain is adjustable. Admins can allow slow charging in a running vehicle or a powered building
+[*] [b]Battery[/b]: drains in real time; by default it does not drain while you are offline or the singleplayer game is paused, and all features stop when it is empty (admins can keep the minimap on instead, or turn off "Needs a battery"). Each module's drain is adjustable. Admins can allow slow charging in a running vehicle or a powered building
 [*] [b]Admin settings[/b]: sandbox options, plus an admin-only "Map Watch" category in the minimap settings and its own settings window; zombie drop rules grouped by outfit
 [/list]
 

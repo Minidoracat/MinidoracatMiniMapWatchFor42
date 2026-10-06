@@ -301,6 +301,14 @@ function P.ui(player, watch, slot)
     end
     local rec = watch and W.slotRecord(watch, slot.id)
     local valid = W.slotValid(player, slot)
+    -- 經濟系統也接受解鎖卡：用卡開過＝永久有效（綁帳號），不再顯示付費
+    local cardAlso = W.slotCardAlso(slot)
+    if cardAlso and W.isUnlocked(player, slot.id) then
+        ui.chip = "active"
+        line(ui, T("Desc_CardOpened"))
+        button(ui, rec and "remove" or "install", T(rec and "RemoveModule" or "InstallModule"), true)
+        return ui
+    end
     local v = P.view(slot)
     if not v.api then
         line(ui, T("PayNoClient"), DIM)
@@ -321,6 +329,13 @@ function P.ui(player, watch, slot)
     if P.busy[v.pid] then line(ui, T("PayBusy"), DIM) end
     local m = P.msg[v.pid]
     if m and getTimestampMs() - m[3] < P.MSG_MS then line(ui, m[1], m[2] and RED or WHITE) end
+    if cardAlso and not valid then
+        local list, name = C.cards(player, slot), C.cardName(slot)
+        local n = list and list:size() or 0
+        line(ui, T("PayCardAlso", name), DIM)
+        line(ui, n > 0 and T("CardCount", tostring(n)) or T("CardNone", name), DIM)
+        button(ui, "card", T("UseSlotCard", name), n > 0)
+    end
     if rec then
         button(ui, "remove", T("RemoveModule"), true)
     elseif valid then

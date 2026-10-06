@@ -32,7 +32,7 @@ local TIER_TOKEN = { std = "tierStd", ext = "tierExt", adv = "tierAdv", core = "
     orphan = "tierOrphan" }
 -- 付費按鈕的圖示（C.Pay.ui 的 id → UI.Icons key）
 local PAY_ICON = { rent = "clock", renew = "clock", buy = "infinity", pay = "check", agree = "check", autoOn = "clock",
-    autoOff = "pause", check = "reload", remove = "screwdriver" }
+    autoOff = "pause", check = "reload", remove = "screwdriver", card = "card" }
 local STATUS_ICON = { active = "check", rent = "clock", paused = "pause", dead = "pause", locked = "lock", empty = "plus",
     lapsed = "clock", off = "close", Installing = "screwdriver", Removing = "screwdriver" }
 local PAUSE_REASONS = { [W.REASON_PAUSED] = true, [W.REASON_DEAD] = true, [W.REASON_NO_BATTERY] = true }
@@ -105,7 +105,7 @@ function C.slotStatus(player, watch, slot)
         if W.slotMode(slot) == "off" then return "off", nil end
         return C.Pay.lapsed(slot) and "lapsed" or "locked", nil
     end
-    local c = W.charge(watch)
+    local c = W.power(watch)
     if c == nil or c <= 0 then return "dead", rec end
     if not valid or not W.modules[rec.id] then return "paused", rec end
     return "active", rec
@@ -183,10 +183,11 @@ local function shapeOf(UI, theme, part)
     return part == "title" and "roundTop" or nil
 end
 
--- 電池圖示（Dock 與標題列共用；不配置 table）：Icons battery 外框＋內框填電量（32px 座標 x 6..23、y 12..20）
+-- 電池圖示（Dock 與標題列共用；不配置 table）：Icons battery 外框＋內框填電量（32px 座標 x 6..23、y 12..20）；
+-- 不需要電池時畫滿格（W.power）
 function C.drawBattery(el, x, y, size, watch, theme)
     local UI, colors = C.ui(), theme.colors
-    local c = watch and W.charge(watch)
+    local c = watch and W.power(watch)
     UI.Icons.draw(el, "battery", x, y, size, colors.text, watch and 1 or 0.4)
     local k = size / 32
     local ix, iy, iw, ih = x + math.floor(6 * k), y + math.floor(12 * k), math.floor(17 * k), math.max(1, math.floor(8 * k))
@@ -583,12 +584,12 @@ function M:banner(player, watch)
     if watch ~= C.watchOf(self.playerNum) then
         return getText("IGUI_MinidoracatWatch_Banner_NotWorn"), "warnSurface", "warnText", "warnLine", "warning", nil
     end
-    local c = W.charge(watch)
-    if c == nil then
-        return getText("IGUI_MinidoracatWatch_Banner_NoBattery"), "errorSurface", "errorText", "errorLine", "battery", "primary"
-    end
-    if c <= 0 then
-        return getText("IGUI_MinidoracatWatch_Banner_Dead"), "errorSurface", "errorText", "errorLine", "battery", "primary"
+    local c = W.power(watch)
+    if c == nil or c <= 0 then
+        -- 沒電時保留小地圖（沙盒 DeadMode 2）：文案不寫「無訊號」
+        local key = c == nil and "IGUI_MinidoracatWatch_Banner_NoBattery" or "IGUI_MinidoracatWatch_Banner_Dead"
+        if W.deadKeepsMinimap() then key = key .. "_Map" end
+        return getText(key), "errorSurface", "errorText", "errorLine", "battery", "primary"
     end
     if c <= W.LOW_CHARGE then
         return getText("IGUI_MinidoracatWatch_Banner_Low", tostring(C.percent(c)), C.timeText(c, C.fullRuntime(player, watch))),
@@ -604,6 +605,7 @@ end
 function M:composeFoot(player, watch)
     local c = watch and W.charge(watch)
     if not watch then return getText("IGUI_MinidoracatWatch_Status_NoWatch") end
+    if not W.needBattery() then return getText("IGUI_MinidoracatWatch_Foot_NoBatteryNeeded") end
     if c == nil then return getText("IGUI_MinidoracatWatch_Foot_NoBattery") end
     if c <= 0 then return getText("IGUI_MinidoracatWatch_Foot_Dead") end
     local hours = C.fullRuntime(player, watch)
@@ -726,7 +728,8 @@ function M:arrange(player, w)
     local c = w and W.charge(w)
     self.btnInsert:setTitle(getText(c ~= nil and "IGUI_MinidoracatWatch_ReplaceBattery" or "IGUI_MinidoracatWatch_InsertBattery"))
     self.btnInsert:setEnabled(w ~= nil and self.hasBattery == true)
-    self.btnInsert:setStyle((w and (c == nil or c <= 0)) and "primary" or "normal")
+    local p = w and W.power(w)
+    self.btnInsert:setStyle((w and (p == nil or p <= 0)) and "primary" or "normal")
     self.btnRemove:setEnabled(w ~= nil and c ~= nil)
     local screen = W.hasScreen(w)
     if screen then self.btnScreen:setTitle(C.screenLabel(w)) end
@@ -773,7 +776,7 @@ function M:drawHeader(UI, colors, w)
     end
     -- 電量膠囊（關閉鈕左邊）：低電量＝警示色、沒電＝錯誤色；嗶嗶腕機的數字用等寬字
     local c = w and W.charge(w)
-    if c == nil then return end
+    if c == nil or not W.needBattery() then return end -- 不需要電池：不顯示電量
     local f = self.mono and UIFont.Code or UIFont.Small
     local pct = C.percent(c) .. "%"
     local pw = 6 + 20 + 4 + measure(pct, f) + 8

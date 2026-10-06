@@ -69,23 +69,19 @@ L.KEYS = { "Enabled", "LootValuTech", "LootPaws", "LootNexus", "LootSpiffo", "Lo
 L.AMOUNT_KEYS = { "LootWatchAmount", "LootModuleAmount", "LootCardAmount" }
 L.AMOUNT_OF = { LootModules = "LootModuleAmount", LootCards = "LootCardAmount" } -- 其餘（七款錶）＝LootWatchAmount
 L.FACTORS = { 0.25, 0.5, 1, 2 }
+L.AMOUNT_DEFAULT = { LootCardAmount = 1 } -- 解鎖卡預設「很少」（設計稿預設）；其餘「一般」
 L.TABLES = {} -- 本 MOD 碰到的分佈表
 for _, e in ipairs(L.ENTRIES) do
     for i = 1, #e[3], 2 do L.TABLES[e[3][i]] = true end
 end
 
--- 原生沙盒值（getSandboxOptions():getOptionByName(...):getValue()，原版用例 CPlantGlobalObject.lua:19）；拿不到就退回 SandboxVars
-local function native(key, default)
-    local opts = getSandboxOptions and getSandboxOptions()
-    local o = opts and opts:getOptionByName("MinidoracatWatch." .. key)
-    if o then return o:getValue() end
-    return W.sandbox(key, default)
-end
-function L.option(key) return native(key, true) ~= false end
+-- 原生沙盒值優先（W.nativeSandbox）：單機的原版沙盒介面只改原生選項
+function L.option(key) return W.nativeSandbox(key, true) ~= false end
 function L.amount(key)
-    local v = tonumber(native(key, 3))
+    local default = L.AMOUNT_DEFAULT[key] or 3
+    local v = tonumber(W.nativeSandbox(key, default))
     if v and L.FACTORS[v] then return v end
-    return 3
+    return default
 end
 
 -- 目前開關與數量的簽章（字串比對；每 POLL_MS 一次、13 個選項）：開關一字一位、"|"、數量一字一位

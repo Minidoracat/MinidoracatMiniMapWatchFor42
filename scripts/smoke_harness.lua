@@ -403,7 +403,7 @@ tick(1000, 500)
 check(API.getWatchModuleState(dave, "scan") == "active", "自動續租扣到款的通知：恢復 active")
 MinidoracatEconomy = nil
 
-F.print("情境十二：充電 → 發動的車上充電並推給本人、熄火停充；有電的室內充電不碰發電機；預設不開放")
+F.print("情境十二：充電 → 發動的車上充電並推給本人、熄火停充；有電的室內充電不碰發電機；預設不開放；取出的電池不超過裝入時的電量")
 local gail = F.player("gail", 0)
 local gw = F.item(F.LEFT)
 gail.inv:AddItem(gw)
@@ -437,6 +437,13 @@ tick(2000, 500)
 gc = W.charge(gw)
 tick(60000, 500)
 check(near(W.charge(gw) - gc, 60000 / (12 * H), 1e-6) and fuel.fuel == 3, "發電機供電的室內：12 小時速率、燃料不變")
+local capped, charged = gw:getModData()[W.CAP_KEY], W.charge(gw)
+F.reset()
+command(gail, { watchId = gw:getID(), install = false })
+local outBat = F.added[1]
+check(capped and capped < charged and W.charge(gw) == nil and outBat
+    and outBat:getCurrentUses() * F.BATTERY_DELTA <= capped + 1e-12,
+    "取出電池：不超過第一次充電前的電量（充進錶的電不跟著電池走）")
 SandboxVars.MinidoracatWatch.ChargeCar, SandboxVars.MinidoracatWatch.ChargeHouse = nil, nil
 
 F.print("情境十三：管理員設定（Phase 4）→ 管理員讀到設定、改第三方模組耗電並寫檔、廣播清單；一般玩家偽造指令被拒；舊版本被擋")

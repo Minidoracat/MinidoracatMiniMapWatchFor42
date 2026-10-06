@@ -1,12 +1,13 @@
 -- MinidoracatWatch.lua（shared）：地圖錶的電池、扣電、穿戴限制與小地圖決策表。
 -- MinidoracatWatchCore 是本 addon 的內部表，不是公開 API（公開 API MinidoracatWatchAPI 在 MinidoracatWatch_Modules.lua）。
 --
--- 電量放在錶的 modData[KEY]：nil＝全新的錶（視為裝著滿電電池）、-1＝沒有電池、0..1＝剩餘電量。
+-- 電量放在錶的 modData[KEY]：nil＝全新的錶（視為裝著滿電電池）、-1＝沒有電池、0..1＝剩餘電量；
+-- 另記裝入時的電量 modData[CAP_KEY]（取出的電池不超過它，W.returnCharge）。
 -- 原版的耗電類別用不上：AlarmClockClothing 與 DrainableComboItem 都是 final
 -- （AlarmClockClothing.java:36、DrainableComboItem.java:32）。
 -- 換手（ISClothingExtraAction）會建新物品、ID 改變，但整份 modData 會複製過去
 -- （ISClothingExtraAction.lua:107-108），所以狀態只綁 modData，不綁物品 ID。
--- 物品 modData 只放這一個數字：上次在線時間放伺服器的全域 ModData（家族規則：物品身上不存時間戳）。
+-- 物品 modData 只放電量數字：上次在線時間放伺服器的全域 ModData（家族規則：物品身上不存時間戳）。
 --
 -- 權威：扣電與換電池只在伺服器（MP）或單機執行。MP 客戶端只讀 modData、送請求。
 
@@ -60,7 +61,21 @@ function W.sandbox(name, default)
     return v
 end
 
+-- 原生沙盒值優先（單機的原版沙盒介面只 set 原生選項、不更新 SandboxVars，SandboxOptions.java:572-582；
+-- 原版用例 CPlantGlobalObject.lua:19）；拿不到就退回 SandboxVars。輪詢「改了就重套」的設定（戰利品、配方）用這個。
+function W.nativeSandbox(name, default)
+    local opts = getSandboxOptions and getSandboxOptions()
+    local o = opts and opts:getOptionByName("MinidoracatWatch." .. name)
+    if o then return o:getValue() end
+    return W.sandbox(name, default)
+end
+
 function W.enabled() return W.sandbox("Enabled", true) ~= false end
+
+-- 「需要電池」關閉（沙盒 NeedBattery）＝地圖錶永遠不會沒電：不扣電、不充電，閘門與狀態判定一律當作滿電
+function W.needBattery() return W.sandbox("NeedBattery", true) ~= false end
+-- 沒電時（沒電或沒電池）只保留小地圖（沙盒 DeadMode 2）；預設 1＝所有功能停用
+function W.deadKeepsMinimap() return W.sandbox("DeadMode", 1) == 2 end
 
 function W.minimapRule()
     local r = W.sandbox("MinimapRule", W.RULE_WATCH)
@@ -100,6 +115,23 @@ function W.setCharge(item, charge)
     item:getModData()[W.KEY] = charge
 end
 
+-- 閘門與狀態判定用的電量：不需要電池時一律 1（換電池、電量顯示仍讀 W.charge）
+function W.power(item)
+    if not W.needBattery() then return 1 end
+    return W.charge(item)
+end
+
+-- 擋「用錶充一般電池」（規劃書 §4 充電，2026-10-06）：裝入時把電量記在錶的 modData（CAP_KEY），取出的電池不超過它。
+-- 充電只會讓錶的電量高過這個值，扣電只會更低，所以退回 min(目前電量, 裝入時的電量)＝充進錶的電留在錶上。
+-- 沒有紀錄（舊資料、出廠電池）＝目前電量：充電之前 accrue 會先補記（見下方），沒充過電的錶電量不會高過裝入時。
+W.CAP_KEY = "MinidoracatWatchBatteryCap"
+function W.returnCharge(item, charge)
+    local cap = item:hasModData() and item:getModData()[W.CAP_KEY]
+    if type(cap) ~= "number" or cap ~= cap or cap >= charge then return charge end
+    if cap < 0 then return 0 end
+    return cap
+end
+
 -- 續航（現實時間）＝滿電小時數 ÷ 耗電倍率（1＋模組耗電%÷100，節能核心再減半；W.drainFactor）
 function W.drain(charge, ms, fullHours, factor)
     if charge == nil or ms <= 0 then return charge end
@@ -132,14 +164,15 @@ function W.offlineMs(now, seen, drainOffline)
     return d
 end
 
--- 小地圖閘門的決策表（純函式）：回 allowed, reasonKey
-function W.minimapDecision(enabled, rule, hasWatch, charge)
+-- 小地圖閘門的決策表（純函式）：回 allowed, reasonKey。keepDead＝沒電時保留小地圖（W.deadKeepsMinimap）
+function W.minimapDecision(enabled, rule, hasWatch, charge, keepDead)
     if not enabled or rule == W.RULE_FREE then return true end
     if rule == W.RULE_OFF then return false, W.REASON_OFF end
     if not hasWatch then return false, W.REASON_NO_WATCH end
+    if charge ~= nil and charge > 0 then return true end
+    if keepDead then return true end
     if charge == nil then return false, W.REASON_NO_BATTERY end
-    if charge <= 0 then return false, W.REASON_DEAD end
-    return true
+    return false, W.REASON_DEAD
 end
 
 -- 身上第一支（except 以外的）地圖錶與總支數。WornItems 依 BodyLocationGroup 順序排列
@@ -245,6 +278,7 @@ function W.applyBatteryChange(player, watchId, install, batteryId)
     if not W.isWatch(watch) then return false, W.FAIL_GENERIC end
     W.settleNow(player) -- 戴著的錶先把還沒入帳的耗電寫進去，退回的電池才不會多出這段電
     local old = W.charge(watch)
+    local back = old ~= nil and W.returnCharge(watch, old) -- 退回的電池：不超過裝入時的電量
 
     if install then
         local battery = inv:getItemWithIDRecursiv(batteryId)
@@ -259,11 +293,13 @@ function W.applyBatteryChange(player, watchId, install, batteryId)
         container:DoRemoveItem(battery)
         if isServer() then sendRemoveItemFromContainer(container, battery) end
         W.setCharge(watch, charge)
-        if old ~= nil then giveBattery(player, old) end
+        watch:getModData()[W.CAP_KEY] = charge
+        if back then giveBattery(player, back) end
     else
         if old == nil then return false, W.FAIL_NO_BATTERY end
         W.setCharge(watch, W.NO_BATTERY)
-        giveBattery(player, old)
+        watch:getModData()[W.CAP_KEY] = nil
+        giveBattery(player, back)
     end
     -- 只有伺服器能同步 modData：sendToRelative 給玩家附近的所有連線（含本人），客戶端以容器＋物品 ID
     -- 找到同一件物品後整表覆蓋（LuaManager.java:12326-12334、SyncItemModDataPacket；單機是 no-op）
@@ -394,16 +430,19 @@ function W.powerSource(player, watch)
     return nil
 end
 
-local function accrue(player, s, fullHours, enabled)
+-- metered＝地圖錶系統開著而且需要電池（W.needBattery）：關閉時不扣電、不充電、不補扣離線時間
+local function accrue(player, s, fullHours, metered)
     local ms = activeMs - s.mark
     s.mark = activeMs
-    if not s.watch or not enabled then return end
+    if not s.watch or not metered then return end
     if not s.power then
         if drainWatch(player, s.watch, ms, fullHours) then s.dirty = true end
         return
     end
     local c = W.charge(s.watch)
     if c == nil or c >= 1 or ms <= 0 then return end
+    local md = s.watch:getModData()
+    if md[W.CAP_KEY] == nil then md[W.CAP_KEY] = c end -- 舊資料：第一次充電前補記，之後取出的電池不超過這個值
     c = W.recharge(c, ms, W.chargeHours(s.power))
     W.setCharge(s.watch, c)
     s.dirty = true
@@ -451,7 +490,7 @@ end
 function W.settleNow(player)
     if isClient() or not player then return end
     local s = state[player]
-    if s then accrue(player, s, W.fullHours(), W.enabled()) end
+    if s then accrue(player, s, W.fullHours(), W.enabled() and W.needBattery()) end
 end
 
 -- 讓戴著的嗶嗶腕機外觀等於 modData（伺服器／單機）：同一支錶、同一個選擇只套一次（每次戴上、切換時各一次）。
@@ -516,7 +555,7 @@ end
 function W.visitAll(now, doSync)
     local seen = ModData.getOrCreate(W.SEEN_TABLE)
     local drainOffline = W.sandbox("DrainOffline", false) == true
-    local fullHours, enabled = W.fullHours(), W.enabled()
+    local fullHours, enabled = W.fullHours(), W.enabled() and W.needBattery() -- 計電（見 accrue 的 metered）
     local nextState = doSync and {} or state
     if isServer() then
         local players = getOnlinePlayers() -- LuaManager.java:4453-4463（單機回空清單）

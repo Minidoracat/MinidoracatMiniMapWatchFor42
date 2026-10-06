@@ -233,4 +233,28 @@ option MinidoracatWatch.LootModuleAmount
 {type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_LootModuleAmount,}
 
 option MinidoracatWatch.LootCardAmount
-{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_LootCardAmount,}
+{type = enum, numValues = 4, default = 1, page = MinidoracatWatch, translation = MinidoracatWatch_LootCardAmount,}
+
+/* 電池（設計稿電池頁）：需要電池（關閉＝永遠不會沒電）；沒電時 1 所有功能停用、2 只保留小地圖 */
+option MinidoracatWatch.NeedBattery
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_NeedBattery,}
+
+option MinidoracatWatch.DeadMode
+{type = enum, numValues = 2, default = 1, page = MinidoracatWatch, translation = MinidoracatWatch_DeadMode,}
+
+/* 經濟系統模式也接受解鎖卡（每級一個；第三方槽位可在伺服器設定檔逐槽覆寫） */
+option MinidoracatWatch.SlotExtCard
+{type = boolean, default = false, page = MinidoracatWatch, translation = MinidoracatWatch_SlotExtCard,}
+
+option MinidoracatWatch.SlotAdvCard
+{type = boolean, default = false, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAdvCard,}
+
+option MinidoracatWatch.SlotCoreCard
+{type = boolean, default = false, page = MinidoracatWatch, translation = MinidoracatWatch_SlotCoreCard,}
+
+option MinidoracatWatch.SlotAddonCard
+{type = boolean, default = false, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAddonCard,}
+
+/* 製作模組需要的電學等級（0＝不需要；執行期改配方 SkillRequired，shared/MinidoracatWatch_Recipe.lua） */
+option MinidoracatWatch.CraftLevel
+{type = integer, min = 0, max = 10, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_CraftLevel,}

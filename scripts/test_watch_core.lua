@@ -71,6 +71,15 @@ for i, c in ipairs(cases) do
     local ok, reason = W.minimapDecision(c[1], c[2], c[3], c[4])
     check(ok == c[5] and reason == c[6], "決策表第 " .. i .. " 列")
 end
+-- 沒電時保留小地圖（DeadMode 2）：沒電、沒電池都放行；沒戴錶、規則關閉照樣擋
+check(W.minimapDecision(true, W.RULE_WATCH, true, 0, true) == true
+    and W.minimapDecision(true, W.RULE_WATCH, true, nil, true) == true, "沒電時保留小地圖：沒電／沒電池放行")
+check(select(2, W.minimapDecision(true, W.RULE_WATCH, false, nil, true)) == W.REASON_NO_WATCH
+    and select(2, W.minimapDecision(true, W.RULE_OFF, true, 0, true)) == W.REASON_OFF, "保留小地圖不放行沒戴錶與關閉")
+check(W.deadKeepsMinimap() == false, "DeadMode 預設＝所有功能停用")
+SandboxVars.MinidoracatWatch.DeadMode = 2
+check(W.deadKeepsMinimap() == true, "DeadMode 2＝保留小地圖")
+SandboxVars.MinidoracatWatch.DeadMode = nil
 SandboxVars.MinidoracatWatch.MinimapRule = 9
 check(W.minimapRule() == W.RULE_WATCH, "未知規則值退回 watch")
 SandboxVars.MinidoracatWatch.MinimapRule = 2
@@ -490,6 +499,73 @@ F.fire("OnServerCommand", W.MODULE, W.CMD_CHARGE, { to = "erin", kind = "house" 
 F.fire("OnServerCommand", W.MODULE, W.CMD_CHARGE, { to = "erin" })
 check(W.chargeState(cp) == nil, "收到 kind=nil 停止")
 check(W.chargeState(nil) == nil, "沒有玩家回 nil")
+-- 擋「用錶充一般電池」（規劃書 §4 充電，2026-10-06）：取出的電池不超過裝入時的電量，不生電
+F.mode = "server"
+cp.square, cp.vehicle = nil, nil
+sbw.CarHours = 1
+run(2000, 1000)
+local function insert(c)
+    local b = F.item("Base.Battery")
+    b:setCurrentUsesFloat(c)
+    cp.inv:AddItem(b)
+    W.applyBatteryChange(cp, cw:getID(), true, b:getID())
+    return b:getCurrentUses() * b:getUseDelta()
+end
+local function chargeInCar(ms)
+    cp.vehicle = F.vehicle(true)
+    run(1000, 1000)
+    run(ms, 1000)
+    cp.vehicle = nil
+    run(1000, 1000)
+end
+local function newest()
+    local list = cp.inv:getAllTypeRecurse("Base.Battery")
+    return list:get(list:size() - 1):getCurrentUses() * F.BATTERY_DELTA
+end
+local lowC = insert(0.3)
+check(cw.md[W.CAP_KEY] == lowC, "裝入時把電量記在錶的 modData")
+chargeInCar(3600000)
+check(W.charge(cw) > 0.99, "車上充飽（1 小時速率）")
+W.applyBatteryChange(cp, cw:getID(), false)
+local outLow = newest()
+check(outLow <= lowC + 1e-12 and outLow > lowC - F.BATTERY_DELTA, "充飽後取出：電池只有裝入時的電量（" .. outLow .. "）")
+check(cw.md[W.CAP_KEY] == nil, "取出後清掉紀錄")
+lowC = insert(0.3)
+chargeInCar(1200000)
+local mid = W.charge(cw)
+insert(0.9)
+local swapped = cp.inv:getAllTypeRecurse("Base.Battery")
+local back2 = swapped:get(swapped:size() - 1):getCurrentUses() * F.BATTERY_DELTA
+check(mid > lowC + 0.2 and back2 <= lowC + 1e-12, "換電池：退回的舊電池也不超過它裝入時的電量")
+run(1000, 1000)
+local drained = W.charge(cw) -- 沒有充電、照常扣電：取出時就是目前電量
+W.applyBatteryChange(cp, cw:getID(), false)
+check(newest() <= drained + 1e-12 and newest() > drained - F.BATTERY_DELTA, "扣過電的電池照目前電量退回")
+-- 舊資料（沒有紀錄）：第一次充電前補記目前電量
+W.setCharge(cw, 0.4)
+cw.md[W.CAP_KEY] = nil
+chargeInCar(1200000)
+check(cw.md[W.CAP_KEY] == 0.4 or (cw.md[W.CAP_KEY] and cw.md[W.CAP_KEY] <= 0.4 and cw.md[W.CAP_KEY] > 0.39),
+    "舊資料：充電前補記當時的電量")
+W.applyBatteryChange(cp, cw:getID(), false)
+check(newest() <= 0.4 + 1e-12, "舊資料充過電再取出：不超過補記的電量")
+check(W.returnCharge(F.item(F.LEFT), 1) == 1, "出廠電池（沒有紀錄、沒有 modData）照原電量退回")
+sbw.CarHours = nil
+
+-- 需要電池關閉：不扣、不充；閘門與狀態用 W.power＝1（沒電池也一樣）
+lowC = insert(0.5)
+sbw.NeedBattery = false
+check(W.power(cw) == 1 and W.charge(cw) == lowC, "不需要電池：W.power＝1，W.charge 照實")
+check(measure(60000) == 0, "不需要電池：不扣電")
+cp.vehicle = F.vehicle(true)
+run(1000, 1000)
+check(measure(60000) == 0 and W.chargeState(cp) == nil, "不需要電池：車上也不充")
+cp.vehicle = nil
+W.setCharge(cw, W.NO_BATTERY)
+check(W.power(cw) == 1, "不需要電池：沒裝電池也算有電")
+sbw.NeedBattery = nil
+check(W.power(cw) == nil, "需要電池（預設）：沒電池＝nil")
+
 sbw.ChargeCar, sbw.ChargeHouse = nil, nil
 F.mode = "sp"
 

@@ -359,6 +359,41 @@ SB.AllowCraft = nil
 SB.Enabled = false
 check(MinidoracatWatch_Recipe.canCraft() == false, "地圖錶系統關閉：不能做")
 SB.Enabled = true
+-- 電學等級（CraftLevel）：執行期改配方的 SkillRequired（clearRequiredSkills＋addRequiredSkill），變了才改
+do
+    local R = MinidoracatWatch_Recipe
+    local recipes, calls = {}, 0
+    local function recipe()
+        local r = { skills = { { "Electricity", 3 } } }
+        function r:clearRequiredSkills() calls = calls + 1; self.skills = {} end
+        function r:addRequiredSkill(perk, lv) self.skills[#self.skills + 1] = { perk, lv } end
+        return r
+    end
+    for _, n in ipairs(R.RECIPES) do recipes[n] = recipe() end
+    local savedSM, savedPerks = getScriptManager, Perks
+    getScriptManager = function() return { getCraftRecipe = function(_, n) return recipes[n] end } end
+    Perks = { Electricity = "Electricity" }
+    local function poll() F.now = F.now + R.POLL_MS; F.fire("OnTickEvenPaused") end
+    poll()
+    local all3 = true
+    for _, r in pairs(recipes) do all3 = all3 and #r.skills == 1 and r.skills[1][2] == 3 end
+    check(#R.RECIPES == 4 and all3 and R.applied == 3, "預設電學 3：四條配方都套上")
+    SB.CraftLevel = 7
+    poll()
+    local c = recipes.CraftMinidoracatWatchLight
+    check(c.skills[1][1] == "Electricity" and c.skills[1][2] == 7 and #c.skills == 1, "沙盒改成 7：需求換成電學 7")
+    local before = calls
+    poll()
+    check(calls == before, "等級沒變：不重套")
+    SB.CraftLevel = 0
+    poll()
+    check(#c.skills == 0, "0＝不需要技能")
+    SB.CraftLevel = 99
+    check(R.level() == 10, "超出範圍夾到 10")
+    SB.CraftLevel = nil
+    poll()
+    getScriptManager, Perks = savedSM, savedPerks
+end
 
 -- ===== 嗶嗶腕機的螢幕：伺服器 =====
 local BB = "MinidoracatWatch.MapWatch_BB3000_Left"

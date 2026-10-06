@@ -282,6 +282,17 @@ check(Econ.validatePurchase("carol", "watch_ext", "rental", 1, { permanent = 0 }
 E.readError = true
 check(select(2, Econ.validatePurchase("alice", "watch_ext", "permanent", 1, {})) == "READ_FAILED", "讀不到權益：不賣買斷")
 E.readError = false
+-- 也接受解鎖卡：用卡開過就拒絕任何付款（含自動續租）；選項關掉時卡的紀錄不擋付款
+F.globalModData[W.UNLOCK_TABLE] = F.globalModData[W.UNLOCK_TABLE] or {}
+F.globalModData[W.UNLOCK_TABLE].dave = { s123 = { ext = true } }
+check(Econ.validatePurchase("dave", "watch_ext", "rental", 1, { permanent = 0 }) == true,
+    "沒開「也接受解鎖卡」：舊的卡紀錄不擋付款")
+SB.SlotExtCard = true
+check(select(2, Econ.validatePurchase("dave", "watch_ext", "rental", 1, { permanent = 0 })) == "CARD_UNLOCKED",
+    "也接受解鎖卡、已用卡開啟：拒絕付款（CARD_UNLOCKED）")
+check(Econ.validatePurchase("carol", "watch_ext", "rental", 1, { permanent = 0 }) == true, "沒用過卡的人照常付款")
+SB.SlotExtCard = nil
+F.globalModData[W.UNLOCK_TABLE].dave = nil
 
 -- ===== 第三方槽位的 MOD 被移除 =====
 -- rev 4：缺席的產品不註冊（Economy 凍結租約）；舊版：照樣註冊、方案全關
@@ -514,6 +525,20 @@ fresh()
 ui = P.ui(me, nil, ext)
 check(P.lapsed(ext) and ui.chip == "lapsed" and hasLine(ui, "PayLapsed") and btn(ui, "renew")
     and btn(ui, "renew")[2]:find("PayBtnRenew|7|", 1, true), "租約到期的空槽：lapsed、續租（含價格）")
+-- 也接受解鎖卡：沒開的槽位多一顆「使用解鎖卡」（沒卡＝停用）；用卡開過＝有效、不再顯示付費
+SB.SlotExtCard = true
+ui = P.ui(me, nil, ext)
+check(hasLine(ui, "PayCardAlso") and btn(ui, "card") and btn(ui, "card")[3] == false and btn(ui, "renew"),
+    "也接受解鎖卡：續租之外可以用卡（背包沒卡＝停用）")
+local extCard = F.item("MinidoracatWatch.UnlockCard_Ext")
+me.inv:AddItem(extCard)
+check(btn(P.ui(me, nil, ext), "card")[3] == true, "背包有卡：使用解鎖卡可按")
+W.clientUnlocks.alice = { ext = true }
+ui = P.ui(me, nil, ext)
+check(W.slotValid(me, ext) and ui.chip == "active" and hasLine(ui, "Desc_CardOpened") and btn(ui, "install")
+    and not btn(ui, "renew") and not btn(ui, "card"), "用卡開過：有效、說明綁帳號、可安裝、沒有付費按鈕")
+W.clientUnlocks.alice, SB.SlotExtCard = nil, nil
+me.inv:DoRemoveItem(extCard)
 -- 凍結：孤立槽位顯示剩餘時間停在凍結時
 CE.states.w_gone = env("w_gone", ent(0, { rental("frozen", F.now + 2 * HOUR) }))
 fresh()

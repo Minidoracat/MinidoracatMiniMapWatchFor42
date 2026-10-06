@@ -63,9 +63,9 @@ function A.parseDrains(raw)
     return out
 end
 
--- addonSlots：{ [第三方槽位 id] = { mode = free|card|econ|off, buy?, buyPrice?, rent?, rentPrice? } }；
--- 沒寫的欄位照沙盒 SlotAddon*。內建槽位不收。
-local SLOT_KEYS = { mode = true, buy = true, buyPrice = true, rent = true, rentPrice = true }
+-- addonSlots：{ [第三方槽位 id] = { mode = free|card|econ|off, buy?, buyPrice?, rent?, rentPrice?, card? } }；
+-- 沒寫的欄位照沙盒 SlotAddon*（card＝經濟系統也接受解鎖卡）。內建槽位不收。
+local SLOT_KEYS = { mode = true, buy = true, buyPrice = true, rent = true, rentPrice = true, card = true }
 function A.parseSlots(raw)
     local t = objectOf(raw)
     if not t then return nil, { "must be an object of slot id -> settings" } end
@@ -86,7 +86,7 @@ function A.parseSlots(raw)
                 if not SLOT_KEYS[k] then bad(id, "unknown field " .. tostring(k)); ok = false end
             end
             if not W.MODE_VALUE[e.mode] then bad(id, "mode must be free, card, econ or off"); ok = false end
-            for _, f in ipairs({ "buy", "rent" }) do
+            for _, f in ipairs({ "buy", "rent", "card" }) do
                 if e[f] ~= nil and type(e[f]) ~= "boolean" then bad(id, f .. " must be true or false"); ok = false end
             end
             for _, f in ipairs({ "buyPrice", "rentPrice" }) do
@@ -95,7 +95,8 @@ function A.parseSlots(raw)
                 end
             end
             if ok then
-                out[id] = { mode = e.mode, buy = e.buy, buyPrice = e.buyPrice, rent = e.rent, rentPrice = e.rentPrice }
+                out[id] = { mode = e.mode, buy = e.buy, buyPrice = e.buyPrice, rent = e.rent, rentPrice = e.rentPrice,
+                    card = e.card }
             end
         end
     end
@@ -104,7 +105,7 @@ function A.parseSlots(raw)
     return out
 end
 
-Cfg.keyOrder({ "mode", "buy", "buyPrice", "rent", "rentPrice" })
+Cfg.keyOrder({ "mode", "buy", "buyPrice", "rent", "rentPrice", "card" })
 Cfg.section("moduleDrains", { default = function() return {} end, parse = A.parseDrains })
 Cfg.section("addonSlots", { default = function() return {} end, parse = A.parseSlots })
 

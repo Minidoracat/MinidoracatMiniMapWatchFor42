@@ -56,7 +56,7 @@ end
 
 -- ===== 伺服器設定檔的清單（Phase 4）=====
 -- 第三方模組耗電（moduleDrains：[模組 id] = %）與第三方槽位逐槽設定（addonSlots：[槽位 id] = { mode, buy?, buyPrice?,
--- rent?, rentPrice? }）存在伺服器設定檔（server/MinidoracatWatch_Admin.lua 登記區段）。伺服器與單機直接讀設定檔的值；
+-- rent?, rentPrice?, card? }）存在伺服器設定檔（server/MinidoracatWatch_Admin.lua 登記區段）。伺服器與單機直接讀設定檔的值；
 -- MP 客戶端讀伺服器推來的那份（W.clientLists，登入時要一次、每次變更廣播），閘門與面板才和伺服器一致。
 W.CMD_LISTS = "lists"
 W.CMD_LISTS_REQ = "listsReq"
@@ -96,6 +96,22 @@ function W.slotMode(slot)
     if v == 4 then return "off" end
     if v == 3 and W.econStatus == "READY" then return "econ" end
     return "card"
+end
+
+-- 經濟系統模式「也接受解鎖卡」（沙盒 Slot<級>Card，預設關；第三方槽位先看逐槽設定的 card）
+function W.slotCardAlso(slot)
+    local key = W.SLOT_MODE_KEY[slot.tier]
+    if not key then return false end
+    if slot.tier == "addon" then
+        local e = W.addonSlotCfg(slot.id)
+        if e and e.card ~= nil then return e.card == true end
+    end
+    return W.sandbox(key .. "Card", false) == true
+end
+-- 現在能不能用解鎖卡開這個槽位：解鎖卡模式（含沒有 Economy 時的經濟系統），或經濟系統且也接受解鎖卡
+function W.acceptsCard(slot)
+    local mode = W.slotMode(slot)
+    return mode == "card" or (mode == "econ" and W.slotCardAlso(slot))
 end
 
 function W.needScrewdriver() return W.sandbox("NeedScrewdriver", true) ~= false end
@@ -292,7 +308,7 @@ function W.slotValid(player, slot)
     local mode = W.slotMode(slot)
     if mode == "free" then return true end
     if mode == "off" then return false end
-    if mode == "econ" then return W.payValid(player, slot) end
+    if mode == "econ" then return W.payValid(player, slot) or (W.slotCardAlso(slot) and W.isUnlocked(player, slot.id)) end
     return W.isUnlocked(player, slot.id)
 end
 
@@ -436,7 +452,7 @@ function W.modState(e, id)
 end
 
 local function powered(e)
-    local c = e.watch and W.charge(e.watch) or nil
+    local c = e.watch and W.power(e.watch) or nil
     return c ~= nil and c > 0
 end
 
@@ -467,7 +483,7 @@ function W.featureDecision(player, feature, surface)
     if rule == W.RULE_OFF then return false, W.REASON_FEATURE_OFF end
     local e = player and W.status(player)
     if not (e and e.watch) then return false, W.REASON_NEED_WATCH end
-    local c = W.charge(e.watch)
+    local c = W.power(e.watch)
     if c == nil then return false, W.REASON_NO_BATTERY end
     if c <= 0 then return false, W.REASON_DEAD end
     if rule == W.RULE_WATCH then return true end
@@ -707,8 +723,8 @@ function W.applyUnlock(player, slotId, cardId)
     if not want or not player or player:isDead() then return false, W.FAIL_UNLOCK end
     local name, key = W.account(player)
     if not name then return false, W.FAIL_UNLOCK_ACCOUNT end
-    if W.slotMode(slot) ~= "card" then return false, W.FAIL_UNLOCK end
-    if W.isUnlocked(player, slotId) then return false, W.FAIL_UNLOCKED end
+    if not W.acceptsCard(slot) then return false, W.FAIL_UNLOCK end
+    if W.slotValid(player, slot) then return false, W.FAIL_UNLOCKED end -- 已經開著（解鎖過、買斷、租用中）：不浪費卡
     local inv = player:getInventory()
     local card = inv and inv:getItemWithIDRecursiv(cardId)
     if not card or card:getFullType() ~= want then return false, W.FAIL_UNLOCK end

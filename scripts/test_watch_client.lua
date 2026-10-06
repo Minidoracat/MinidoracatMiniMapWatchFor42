@@ -151,6 +151,14 @@ check(ok == false and reason == W.REASON_NO_BATTERY, "沒有電池：擋")
 W.setCharge(watch, 0)
 ok, reason = gate(0, "minimap")
 check(ok == false and reason == W.REASON_DEAD, "沒電：擋")
+SB.DeadMode = 2
+check(gate(0, "minimap") == true and select(1, gate(0, "arrow")) == false, "沒電時保留小地圖：小地圖放行、其他功能照擋")
+W.setCharge(watch, W.NO_BATTERY)
+check(gate(0, "minimap") == true, "沒電時保留小地圖：沒電池也放行")
+SB.DeadMode, SB.NeedBattery = nil, false
+check(gate(0, "minimap") == true, "不需要電池：沒電池也放行")
+SB.NeedBattery = nil
+W.setCharge(watch, 0)
 SB.Enabled = false
 check(gate(0, "minimap") == true, "總開關關閉：放行")
 SB.Enabled = true
@@ -352,6 +360,13 @@ check(dockSpec.getStatus() == "IGUI_MinidoracatWatch_Status_Charge|50|IGUI_Minid
     "停留說明：電量與剩餘時間（定位模組 +25%：72÷1.25×0.5＝28.8 小時）")
 W.setCharge(watch, 0.005)
 check(dockSpec.getStatus() == "IGUI_MinidoracatWatch_Status_ChargeUnderHour|1", "不到 1 小時用整句（不拼「大約還能用 不到 1 小時」）")
+W.setCharge(watch, 0.5)
+-- 不需要電池：Dock 不警示、停留說明寫不需要電池、圖示畫滿格
+SB.NeedBattery = false
+W.setCharge(watch, 0)
+check(dockSpec.getState() == nil and dockSpec.getBadge() == 0
+    and dockSpec.getStatus() == "IGUI_MinidoracatWatch_Status_NoBatteryNeeded", "不需要電池：Dock 不警示、說明不需要電池")
+SB.NeedBattery = nil
 W.setCharge(watch, 0.5)
 F.draws, F.icons, F.fills = 0, {}, {}
 dockSpec.drawIcon(setmetatable({}, Element), 0, 0, 28)
@@ -652,6 +667,22 @@ tick()
 panel:update()
 panel:prerender()
 check(not panel.btnBanner.visible and panel.btnInsert.style == "normal", "電量正常：沒有橫幅按鈕")
+-- 沒電時保留小地圖：橫幅不寫「無訊號」；不需要電池：沒有電池橫幅、電量列寫不需要電池
+W.setCharge(watch, 0)
+SB.DeadMode = 2
+tick()
+panel:update()
+check(panel.bannerMsg and panel.bannerMsg:find("Banner_Dead_Map", 1, true), "沒電時保留小地圖：橫幅改寫小地圖照常顯示")
+SB.DeadMode, SB.NeedBattery = nil, false
+tick()
+panel:update()
+check(panel.bannerMsg == nil and panel.footText == "IGUI_MinidoracatWatch_Foot_NoBatteryNeeded"
+    and panel.btnInsert.style == "normal" and C.slotStatus(p, watch, W.slotById.std1) ~= "dead",
+    "不需要電池：沒有電池橫幅、電量列寫不需要電池、模組不算沒電")
+SB.NeedBattery = nil
+W.setCharge(watch, 0.5)
+tick()
+panel:update()
 -- 充電（W.chargeState／W.chargeHoursToFull 換成固定值，看電量列怎麼寫）
 local realState, realToFull = W.chargeState, W.chargeHoursToFull
 W.chargeState = function() return "car" end

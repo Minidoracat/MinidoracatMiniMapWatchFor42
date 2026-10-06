@@ -14,6 +14,7 @@ MinidoracatWatchAdminUI = AU -- 內部表（測試與 E2E 用），不是公開 
 
 -- ===== 伺服器清單的同步（MP 客戶端；不需要 UI 框架）=====
 -- 伺服器每次變更廣播一次；客戶端第一個 tick 補要一次（伺服器送的時候客戶端可能還在載入）。只收認得的形狀。
+local function bool(v) if type(v) == "boolean" then return v end return nil end -- false 也要留（`and v or nil` 會丟掉）
 function AU.onLists(args)
     local drains, slots = {}, {}
     for id, v in pairs(type(args.moduleDrains) == "table" and args.moduleDrains or {}) do
@@ -23,10 +24,11 @@ function AU.onLists(args)
         if type(id) == "string" and type(e) == "table" and W.MODE_VALUE[e.mode] then
             slots[id] = {
                 mode = e.mode,
-                buy = type(e.buy) == "boolean" and e.buy or nil,
+                buy = bool(e.buy),
                 buyPrice = type(e.buyPrice) == "number" and e.buyPrice or nil,
-                rent = type(e.rent) == "boolean" and e.rent or nil,
+                rent = bool(e.rent),
                 rentPrice = type(e.rentPrice) == "number" and e.rentPrice or nil,
+                card = bool(e.card),
             }
         end
     end
@@ -86,21 +88,24 @@ local function notify(player, text)
 end
 
 -- ===== UI 框架 =====
--- 需要 rev 14（Dropdown）＋window／controls／dialog／dropdown／table；Toast 選用。widget 檔不保證排在本檔之前，自己 pcall require。
+-- 需要 rev 16（ScrollPanel、Text.wrap、TextField:setInvalid）＋window／controls／dialog／dropdown／table；Toast 選用。
+-- widget 檔不保證排在本檔之前，自己 pcall require。
 if not (MinidoracatUI and MinidoracatUI.v1) then pcall(require, "MinidoracatUI/V1") end
 pcall(require, "MinidoracatUI/VirtualList")
+pcall(require, "MinidoracatUI/TextWrap")
 pcall(require, "MinidoracatUI/Widgets/Controls")
 pcall(require, "MinidoracatUI/Widgets/Window")
 pcall(require, "MinidoracatUI/Widgets/Dropdown")
 pcall(require, "MinidoracatUI/Widgets/Table")
+pcall(require, "MinidoracatUI/Widgets/ScrollPanel")
 pcall(require, "MinidoracatUI/Widgets/Toast")
 local UI = MinidoracatUI and MinidoracatUI.v1
 local CAPS = UI and UI.CAPABILITIES
-AU.uiReady = UI ~= nil and UI.API_MAJOR == 1 and type(UI.API_REVISION) == "number" and UI.API_REVISION >= 14
+AU.UI_REV = 16
+AU.uiReady = UI ~= nil and UI.API_MAJOR == 1 and type(UI.API_REVISION) == "number" and UI.API_REVISION >= AU.UI_REV
     and type(CAPS) == "table" and CAPS.window == true and CAPS.controls == true and CAPS.dialog == true
-    and CAPS.dropdown == true and CAPS.table == true
-local okWrap, TextWrap = pcall(require, "MinidoracatUI/TextWrap")
-if not (okWrap and type(TextWrap) == "table" and type(TextWrap.cut) == "function") then TextWrap = nil end
+    and CAPS.dropdown == true and CAPS.table == true and CAPS.scrollPanel == true and CAPS.textWrap == true
+    and CAPS.textFieldInvalid == true and UI.ScrollPanel ~= nil and type(UI.Text.wrap) == "function"
 
 AU.state = nil -- 開著的視窗：{ pn, player, win, base, draft, rev, … }
 AU.pending = {} -- MP：[帳號] = playerNum（等 adminState）
@@ -109,7 +114,8 @@ function AU.open(pn)
     local player = getSpecificPlayer(pn or 0)
     if not player then return end
     if not AU.uiReady then
-        W.log("admin settings window needs MinidoracatUIFor42 API rev 14 (window, controls, dialog, dropdown, table)")
+        W.log("admin settings window needs MinidoracatUIFor42 API rev 16 (window, controls, dialog, dropdown, table, "
+            .. "scrollPanel, textWrap, textFieldInvalid)")
         return notify(player, T("UiMissing"))
     end
     if not W.isSettingsAdmin(player) then return notify(player, T("Denied")) end
@@ -159,25 +165,9 @@ AU.TABS = { "overview", "features", "slots", "battery", "acquire", "zombies" }
 
 local function measure(s) return getTextManager():MeasureStringX(FONT, s) end
 
--- 斷行（框架內部的 TextWrap；缺席時一行一段）
-local function wrap(text, width)
-    local out = {}
-    for para in string.gmatch(tostring(text) .. "\n", "([^\n]*)\n") do
-        if TextWrap then
-            local rest = para
-            while rest ~= "" do
-                local line
-                line, rest = TextWrap.cut(rest, width, FONT)
-                out[#out + 1] = line
-            end
-        else
-            out[#out + 1] = para
-        end
-    end
-    return out
-end
+local function wrap(text, width) return UI.Text.wrap(text, width, FONT) end -- 快取的唯讀表：只讀不改
 
--- ===== 分頁容器：自繪元件（ISUIElement 基底、不畫底），畫自己的文字列與不合法欄位的紅框 =====
+-- ===== 分頁內容：自繪元件（ISUIElement 基底、不畫底），畫自己的文字列；放在 UI.ScrollPanel 裡捲動 =====
 local Pane = ISUIElement:derive("MinidoracatWatchAdminPane")
 function Pane:render()
     for i = 1, #self.texts do
@@ -185,15 +175,13 @@ function Pane:render()
         local c = COL[t.token] or COL.text
         self:drawText(t.text, t.x, t.y, c.r, c.g, c.b, c.a, FONT)
     end
-    local bad = self.S and self.S.bad
-    if bad then
-        local c = COL.errorText
-        for ctrl in pairs(bad) do
-            if ctrl.parent == self and ctrl:getIsVisible() then
-                self:drawRectBorder(ctrl:getX() - 2, ctrl:getY() - 2, ctrl:getWidth() + 4, ctrl:getHeight() + 4, c.a, c.r, c.g, c.b)
-            end
-        end
-    end
+end
+-- 內容高度＝最低的文字列與子元件底緣（ScrollPanel 依可見子元件的底緣量捲動範圍）
+local function fitPane(p)
+    local h = 0
+    for _, t in ipairs(p.texts) do h = math.max(h, t.y + FH + 2) end
+    for _, c in pairs(p:getChildren()) do h = math.max(h, c:getY() + c:getHeight()) end
+    p:setHeight(h)
 end
 local function newPane(S, x, y, w, h)
     local p = ISUIElement.new(Pane, x, y, w, h)
@@ -254,28 +242,29 @@ local function sbDropdown(S, p, x, y, w, key, labels)
     return c
 end
 
--- 數字欄：文字合法就寫進 draft，不合法記進 S.bad（紅框、擋住套用）；parse(text) → 值或 nil
-local function field(S, p, x, y, w, get, set, parse, fmt)
-    fmt = fmt or tostring
+-- 不合法的欄位：記進 S.bad（擋住套用）＋框架的錯誤狀態（紅框＋警示圖示，訊息是滑鼠提示與焦點說明）
+local function markBad(S, tf, bad, msg)
+    S.bad[tf] = bad or nil
+    tf:setInvalid(bad == true, bad and msg or nil)
+end
+-- 數字欄：文字合法就寫進 draft，不合法 markBad；parse(text) → 值或 nil；msg＝不合法時的說明
+local function field(S, p, x, y, w, get, set, parse, msg)
     local tf
-    tf = UI.TextField.new({ x = x, y = y, width = w, height = CH, text = fmt(get()), theme = THEME,
+    tf = UI.TextField.new({ x = x, y = y, width = w, height = CH, text = tostring(get()), theme = THEME,
         onChange = function(_, s)
             local v = parse(s)
-            if v == nil then
-                S.bad[tf] = true
-            else
-                S.bad[tf] = nil
-                set(v)
-            end
+            markBad(S, tf, v == nil, msg)
+            if v ~= nil then set(v) end
             changed(S)
         end })
     p:addChild(tf)
     S.binds[#S.binds + 1] = function()
-        S.bad[tf] = nil
-        tf:setText(fmt(get()))
+        markBad(S, tf, false)
+        tf:setText(tostring(get()))
     end
     return tf
 end
+local function rangeText(min, max) return T("Range", M.num(min), M.num(max)) end
 local function intParser(min, max)
     return function(s)
         local v = tonumber(s)
@@ -286,7 +275,7 @@ end
 local function sbField(S, p, x, y, w, key)
     local f = M.FIELD[key]
     local c = field(S, p, x, y, w, function() return S.draft.sb[key] end, function(v) S.draft.sb[key] = v end,
-        intParser(f.min, f.max))
+        intParser(f.min, f.max), rangeText(f.min, f.max))
     S.ctrl[key] = c
     return c
 end
@@ -363,21 +352,22 @@ local function buildSlots(S, p)
     local y = para(p, T("Slots_desc"), 0, 0, w) + 2
     S.noEconY = y
     if W.econStatus ~= "READY" then y = para(p, T("NoEcon_hint"), 0, y, w, "errorText") + 2 end
-    -- 欄：槽位｜開啟方式｜買斷｜買斷價格｜租用｜每期租金｜（第三方：用預設）
-    local cx = { 0, 180, 392, 446, 566, 620, 740 }
-    local heads = { "Col_slot", "Col_mode", "Col_buy", "Col_buyPrice", "Col_rent", "Col_rentPrice" }
+    -- 欄：槽位｜開啟方式｜買斷｜買斷價格｜租用｜每期租金｜也接受解鎖卡｜（第三方：用預設）
+    local cx = { 0, 170, 350, 396, 502, 548, 656, 730 }
+    local heads = { "Col_slot", "Col_mode", "Col_buy", "Col_buyPrice", "Col_rent", "Col_rentPrice", "Col_card" }
     for i, k in ipairs(heads) do text(p, T(k), cx[i], y, "textMuted") end
     y = y + FH + 6
     local modeOpts = {}
     for i, m in ipairs(M.MODES) do modeOpts[i] = { id = i, label = T("ModeOpt_" .. m) } end
-    local price = intParser(1, 1000000000)
+    local price, priceMsg = intParser(1, 1000000000), rangeText(1, 1000000000)
     local function sbRow(name, key)
         text(p, name, cx[1], y + (CH - FH) / 2, "text")
-        dropdown(S, p, cx[2], y, 200, modeOpts, function() return S.draft.sb[key] end, function(v) S.draft.sb[key] = v end)
+        dropdown(S, p, cx[2], y, 170, modeOpts, function() return S.draft.sb[key] end, function(v) S.draft.sb[key] = v end)
         sbCheck(S, p, cx[3], y, key .. "Buy", "", 40)
-        sbField(S, p, cx[4], y, 110, key .. "BuyPrice")
+        sbField(S, p, cx[4], y, 96, key .. "BuyPrice")
         sbCheck(S, p, cx[5], y, key .. "Rent", "", 40)
-        sbField(S, p, cx[6], y, 110, key .. "RentPrice")
+        sbField(S, p, cx[6], y, 96, key .. "RentPrice")
+        sbCheck(S, p, cx[7], y, key .. "Card", "", 40)
         y = y + ROW
     end
     for _, t in ipairs(M.TIERS) do sbRow(getText("IGUI_MinidoracatWatch_Slot_" .. t.id), t.key) end
@@ -388,23 +378,27 @@ local function buildSlots(S, p)
         local function entry()
             if not S.draft.addon[id] then
                 local e = M.slotEntry(S.draft, id)
-                S.draft.addon[id] = { mode = e.mode, buy = e.buy, buyPrice = e.buyPrice, rent = e.rent, rentPrice = e.rentPrice }
+                S.draft.addon[id] = { mode = e.mode, buy = e.buy, buyPrice = e.buyPrice, rent = e.rent, rentPrice = e.rentPrice,
+                    card = e.card }
             end
             return S.draft.addon[id]
         end
         local function cur(f) return M.slotEntry(S.draft, id)[f] end
         text(p, M.slotName(slot), cx[1], y + (CH - FH) / 2, "text")
-        dropdown(S, p, cx[2], y, 200, modeOpts, function() return W.MODE_VALUE[cur("mode")] end,
+        dropdown(S, p, cx[2], y, 170, modeOpts, function() return W.MODE_VALUE[cur("mode")] end,
             function(v) entry().mode = M.MODES[v] end)
         check(S, p, cx[3], y, "", function() return cur("buy") end, function(v) entry().buy = v end, 40)
-        field(S, p, cx[4], y, 110, function() return cur("buyPrice") end, function(v) entry().buyPrice = v end, price)
+        field(S, p, cx[4], y, 96, function() return cur("buyPrice") end, function(v) entry().buyPrice = v end, price,
+            priceMsg)
         check(S, p, cx[5], y, "", function() return cur("rent") end, function(v) entry().rent = v end, 40)
-        field(S, p, cx[6], y, 110, function() return cur("rentPrice") end, function(v) entry().rentPrice = v end, price)
-        button(p, cx[7], y, T("UseDefault"), function()
+        field(S, p, cx[6], y, 96, function() return cur("rentPrice") end, function(v) entry().rentPrice = v end, price,
+            priceMsg)
+        check(S, p, cx[7], y, "", function() return cur("card") end, function(v) entry().card = v end, 40)
+        button(p, cx[8], y, T("UseDefault"), function()
             S.draft.addon[id] = nil
             AU.syncAll(S)
             changed(S)
-        end, "ghost", w - cx[7])
+        end, "ghost", w - cx[8])
         y = y + ROW
     end
     y = y + 4
@@ -427,22 +421,27 @@ end
 -- ===== 分類：電池 =====
 local function buildBattery(S, p)
     local w = p.width
-    local dx = labeled(p, M.sbLabel("FullHours"), 0, 0, 260)
-    sbField(S, p, dx, 0, 90, "FullHours")
-    text(p, T("Unit_hours"), dx + 98, (CH - FH) / 2, "textMuted")
-    local y = para(p, T("FullHours_desc"), 0, CH + 4, w) + 2
+    local half = math.floor(w / 2)
+    -- 需要電池（關閉＝永遠不會沒電）｜沒電時（所有功能停用／只保留小地圖）
+    sbCheck(S, p, 0, 0, "NeedBattery")
+    local dx = labeled(p, M.sbLabel("DeadMode"), half, 0, 120)
+    sbDropdown(S, p, dx, 0, w - dx, "DeadMode")
+    local y = para(p, T("NeedBattery_desc"), 0, CH + 4, w) + 4
+    dx = labeled(p, M.sbLabel("FullHours"), 0, y, 260)
+    sbField(S, p, dx, y, 90, "FullHours")
+    text(p, T("Unit_hours"), dx + 98, y + (CH - FH) / 2, "textMuted")
+    y = para(p, T("FullHours_desc"), 0, y + CH + 4, w) + 2
     sbCheck(S, p, 0, y, "DrainOffline")
     sbCheck(S, p, math.floor(w / 2), y, "DrainPaused")
     y = y + ROW + 2
-    -- 充電：開關＋「從沒電到充滿約 N 小時」
-    local half = math.floor(w / 2)
+    -- 充電：開關＋「從沒電到充滿約 N 小時」（車上＝引擎發動時；不扣車輛電瓶，文案不寫「從電瓶」）
     local cb = sbCheck(S, p, 0, y, "ChargeCar")
     sbField(S, p, cb:getRight() + GAP, y, 56, "CarHours")
     text(p, T("Unit_hours"), cb:getRight() + GAP + 62, y + (CH - FH) / 2, "textMuted")
     cb = sbCheck(S, p, half, y, "ChargeHouse")
     sbField(S, p, cb:getRight() + GAP, y, 56, "HouseHours")
     text(p, T("Unit_hours"), cb:getRight() + GAP + 62, y + (CH - FH) / 2, "textMuted")
-    y = y + ROW + 2
+    y = para(p, T("Charge_desc"), 0, y + ROW, w) + 4
     text(p, T("Drains"), 0, y, "text")
     y = para(p, T("Drains_desc"), 0, y + FH + 4, w) + 4
     local cw = math.floor((w - GAP * 4) / 3)
@@ -451,7 +450,7 @@ local function buildBattery(S, p)
         local x = col * (cw + GAP * 2)
         local fx = labeled(p, label, x, top + row * ROW, cw - 96)
         text(p, "+", fx - 10, top + row * ROW + (CH - FH) / 2, "textMuted")
-        field(S, p, fx, top + row * ROW, 64, get, set, intParser(0, 1000))
+        field(S, p, fx, top + row * ROW, 64, get, set, intParser(0, 1000), rangeText(0, 1000))
         text(p, "%", fx + 70, top + row * ROW + (CH - FH) / 2, "textMuted")
     end
     for i, d in ipairs(M.DRAINS) do
@@ -467,17 +466,11 @@ local function buildBattery(S, p)
         text(p, T("DrainsNone"), 0, y, "textMuted")
         y = y + FH + 6
     else
-        -- ponytail: 第三方模組最多列 6 個（兩列），更多的用設定檔調；框架沒有捲動容器（回報框架缺件）
-        for i = 1, math.min(6, #mods) do
-            local def = mods[i]
+        for i, def in ipairs(mods) do -- 全部列出：分頁在 ScrollPanel 裡捲動
             cell(i, y, M.moduleName(def.id), function() return M.addonDrain(S.draft, def) end,
                 function(v) S.draft.drains[def.id] = v end)
         end
-        y = y + math.ceil(math.min(6, #mods) / 3) * ROW
-        if #mods > 6 then
-            text(p, T("DrainsMore", tostring(#mods - 6)), 0, y, "textMuted")
-            y = y + FH + 6
-        end
+        y = y + math.ceil(#mods / 3) * ROW
     end
     button(p, 0, y, T("DrainReset"), function()
         for _, d in ipairs(M.DRAINS) do S.draft.sb[d[2]] = M.FIELD[d[2]].default end
@@ -517,8 +510,12 @@ local function buildAcquire(S, p)
     end
     row("LootModules", T("LootModules"), T("LootModules_desc"), "LootModuleAmount")
     row("LootCards", T("LootCards"), T("LootCards_desc"), "LootCardAmount")
+    -- 製作模組需要的電學等級（0–10；配方執行期改 SkillRequired，shared/MinidoracatWatch_Recipe.lua）
+    local lx = labeled(p, M.sbLabel("CraftLevel"), w - 230, y, 150)
+    sbField(S, p, lx, y, 50, "CraftLevel")
     row("AllowCraft", T("Craft"), T("Craft_desc"))
     row("NeedScrewdriver", T("Tool"), T("Tool_desc"))
+    -- 「到經濟中心上架」不做：Economy 沒有讓其他 MOD 帶入物品的公開 API（只有內部的 C.AdminWindow.addItem，一次一件）
 end
 
 -- ===== 分類：殭屍掉落 =====
@@ -600,12 +597,8 @@ local function buildZombies(S, p)
     S.edChance = UI.TextField.new({ x = ex, y = y, width = 64, height = CH, theme = THEME, onChange = function(_, s)
         local r, v = cur(), tonumber(s)
         if not r then return end
-        if v and M.validChance(v) then
-            S.bad[S.edChance] = nil
-            r.chance = v
-        else
-            S.bad[S.edChance] = true
-        end
+        markBad(S, S.edChance, not (v and M.validChance(v)), rangeText(0, 100))
+        if not S.bad[S.edChance] then r.chance = v end
         AU.refreshRules(S)
     end })
     p:addChild(S.edChance)
@@ -635,7 +628,7 @@ local function buildZombies(S, p)
             local r = cur()
             if not (r and r.group == "custom") then return end
             local list = M.parseOutfits(s)
-            S.bad[S.edOutfits] = list == nil or nil
+            markBad(S, S.edOutfits, list == nil, T("Outfits_bad"))
             if list then r.outfits = list end
             AU.refreshRules(S)
         end })
@@ -686,7 +679,8 @@ function AU.syncEditor(S)
     local r = S.draft.drops[S.ruleIndex or 0]
     if not r then S.ruleIndex = nil end
     for _, c in ipairs({ S.edGroup, S.edChance, S.edItem, S.edDel }) do c:setEnabled(r ~= nil) end
-    S.bad[S.edChance], S.bad[S.edOutfits] = nil, nil
+    markBad(S, S.edChance, false)
+    markBad(S, S.edOutfits, false)
     if r then
         S.edGroup:setSelected(r.group, true)
         S.edItem:setSelected(r.item, true)
@@ -759,6 +753,8 @@ function AU.refresh(S)
         local s = M.validInt("FullHours", S.draft.sb.FullHours) and M.hoursText(M.runtime(S.draft, r[2], r[3])) or "-"
         text(c, T("Sum_Line", T(r[1]), s), x, yy, "textMuted").calc = true
     end
+    fitPane(p) -- 一覽行數會變：捲動範圍跟著
+    fitPane(c)
     local _, _, n = M.diff(S.base, S.draft)
     S.dirty = n
     S.dirtyText.text = n == 0 and T("Clean") or T("Dirty", tostring(n))
@@ -787,7 +783,7 @@ end
 
 function AU.showTab(S, id)
     UI.Dropdown.close(S.win)
-    for k, p in pairs(S.panes) do p:setVisible(k == id) end
+    for k, sp in pairs(S.scrolls) do sp:setVisible(k == id) end
     S.tab = id
     S.tabs:setSelected(id, true) -- 程式切換（E2E）也要讓頁籤跟上
 end
@@ -846,11 +842,17 @@ function AU.build(pn, player, st)
     S.base = M.readBase(st)
     S.draft = M.copy(S.base)
     S.rev = st.rev
+    -- 每個分類是一個 UI.ScrollPanel（rev 16）裡的 Pane：內容比視窗高就捲動。殭屍掉落的規則表自己會捲（VirtualList），
+    -- 那一頁的 Pane 固定等於可視高度、讓規則表撐滿。
+    S.scrolls = {}
     for _, id in ipairs(AU.TABS) do
-        local p = newPane(S, PAD, py, w - PAD * 2, ph)
-        win:addChild(p)
-        S.panes[id] = p
+        local sp = UI.ScrollPanel.new({ x = PAD, y = py, width = w - PAD * 2, height = ph, theme = THEME })
+        win:addChild(sp)
+        local p = newPane(S, 0, 0, sp:contentWidth(), ph)
+        sp:addChild(p)
+        S.scrolls[id], S.panes[id] = sp, p
         builders[id](S, p)
+        if id ~= "zombies" then fitPane(p) end
     end
     AU.showTab(S, "overview")
     AU.syncAll(S)

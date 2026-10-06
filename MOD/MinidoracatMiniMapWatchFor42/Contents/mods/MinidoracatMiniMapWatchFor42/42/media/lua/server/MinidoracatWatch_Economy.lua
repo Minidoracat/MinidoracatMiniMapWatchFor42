@@ -191,12 +191,25 @@ function Econ.onChanged(username, productId, env)
     W.invalidate()
 end
 
+-- 這個帳號用解鎖卡開過這個槽位（任一驗證鍵；Economy 只給登入名，W.account 要玩家物件）
+-- ponytail: 不分驗證鍵，同名的 no-steam／Steam 紀錄都算；要分時改由 validatePurchase 帶玩家物件
+local function cardUnlocked(username, slotId)
+    local byKey = ModData.getOrCreate(W.UNLOCK_TABLE)[username]
+    if type(byKey) ~= "table" then return false end
+    for _, slots in pairs(byKey) do
+        if type(slots) == "table" and slots[slotId] == true then return true end
+    end
+    return false
+end
+
 -- 購買驗證（Economy 付款與自動續租扣款前呼叫）：回 true 或 false, 原因碼（客戶端 IGUI_MinidoracatWatch_PayReason_<碼>）。
 -- D5：已買斷不能租；租約開著自動續租時不能買斷（請先關閉，免得買斷後還被續租扣款）。不以「已經有效」拒絕（續租本來就要能付）。
+-- 已經用解鎖卡開過（也接受解鎖卡）：永久有效，任何付款（含自動續租）都拒絕，免得付了沒有用的錢。
 function Econ.validatePurchase(username, productId, kind, quantity, projected)
     local slot = Econ.slotByProduct[productId]
     if not slot or Econ.absent[productId] then return false, "UNKNOWN_SLOT" end
     if W.slotModeValue(slot) ~= 3 then return false, "MODE_NOT_ECONOMY" end
+    if W.slotCardAlso(slot) and cardUnlocked(username, slot.id) then return false, "CARD_UNLOCKED" end
     if kind == "rental" and type(projected) == "table" and (tonumber(projected.permanent) or 0) >= 1 then
         return false, "HAVE_PERMANENT"
     end

@@ -46,7 +46,7 @@ function C.gate(pn, feature, surface)
         if not enabled or rule ~= W.RULE_WATCH then return W.minimapDecision(enabled, rule, false, nil) end
         local watch = player and W.status(player).watch
         if not watch then return W.minimapDecision(enabled, rule, false, nil) end
-        return W.minimapDecision(enabled, rule, true, W.charge(watch))
+        return W.minimapDecision(enabled, rule, true, W.power(watch), W.deadKeepsMinimap())
     end
     local ok, reason, dist = W.featureDecision(player, feature, surface)
     if not ok and feature == "nav" and reason ~= W.REASON_FEATURE_OFF and C.navDevice(pn) then return true end
@@ -106,6 +106,7 @@ function C.percent(charge) return math.ceil(charge * 100) end
 
 function C.statusText(watch, player)
     if not watch then return getText("IGUI_MinidoracatWatch_Status_NoWatch") end
+    if not W.needBattery() then return getText("IGUI_MinidoracatWatch_Status_NoBatteryNeeded") end
     local c = W.charge(watch)
     if c == nil then return getText("IGUI_MinidoracatWatch_Status_NoBattery") end
     if c <= 0 then return getText("IGUI_MinidoracatWatch_Status_Dead") end
@@ -299,14 +300,14 @@ local DOCK_SPEC = {
     getState = function()
         local w = C.watchOf(0)
         if not w then return nil end
-        local c = W.charge(w)
+        local c = W.power(w)
         if c == nil or c <= W.LOW_CHARGE then return "warn" end
         return nil
     end,
     getBadge = function()
         local w = C.watchOf(0)
         if not w then return 0 end
-        local c = W.charge(w)
+        local c = W.power(w)
         if c == nil or c <= 0 then return -1 end
         return 0
     end,
@@ -435,7 +436,7 @@ local function cardMenu(context, player, pn, item)
     local any = false
     local sub, opt = subMenu(context, getText("IGUI_MinidoracatWatch_UseCard"))
     for _, slot in ipairs(W.slotList) do
-        if W.cardType(slot) == item:getFullType() and W.slotMode(slot) == "card" and not W.isUnlocked(player, slot.id) then
+        if W.cardType(slot) == item:getFullType() and W.acceptsCard(slot) and not W.slotValid(player, slot) then
             any = true
             sub:addOption(getText("IGUI_MinidoracatWatch_OpenSlot", C.slotName(slot)), slot.id, onUnlock, pn)
         end

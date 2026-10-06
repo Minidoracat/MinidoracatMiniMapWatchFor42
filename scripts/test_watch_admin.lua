@@ -189,6 +189,14 @@ do
     check(has(s, "模組耗電：已調整 1 項，開燈時 +100%"), "summary: tuned drains counted")
     check(has(s, "殭屍掉落：關閉") and has(s, "戰利品：6 款地圖錶會出現"), "summary: drops off, six styles")
     check(has(s, "充電：車上約 6 小時充滿"), "summary: charge line names the car hours")
+    check(has(s, "沒電時：所有功能停用"), "summary: dead mode line")
+    d.sb.SlotExtCard = true
+    check(has(M.summary(d, true), "擴充槽：租用每 7 天 60 倖存幣，或買斷 400 倖存幣，也接受解鎖卡"),
+        "summary: economy tier that also takes unlock cards")
+    d.sb.NeedBattery = false
+    s = M.summary(d, true)
+    check(has(s, "電池：不需要電池，地圖錶不會沒電") and not find(s, "充電：") and not find(s, "沒電時："),
+        "summary: no battery needed replaces the battery, drain and charge lines")
     d.sb.Enabled = false
     s = M.summary(d, true)
     check(#s == 1 and s[1] == "地圖錶：已停用，所有功能都和現在一樣，不需要錶", "summary: disabled is a single line")
@@ -215,6 +223,11 @@ do
     check(find(lines, "新增掉落規則：穿 HazardSuit, Bandit 的殭屍每隻有 0.5% 機率掉落") ~= nil, "diff: added custom rule")
     check(warn and lines[#lines]:find("重新同意", 1, true) ~= nil and n == #lines - 1,
         "diff: rent price change warns about re-consent (Phase 6 D3), last line, not counted")
+    local c = M.copy(base)
+    c.sb.NeedBattery, c.sb.DeadMode, c.sb.CraftLevel = false, 2, 5
+    lines = M.diff(base, c)
+    check(has(lines, "需要電池：從 開 改成 關") and has(lines, "沒電時：從 所有功能停用 改成 只保留小地圖")
+        and has(lines, "製作模組需要的電學等級：從 3 改成 5"), "diff: battery switch, dead mode and craft level")
     -- 同一條規則只改順序不算
     local e = M.copy(base)
     e.drops[1], e.drops[2] = e.drops[2], e.drops[1]
@@ -228,9 +241,12 @@ do
     local d = M.copy(base)
     M.applyPreset(d, "easy")
     check(d.sb.FullHours == 168 and d.sb.MinimapRule == 2 and d.sb.RuleNav == 1 and d.sb.SlotCore == 1
-        and d.sb.SlotAddon == 1 and d.sb.RuleLight == 1, "preset easy: 7 days, minimap needs a watch, rest free, slots free")
+        and d.sb.SlotAddon == 1 and d.sb.RuleLight == 1 and d.sb.DeadMode == 2,
+        "preset easy: 7 days, minimap needs a watch, rest free, slots free, minimap kept when dead")
+    check(M.T("Preset_easy_desc"):find("沒電時保留小地圖", 1, true) ~= nil, "preset easy text says the minimap stays")
     M.applyPreset(d, "hard")
-    check(d.sb.FullHours == 24 and d.sb.RuleNav == 3 and d.sb.SlotCore == 1, "preset hard: 1 day, modules, keeps slot modes")
+    check(d.sb.FullHours == 24 and d.sb.RuleNav == 3 and d.sb.SlotCore == 1 and d.sb.DeadMode == 1,
+        "preset hard: 1 day, modules, keeps slot modes, everything off when dead")
     check(not M.applyPreset(d, "nope"), "unknown preset refused")
 end
 
@@ -305,6 +321,8 @@ do
     check(r.code == "invalid", "invalid: unknown mode")
     r = A.apply(admin, req({ addonSlots = { weather = { mode = "econ", buyPrice = 0 } } }))
     check(r.code == "invalid", "invalid: price below 1")
+    r = A.apply(admin, req({ addonSlots = { weather = { mode = "econ", card = "yes" } } }))
+    check(r.code == "invalid", "invalid: card must be true or false")
     r = A.apply(admin, req({ moduleDrains = { weather = 10 }, zombieDrops = { { group = "army", item = "nope", chance = 1 } } }))
     check(r.code == "invalid" and Cfg.get("moduleDrains").weather == nil,
         "invalid: one bad section rejects the whole request (valid section not applied)")
@@ -406,6 +424,10 @@ do
     check(W.listValue("moduleDrains").weather == 33 and W.listValue("moduleDrains").bad == nil, "client keeps valid drains")
     check(W.slotModeValue(slot) == 4 and W.listValue("addonSlots").weather.rentPrice == nil
         and W.listValue("addonSlots").other == nil, "client keeps valid slot entries only")
+    AU.onLists({ moduleDrains = { weather = 33 }, addonSlots = { weather = { mode = "econ", buy = false, card = true } } })
+    local we = W.listValue("addonSlots").weather
+    check(we.buy == false and we.card == true and W.slotCardAlso(slot) == true,
+        "client keeps false booleans and the per-slot card switch")
     check(W.moduleDrain(def) == 33, "client drain factor follows the server lists")
     -- 齒輪分類：主 MOD 太舊（< 3）就不註冊
     MinidoracatMiniMapAPI = { settingsApiVersion = 2, registerSettingsSection = function() return true end }
@@ -429,7 +451,7 @@ do
     for name in pairs(L.TABLES) do list[name] = { items = { "Base.Spoon", 5 } } end
     resetSandbox()
     local sig = L.signature()
-    check(sig == "1111111111|333", "loot signature carries the three amounts")
+    check(sig == "1111111111|331", "loot signature carries the three amounts (cards default to very few)")
     L.apply(list, sig)
     local function weight(tbl, item)
         local items = list[tbl].items
@@ -437,6 +459,7 @@ do
         return nil
     end
     check(weight("ElectronicStoreMisc", "MinidoracatWatch.Module_Compass") == 1, "normal amount keeps the base weight")
+    check(math.abs(weight("ElectronicStoreMisc", W.CARD_TYPES.ext) - 0.025) < 1e-12, "cards default to very few: x0.25")
     NATIVE["MinidoracatWatch.LootModuleAmount"] = 1
     NATIVE["MinidoracatWatch.LootCardAmount"] = 4
     NATIVE["MinidoracatWatch.LootWatchAmount"] = 2
@@ -456,7 +479,7 @@ do
     parses = 0
     L.sync(true)
     check(parses == 1 and L.applied == "1111111111|214", "amount change reparses the distributions")
-    NATIVE["MinidoracatWatch.LootModuleAmount"], NATIVE["MinidoracatWatch.LootCardAmount"] = 3, 3
+    NATIVE["MinidoracatWatch.LootModuleAmount"], NATIVE["MinidoracatWatch.LootCardAmount"] = 3, 1
     NATIVE["MinidoracatWatch.LootWatchAmount"] = 3
 end
 
