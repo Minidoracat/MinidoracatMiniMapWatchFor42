@@ -664,6 +664,10 @@ selectSlot("core")
 check(acts() == "remove", "失效槽位裡的模組隨時能拆")
 W.setCharge(watch, 0)
 check(C.slotStatus(p, watch, W.slotById.std1) == "dead", "沒電：模組 dead")
+-- 橫幅狀態在 update 與 prerender 之間變了（伺服器推送剛到）：這一幀不畫，不拿還沒算過的寬度折行
+-- （1006s watch-econ-mp：第一次出現橫幅時寬度還是 nil，prerender 連續拋錯）
+panel.bannerTextW, panel.bannerMsg = nil, nil
+check(pcall(panel.prerender, panel), "沒電的狀態剛到、還沒 update：prerender 不出錯")
 tick()
 panel:update()
 check(panel.bannerMsg and panel.bannerMsg:find("Banner_Dead", 1, true) and panel.btnBanner.visible

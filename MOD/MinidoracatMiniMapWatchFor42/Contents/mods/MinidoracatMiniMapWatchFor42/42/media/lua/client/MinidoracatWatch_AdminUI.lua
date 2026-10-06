@@ -180,6 +180,17 @@ function AU.onState(args)
     if AU.uiReady and not (AU.state and AU.state.win) then AU.build(pn, player, args) end
 end
 
+-- 頁尾的「不合法」「沒有修改」是上次按套用的結果：欄位改好、有了修改就不再成立，每次 refresh 重算
+function AU.liveMsg(S)
+    local msg = S.msg
+    if msg == T("Invalid") then
+        for _ in pairs(S.bad) do return msg end -- Kahlua 沒有 next()
+        if M.problems(S.draft) == 0 then return nil end
+    end
+    if msg == T("NoChanges") and select(3, M.diff(S.base, S.draft)) > 0 then return nil end
+    return msg
+end
+
 -- ============================================================
 -- 視窗
 -- ============================================================
@@ -799,6 +810,7 @@ function AU.refresh(S)
     local _, _, n = M.diff(S.base, S.draft)
     S.dirty = n
     S.dirtyText.text = n == 0 and T("Clean") or T("Dirty", tostring(n))
+    S.msg = AU.liveMsg(S)
     S.msgText.text = S.msg and (UI.Text and UI.Text.fit and UI.Text.fit(S.msg, S.footer.width - 420, FONT) or S.msg) or ""
     S.discard:setEnabled(n > 0)
     S.apply:setEnabled(n > 0 and not S.busy)

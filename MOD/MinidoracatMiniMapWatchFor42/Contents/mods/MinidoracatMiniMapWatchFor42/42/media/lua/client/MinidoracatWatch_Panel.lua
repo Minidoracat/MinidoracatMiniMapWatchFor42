@@ -796,7 +796,9 @@ end
 
 function M:drawBanner(UI, colors, player, w)
     local msg, bg, fg, line, icon = self:banner(player, w)
-    if not msg then return end
+    -- 只畫 arrange 排好的那一則：狀態在 update 與 prerender 之間變了（伺服器推送剛到）就等下一次 update，
+    -- 不拿還沒算過（第一次是 nil）的寬度與高度去畫
+    if not msg or msg ~= self.bannerMsg then return end
     local x, y, bw, h = PAD, self.bannerY, self.width - 2 * PAD, self.bannerH
     local shape = shapeOf(UI, self.theme, "control")
     self.theme:fill(self, x, y, bw, h, bg, shape)

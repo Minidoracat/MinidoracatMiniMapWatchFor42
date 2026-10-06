@@ -277,6 +277,8 @@ local function leaseEvents(s, player, watch, slot, now, valid)
     -- 等槽位恢復有效再報（伺服器的有效槽位與 Economy 的租約是兩個推送，先後不定）；面板正在付或剛付完的不報
     if e.renewed and valid and C.Pay.busy[v.pid] == nil then
         e.renewed = nil
+        -- 續租成功＝這段到期結束：之後再到期、再扣不到款是新的一件事，不受 60 秒不重報擋住
+        s.said["lapse:" .. slot.id], s.said["fail:" .. slot.id] = nil, nil
         local paid = C.Pay.paidAt[v.pid]
         if not (paid and now >= paid and now - paid < PAID_MS) then
             say(s, player, "renew:" .. slot.id, now, T("Toast_Renewed", name), T("Toast_Renewed_msg", C.Pay.leftText(v.left)))

@@ -395,11 +395,25 @@ step()
 H.check(0, alice, F.now)
 check(#toasts == 12 and toasts[12].message:find("^IGUI_MinidoracatWatch_PayFailOther") ~= nil,
     "到期當下扣款失敗：到期與失敗併成一則")
+-- 續租成功＝這段租約事件結束：之後再到期是新的一件事，60 秒內也照報
+-- （1006s watch-econ-mp：續租後 43 秒再到期且沒扣到款，被當成重複的到期，什麼都沒報）
+W.clientPay.alice = { ext = true }
+econ(rental("r1", F.now + 7 * 86400000, { autoRenew = true }))
+step()
+H.check(0, alice, F.now)
+check(#toasts == 13 and toasts[13].title == "IGUI_MinidoracatWatch_Toast_Renewed|IGUI_MinidoracatWatch_Slot_ext", "補到款：續租成功")
+W.clientPay.alice = {}
+econ(rental("r1", F.now, { autoRenew = true, state = "grace", graceUntil = F.now + 3600000 }),
+    { code = "renewal_failed", error = "insufficient_funds" })
+step()
+H.check(0, alice, F.now)
+check(#toasts == 14 and toasts[14].title == "IGUI_MinidoracatWatch_Toast_Lapsed|IGUI_MinidoracatWatch_Slot_ext"
+    and toasts[14].message:find("^IGUI_MinidoracatWatch_PayFailFunds") ~= nil, "續租後 60 秒內再到期：照報到期與原因")
 -- 換錶：重設基準
 wear(alice, 0)
 step()
 H.check(0, alice, F.now)
-check(#toasts == 12, "換一支沒電的錶：基準，不報")
+check(#toasts == 14, "換一支沒電的錶：基準，不報")
 
 -- ===== 管理員視窗：到經濟中心上架（Economy 客戶端 rev 4＋shopAdd）=====
 F.load("client/MinidoracatWatch_AdminUI.lua")
@@ -442,5 +456,20 @@ CL.openAdminShop = function() error("boom") end
 F.reset()
 AU.openShop({ player = alice })
 check(F.halos[1] and F.halos[1].text == "IGUI_MinidoracatWatch_Admin_ShopFailed", "facade 拋錯：不炸、提示")
+
+-- 頁尾的「不合法」「沒有修改」是上次按套用的結果：欄位改好、有了修改就清掉（AU.refresh 每次用 liveMsg 重算）
+-- （1006r 截圖：滿電時數改回合法後，紅字一直留到確認框都還在）
+local AM = MinidoracatWatchAdminModel
+local b = AM.readBase({ rev = 1, zombieDrops = W.defaultDrops(), moduleDrains = {}, addonSlots = {} })
+local S = { bad = { tf = true }, base = b, draft = AM.copy(b), msg = AM.T("Invalid") }
+check(AU.liveMsg(S) == AM.T("Invalid"), "還有不合法欄位：訊息留著")
+S.bad = {}
+check(AU.liveMsg(S) == nil, "欄位改好：不合法訊息清掉")
+S.msg = AM.T("NoChanges")
+check(AU.liveMsg(S) == AM.T("NoChanges"), "還是沒有修改：訊息留著")
+S.draft.sb.CarHours = S.draft.sb.CarHours + 1
+check(AU.liveMsg(S) == nil, "有了修改：沒有修改的訊息清掉")
+S.msg = AM.T("Conflict")
+check(AU.liveMsg(S) == AM.T("Conflict"), "其他結果訊息照留")
 
 F.finish("test_watch_hud")
