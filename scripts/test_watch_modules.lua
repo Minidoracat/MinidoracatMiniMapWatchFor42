@@ -249,8 +249,8 @@ F.reset()
 check(W.applyUnlock(alice, "ext", card:getID()) == true, "用擴充槽解鎖卡")
 check(card.container == nil and F.removed[1] == card, "卡用掉（移除封包）")
 check(W.slotValid(alice, ext) == true, "擴充槽有效")
-local key = W.seenKey(alice)
-check(F.globalModData[W.UNLOCK_TABLE][key].ext == true, "紀錄在伺服器全域 ModData，鍵＝帳號|playerNum")
+check(F.globalModData[W.UNLOCK_TABLE].alice and F.globalModData[W.UNLOCK_TABLE].alice.n.ext == true,
+    "紀錄在伺服器全域 ModData，鍵＝登入名、no-steam 的驗證鍵 n")
 local push = F.serverCmds[1]
 check(push and push.player == alice and push.command == W.CMD_UNLOCKS and push.args.to == "alice"
     and push.args.slots.ext == true, "變更時把自己的解鎖狀態送給客戶端")
@@ -269,12 +269,45 @@ check(W.applyUnlock(alice, "adv", card2:getID() + 0.5) == false, "非整數 card
 SB.SlotAddon = 2
 check(W.applyUnlock(alice, "forecast", card2:getID()) == true, "其他 MOD 的槽位用擴充槽解鎖卡")
 SB.SlotAddon = 1
--- 帳號鍵：同帳號不同 playerNum、同 playerNum 不同帳號、帳號含分隔字元都不共用
+-- 帳號身分（W.account）：MP 伺服器上分割畫面第 2～4 位不能用；Steam 伺服器以 SteamID 指紋驗證，改名冒用讀不到
 local alice1 = F.player("alice", 1)
-local other = F.player("alice|0", 0)
-check(W.slotValid(alice1, ext) == false and W.slotValid(other, ext) == false, "名額綁 (帳號, playerNum)：別人用不到")
-check(W.seenKey(other) ~= W.seenKey(alice) and W.seenKey(F.player("a|1", 0)) ~= W.seenKey(F.player("a", 10)),
-    "帳號含 | 也不會撞鍵（playerNum 只有數字，最後一個 | 是分隔）")
+alice1.inv:AddItem(F.item("MinidoracatWatch.UnlockCard_Adv"))
+check(W.slotValid(alice1, ext) == false and W.account(alice1) == nil, "分割畫面第 2 位玩家取名 alice：讀不到 alice 的名額")
+local r3, r4 = W.applyUnlock(alice1, "adv", alice1.inv:getAllTypeRecurse("MinidoracatWatch.UnlockCard_Adv"):get(0):getID())
+check(r3 == false and r4 == W.FAIL_UNLOCK_ACCOUNT and alice1.inv:getAllTypeRecurse("MinidoracatWatch.UnlockCard_Adv"):size() == 1,
+    "身分無法驗證：不能用卡、卡不被吃")
+F.reset()
+W.pushUnlocks(alice1)
+check(F.serverCmds[1] and next(F.serverCmds[1].args.slots) == nil, "身分無法驗證：推播空表")
+check(W.account(F.player("", 0)) == nil, "空名字：無法驗證")
+-- Steam 伺服器：alice（SteamID A）用卡；mallory（SteamID B）在同一座位重生、改名 alice（ConnectCoopPacket.java:72-97）
+F.steam = true
+local sa, sb = 76561198000000000, 76561198012345680
+local steamAlice = F.player("salice", 0)
+steamAlice.sid = sa
+local sCard = F.item("MinidoracatWatch.UnlockCard_Ext")
+steamAlice.inv:AddItem(sCard)
+check(W.applyUnlock(steamAlice, "ext", sCard:getID()) == true and W.slotValid(steamAlice, ext), "Steam：alice 用卡開擴充槽")
+local impostor = F.player("salice", 0)
+impostor.sid = sb
+check(W.slotValid(impostor, ext) == false, "Steam：同座位重生改名成 alice（SteamID 不同）讀不到 alice 的名額")
+local iCard = F.item("MinidoracatWatch.UnlockCard_Ext")
+impostor.inv:AddItem(iCard)
+check(W.applyUnlock(impostor, "ext", iCard:getID()) == true and W.slotValid(impostor, ext), "冒名者用自己的卡只開自己那份")
+local back = F.player("salice", 0)
+back.sid = sa
+check(W.slotValid(back, ext) and F.globalModData[W.UNLOCK_TABLE].salice ~= nil, "alice 回來：自己的名額還在、沒被蓋掉")
+local stored = false
+for _, v in pairs(F.globalModData[W.UNLOCK_TABLE].salice) do if v == sa then stored = true end end
+for k in pairs(F.globalModData[W.UNLOCK_TABLE].salice) do if k:find(string.format("%.0f", sa), 1, true) then stored = true end end
+check(not stored, "全域 ModData 只存指紋、不存 SteamID")
+local noSid = F.player("salice", 0)
+check(W.slotValid(noSid, ext) == false and W.account(noSid) == nil, "Steam 伺服器上讀不到 SteamID：無法驗證")
+F.steam = false
+check(W.account(steamAlice) == "salice", "no-steam：沒有驗證因子，回登入名（已知殘餘風險）")
+F.mode = "sp"
+check(W.account(alice1) == W.seenKey(alice1), "單機：帳號＝帳號|本機座位（分割畫面各自一份）")
+F.mode = "server"
 -- 換戴別支錶也能用
 local watch2 = give(alice, F.LEFT)
 compass = give(alice, MOD("Compass"))
@@ -290,7 +323,7 @@ W.clientUnlocks.alice = { adv = true }
 check(W.slotValid(alice, W.slotById.adv) == true, "MP 客戶端只看伺服器送來的那份（顯示用）")
 W.clientUnlocks.alice = nil
 F.mode = "server"
-check(F.globalModData[W.UNLOCK_TABLE][key].adv == nil, "伺服器紀錄沒有被客戶端改到")
+check(F.globalModData[W.UNLOCK_TABLE].alice.n.adv == nil, "伺服器紀錄沒有被客戶端改到")
 
 -- ===== 耗電倍率 =====
 local w3 = give(alice, F.RIGHT)

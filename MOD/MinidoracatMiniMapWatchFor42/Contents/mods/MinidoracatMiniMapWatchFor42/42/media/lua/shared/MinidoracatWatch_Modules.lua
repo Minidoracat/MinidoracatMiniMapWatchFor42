@@ -5,8 +5,8 @@
 --   錶的 modData[SLOTS_KEY] = { [slotId] = { id = 模組 id, item = 模組物品完整類型, md = 模組物品 modData 的複本或 nil } }
 --     模組跟著錶走（交易、換手時 ISClothingExtraAction 整份複製 modData）；安裝＝物品離開背包、紀錄進錶，
 --     拆下＝紀錄離開錶、以同類型建回物品並還原 modData（物品數量守恆）。
---   解鎖紀錄：伺服器全域 ModData[UNLOCK_TABLE][W.seenKey(player)] = { [slotId] = true }。
---     綁帳號（username, playerNum），換戴別支錶也能用；玩家 modData 會被客戶端整表覆蓋
+--   解鎖紀錄：伺服器全域 ModData[UNLOCK_TABLE][帳號][驗證鍵] = { [slotId] = true }，帳號與驗證鍵由 W.account 決定
+--     （讀取、用卡寫入、推播都經過它）。綁帳號，換戴別支錶也能用；玩家 modData 會被客戶端整表覆蓋
 --     （ObjectModDataPacket.java:50-71），全域 ModData 客戶端改不到（GlobalModDataPacket.java:45-56）。
 --     MP 客戶端只拿到自己的那份（登入與變更時由伺服器送，W.clientUnlocks）。
 -- 由 MinidoracatWatch.lua 結尾 require（shared 依檔名順序先載入核心）；這裡不反向 require，免得 Kahlua 警告 recursive require。
@@ -31,8 +31,9 @@ W.FAIL_SLOT_EMPTY = "IGUI_MinidoracatWatch_SlotEmpty"
 W.FAIL_CLASS = "IGUI_MinidoracatWatch_SlotWrongClass"
 W.FAIL_UNLOCK = "IGUI_MinidoracatWatch_UnlockFailed"
 W.FAIL_UNLOCKED = "IGUI_MinidoracatWatch_AlreadyUnlocked"
+W.FAIL_UNLOCK_ACCOUNT = "IGUI_MinidoracatWatch_UnlockNoAccount"
 for _, k in ipairs({ W.FAIL_MODULE, W.FAIL_SCREWDRIVER, W.FAIL_SLOT_INVALID, W.FAIL_SLOT_FULL, W.FAIL_SLOT_EMPTY,
-        W.FAIL_CLASS, W.FAIL_UNLOCK, W.FAIL_UNLOCKED }) do
+        W.FAIL_CLASS, W.FAIL_UNLOCK, W.FAIL_UNLOCKED, W.FAIL_UNLOCK_ACCOUNT }) do
     W.FAIL_KEYS[k] = true
 end
 
@@ -188,14 +189,45 @@ function W.moduleDrain(def)
     return v
 end
 
--- ===== 解鎖紀錄 =====
+-- ===== 解鎖紀錄與帳號身分 =====
 W.clientUnlocks = {} -- MP 客戶端：[username] = { [slotId] = true }（伺服器送來的）
 
--- 鍵沿用 W.seenKey＝username .. "|" .. playerNum：playerNum 只有數字，最後一個 | 就是分隔，
--- 不同 (帳號, playerNum) 不會撞成同一鍵；帳號原樣存（無損），不消毒不截斷。
+-- 解鎖名額的帳號（伺服器唯一的身分函式；照家族 conventions.md「玩家身分」與 Economy 權益：帳號鍵＝登入名，
+-- SteamID 只當驗證因子）。回 帳號, 驗證鍵；無法驗證回 nil（不能讀、不能用卡）。
+-- 伺服器上的 getUsername() 是客戶端送來的：重生與分割畫面加入走 ConnectCoopPacket，只擋空字串與在線重名
+-- （ConnectCoopPacket.java:72-97），再直接設成 player.username（GameServer.java:2848），所以改名成離線玩家就能冒名。
+-- 連線的登入名在 Lua 拿不到（LuaManager 只在 checkPermissions 內部用 getConnectionFromPlayer，:3056）；
+-- SteamID 則來自連線（GameServer.java:2843-2844 setSteamID(connection.getSteamId())），改名帶不走。
+--   1. 單機：沒有冒名問題，帳號＝W.seenKey（帳號|本機座位，分割畫面各自一份）、驗證鍵 "sp"。
+--   2. MP 的第 2～4 位本機玩家（getPlayerNum ~= 0）：和主玩家共用 SteamID，無從驗證 → nil。
+--   3. 名字不是非空字串 → nil。
+--   4. no-steam 伺服器（getSteamModeActive() 為 false，LuaManager.java:9359-9364）：沒有驗證因子 → 名字、驗證鍵 "n"。
+--      已知殘餘風險：改名成離線玩家仍讀得到對方的名額（README 有寫）。
+--   5. Steam 伺服器：驗證鍵＝SteamID 的指紋（IsoPlayer.getSteamID＝IsoPlayer.java:6412；進 Lua 是 double，
+--      floor(sid/16) 對 999983 取餘）。冒名者的 SteamID 不同，指紋對不上就讀不到也寫不進別人的名額；
+--      同一指紋約 4.8e9 個 SteamID，全域 ModData 任何客戶端都能整表索取（GlobalModData.java:171-196），
+--      所以只存指紋、不存 SteamID。SteamID 讀不到或是 0 → nil。
+local FP_MOD = 999983
+function W.steamMode() return getSteamModeActive() == true end -- 測試與 E2E 可覆寫
+function W.account(player)
+    if not player then return nil end
+    if not isServer() then return W.seenKey(player), "sp" end
+    if instanceof(player, "IsoAnimal") or player:getPlayerNum() ~= 0 then return nil end
+    local name = player:getUsername()
+    if type(name) ~= "string" or name == "" then return nil end
+    if not W.steamMode() then return name, "n" end
+    local sid = player:getSteamID()
+    if type(sid) ~= "number" or sid ~= sid or sid <= 0 or sid == math.huge then return nil end
+    local f = math.floor(sid / 16)
+    return name, string.format("s%d", f - math.floor(f / FP_MOD) * FP_MOD)
+end
+
 function W.unlocksOf(player)
     if isClient() then return W.clientUnlocks[player:getUsername()] end
-    return ModData.getOrCreate(W.UNLOCK_TABLE)[W.seenKey(player)] -- ModData.java:20
+    local name, key = W.account(player)
+    if not name then return nil end
+    local t = ModData.getOrCreate(W.UNLOCK_TABLE)[name] -- ModData.java:20
+    return type(t) == "table" and t[key] or nil
 end
 
 function W.isUnlocked(player, slotId)
@@ -407,19 +439,20 @@ end
 
 -- onStateChanged：每秒比對一次（MP 伺服器在扣電迴圈、客戶端與單機在客戶端迴圈），只在狀態改變時呼叫
 -- def.onStateChanged(player, newState, oldState)。第一次看到這位玩家時 oldState＝nil。拋錯只 log 一次。
+-- 紀錄記下是哪個 IsoPlayer：同一座位換了新物件（重生、分割畫面換人，AddCoopPlayer.java:153-162）就從頭算。
 local lastStates = {}
 function W.pollStateCallbacks(player, key)
     if #W.watchers == 0 then return end
     local t = lastStates[key]
-    if not t then
-        t = {}
+    if not t or t.obj ~= player then
+        t = { obj = player, s = {} }
         lastStates[key] = t
     end
     for _, def in ipairs(W.watchers) do
         local s = W.moduleState(player, def.id)
-        local old = t[def.id]
+        local old = t.s[def.id]
         if s ~= old then
-            t[def.id] = s
+            t.s[def.id] = s
             local ok, err = pcall(def.onStateChanged, player, s, old)
             if not ok and not def.errLogged then
                 def.errLogged = true
@@ -471,6 +504,16 @@ function W.hasScrewdriver(player)
     return player:getInventory():containsTagEvalRecurse(ItemTag.SCREWDRIVER, notBroken)
 end
 
+-- 伺服器收到沒登記的槽位或模組物品：最常見的原因是第三方只在 client 檔登記（專用伺服器只算 client 檔的
+-- 檢查碼、不執行，GameServer.java:1469-1471、LuaManager.java:1206-1208）。每個名稱 log 一次、最多 32 個名稱。
+local unknownLogged, unknownCount = {}, 0
+function W.logUnregistered(kind, name)
+    if not isServer() or type(name) ~= "string" or unknownLogged[kind .. name] or unknownCount >= 32 then return end
+    unknownLogged[kind .. name] = true
+    unknownCount = unknownCount + 1
+    W.log(kind .. " " .. name .. " is not registered on the server; register watch modules and slots in a shared file")
+end
+
 local function takeItem(player, item, container)
     player:removeFromHands(item)
     container:DoRemoveItem(item)
@@ -485,7 +528,10 @@ function W.applyModuleChange(player, watchId, slotId, install, itemId)
     end
     if install and not W.isFiniteInt(itemId) then return false, W.FAIL_MODULE end
     local slot = W.slotById[slotId]
-    if not slot and (install or not validId(slotId)) then return false, W.FAIL_MODULE end
+    if not slot and (install or not validId(slotId)) then
+        if install and validId(slotId) then W.logUnregistered("slot", slotId) end
+        return false, W.FAIL_MODULE
+    end
     if not player or player:isDead() then return false, W.FAIL_MODULE end
     local inv = player:getInventory()
     if not inv then return false, W.FAIL_MODULE end
@@ -500,7 +546,12 @@ function W.applyModuleChange(player, watchId, slotId, install, itemId)
         if slots and slots[slotId] ~= nil then return false, W.FAIL_SLOT_FULL end
         local item = inv:getItemWithIDRecursiv(itemId)
         local def = item and W.moduleByItem[item:getFullType()]
-        if not def then return false, W.FAIL_MODULE end
+        if not def then
+            -- 原版物品（Base.*）不可能是模組，不記；其他類型多半是只在 client 登記的第三方模組
+            local t = item and item:getFullType()
+            if t and t:sub(1, 5) ~= "Base." then W.logUnregistered("module item", t) end
+            return false, W.FAIL_MODULE
+        end
         if not slot.accepts[def.class] then return false, W.FAIL_CLASS end
         local container = item:getContainer() -- InventoryItem.java:3840：實際所在的袋子
         if not container then return false, W.FAIL_MODULE end
@@ -535,6 +586,7 @@ end
 
 -- ===== 解鎖卡（伺服器／單機）=====
 -- 只在開啟方式是「解鎖卡」（含 Phase 6 前的經濟系統）、而且還沒開啟時收卡：免費、不開放、已開啟一律拒絕，卡不會被吃。
+-- 帳號無法驗證（W.account 回 nil）也拒絕。推播只送給本人、內容是本人帳號的名額（未驗證＝空表）。
 function W.pushUnlocks(player)
     if not isServer() then return end
     sendServerCommand(player, W.MODULE, W.CMD_UNLOCKS, { to = player:getUsername(), slots = W.unlocksOf(player) or {} })
@@ -546,6 +598,8 @@ function W.applyUnlock(player, slotId, cardId)
     local slot = W.slotById[slotId]
     local want = slot and W.cardType(slot)
     if not want or not player or player:isDead() then return false, W.FAIL_UNLOCK end
+    local name, key = W.account(player)
+    if not name then return false, W.FAIL_UNLOCK_ACCOUNT end
     if W.slotMode(slot) ~= "card" then return false, W.FAIL_UNLOCK end
     if W.isUnlocked(player, slotId) then return false, W.FAIL_UNLOCKED end
     local inv = player:getInventory()
@@ -556,9 +610,9 @@ function W.applyUnlock(player, slotId, cardId)
     -- 以下不再有失敗點
     takeItem(player, card, container)
     local all = ModData.getOrCreate(W.UNLOCK_TABLE)
-    local key = W.seenKey(player)
-    if type(all[key]) ~= "table" then all[key] = {} end
-    all[key][slotId] = true
+    if type(all[name]) ~= "table" then all[name] = {} end
+    if type(all[name][key]) ~= "table" then all[name][key] = {} end
+    all[name][key][slotId] = true
     W.invalidate()
     W.pushUnlocks(player)
     return true

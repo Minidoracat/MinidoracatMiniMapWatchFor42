@@ -15,7 +15,8 @@ function getMouseX() return 100 end
 function getMouseY() return 100 end
 F.draws = 0
 local Element = {}
-function Element:drawText() F.draws = F.draws + 1 end
+F.texts = {}
+function Element:drawText(t) F.draws = F.draws + 1; F.texts[#F.texts + 1] = t end
 function Element:drawTextCentre() F.draws = F.draws + 1 end
 function Element:drawRect() F.draws = F.draws + 1 end
 function Element:drawRectBorder() F.draws = F.draws + 1 end
@@ -455,11 +456,21 @@ check(#F.halos == 1, "未知原因與別人的回報都忽略")
 -- ===== onStateChanged：客戶端每秒比對（MP 客戶端與單機）=====
 local seen = {}
 MinidoracatWatchAPI.registerWatchModule({ id = "weather", name = "IGUI_X", class = "standard", drain = 15,
-    item = "MyWeather.WeatherModule", onStateChanged = function(pl, s, old) seen[#seen + 1] = s end })
+    item = "MyWeather.WeatherModule", onStateChanged = function(pl, s, old) seen[#seen + 1] = { p = pl, s = s, old = old } end })
 tick(); C.poll()
-check(#seen == 1 and seen[1] == "missing", "第一次比對通知目前狀態")
+check(#seen == 1 and seen[1].s == "missing" and seen[1].old == nil, "第一次比對通知目前狀態")
 tick(); C.poll()
 check(#seen == 1, "沒變不通知")
+-- 同一座位換成新的 IsoPlayer（重生、分割畫面換人，AddCoopPlayer.java:153-162）、狀態相同：照樣通知一次、oldState＝nil
+local reborn = setmetatable({}, getmetatable(p))
+for k, v in pairs(p) do reborn[k] = v end
+F.players[1] = reborn
+tick(); C.poll()
+check(#seen == 2 and seen[2].p == reborn and seen[2].s == "missing" and seen[2].old == nil,
+    "同座位換新玩家物件：重新通知、oldState＝nil")
+F.players[1] = p
+tick(); C.poll()
+seen = {}
 
 -- ===== 面板 =====
 SB.SlotExt, SB.SlotAdv, SB.SlotCore = 2, 4, 1
@@ -501,11 +512,35 @@ pick(menu.options[1])
 check(F.queues[p][1] and F.queues[p][1].slotId == "std3" and F.queues[p][1].install, "從清單選模組：排安裝動作")
 F.queues[p] = {}
 selectSlot("ext")
-check(panel.btnCard.visible and panel.btnCard.enabled and panel.btnCard.title == "IGUI_MinidoracatWatch_UseSlotCard|IGUI_MinidoracatWatch_Slot_ext",
-    "解鎖卡模式、未開啟：「使用擴充槽解鎖卡」可按（背包有卡）")
+check(panel.btnCard.visible and panel.btnCard.enabled
+    and panel.btnCard.title == "IGUI_MinidoracatWatch_UseSlotCard|item:MinidoracatWatch.UnlockCard_Ext",
+    "解鎖卡模式、未開啟：「使用擴充槽解鎖卡」（卡的物品名）可按（背包有卡）")
 F.reset()
 panel.btnCard.onclick(panel)
 check(F.clientCmds[1] and F.clientCmds[1].command == W.CMD_UNLOCK and F.clientCmds[1].args.slotId == "ext", "按鈕送解鎖")
+-- 其他 MOD 的槽位（解鎖卡模式）：要的是擴充槽解鎖卡，文案用卡的物品名、不是「槽位名＋解鎖卡」
+MinidoracatWatchAPI.registerWatchSlot({ id = "forecast", name = "IGUI_X_Forecast", accepts = { "standard" },
+    price = { rent = 80, days = 7, buy = 600 } })
+SB.SlotAddon = 2
+local function hasText(want) return table.concat(F.texts):find(want, 1, true) ~= nil end
+local savedCards = {}
+for _, c in ipairs(p.inv:getAllTypeRecurse("MinidoracatWatch.UnlockCard_Ext")._items) do
+    savedCards[#savedCards + 1] = c
+    c.container:DoRemoveItem(c)
+end
+selectSlot("forecast")
+F.texts = {}
+panel:prerender()
+check(panel.btnCard.visible and panel.btnCard.title == "IGUI_MinidoracatWatch_UseSlotCard|item:MinidoracatWatch.UnlockCard_Ext"
+    and not panel.btnCard.enabled, "其他 MOD 的槽位：按鈕寫擴充槽解鎖卡、背包沒卡時停用")
+check(hasText("IGUI_MinidoracatWatch_Desc_Card|item:MinidoracatWatch.UnlockCard_Ext|IGUI_X_Forecast")
+    and hasText("IGUI_MinidoracatWatch_CardNone|item:MinidoracatWatch.UnlockCard_Ext"),
+    "其他 MOD 的槽位：說明與「背包裡沒有…」用卡的物品名，槽位名另外傳")
+for _, c in ipairs(savedCards) do p.inv:AddItem(c) end
+SB.SlotAddon = 1
+for i = #W.slotList, 1, -1 do if W.slotList[i].id == "forecast" then table.remove(W.slotList, i) end end
+W.slotById.forecast = nil
+W.invalidate()
 selectSlot("adv")
 check(not panel.btnCard.visible and not panel.btnInstall.visible and not panel.btnRemoveModule.visible, "不開放的槽位：沒有按鈕")
 -- 拖曳：放到可以裝的槽位排動作；放到不能裝的槽位提示原因

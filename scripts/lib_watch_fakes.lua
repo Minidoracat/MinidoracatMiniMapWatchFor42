@@ -19,6 +19,9 @@ function isClient() return F.mode == "client" end
 function isServer() return F.mode == "server" end
 function isGamePaused() return F.paused end
 function isAdmin() return F.admin == true end
+F.steam = false
+function getSteamModeActive() return F.steam end -- LuaManager.java:9359-9364
+function getItemNameFromFullType(t) return "item:" .. t end
 function getText(key, a, b) return key .. (a and ("|" .. a) or "") .. (b and ("|" .. b) or "") end
 function instanceof(o, cls) return type(o) == "table" and o._class == cls end
 local realPrint = print
@@ -191,6 +194,8 @@ function Player:getModData() return self.md end
 function Player:getPlayerNum() return self.pn end
 function Player:getUsername() return self.name end
 function Player:getOnlineID() return self.onlineId end
+-- SteamID 來自連線（GameServer.java:2843-2844）：改名帶不走；no-steam 是 0
+function Player:getSteamID() return self.sid or 0 end
 function Player:removeFromHands() end
 function Player:isTimedActionInstant() return false end
 function Player:getWornItems()

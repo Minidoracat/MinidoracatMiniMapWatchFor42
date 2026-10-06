@@ -226,7 +226,7 @@ function Panel:update()
         self.btnInstall:setVisible(true)
     elseif st == "locked" then
         self.btnCard:setVisible(true)
-        self.btnCard:setTitle(getText("IGUI_MinidoracatWatch_UseSlotCard", C.slotName(slot)))
+        self.btnCard:setTitle(getText("IGUI_MinidoracatWatch_UseSlotCard", C.cardName(slot)))
         self.btnCard:setEnable(self.cardCount > 0)
     elseif st ~= "off" then
         self.btnRemoveModule:setVisible(true)
@@ -343,9 +343,9 @@ function Panel:drawInspector(player, watch, slot)
         if slot.tier == "core" then y = para(self, getText("IGUI_MinidoracatWatch_Desc_Core"), x, y, width) + 4 end
         if slot.tier == "addon" then y = para(self, getText("IGUI_MinidoracatWatch_Desc_Addon"), x, y, width) + 4 end
         if st == "locked" then
-            y = para(self, getText("IGUI_MinidoracatWatch_Desc_Card", name), x, y, width, 0.85, 0.8, 0.6) + 4
+            y = para(self, getText("IGUI_MinidoracatWatch_Desc_Card", C.cardName(slot), name), x, y, width, 0.85, 0.8, 0.6) + 4
             local note = self.cardCount > 0 and getText("IGUI_MinidoracatWatch_CardCount", tostring(self.cardCount))
-                or getText("IGUI_MinidoracatWatch_CardNone", name)
+                or getText("IGUI_MinidoracatWatch_CardNone", C.cardName(slot))
             para(self, note, x, y, width, 0.6, 0.6, 0.6)
             return
         end

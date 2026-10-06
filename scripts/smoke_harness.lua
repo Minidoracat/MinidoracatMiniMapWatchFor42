@@ -211,6 +211,30 @@ send(relog, W.CMD_MODULE, { watchId = moved:getID(), slotId = "forecast", instal
 check(W.slotRecord(moved, "forecast") == nil and spare.container == relog.inv and fails(relog) == 1,
     "孤立槽位不能再裝")
 
+F.print("情境八：第三方只在 client 檔登記（專用伺服器不執行 client 檔）→ 伺服器拒絕安裝，每個名稱 log 一次")
+-- 客戶端那邊看得到的槽位與模組，伺服器的登記表裡沒有
+local onlyClient = F.item("Other.ClientOnlyModule")
+relog.inv:AddItem(onlyClient)
+F.reset()
+for _ = 1, 2 do
+    send(relog, W.CMD_MODULE, { watchId = moved:getID(), slotId = "clientonly", install = true, itemId = onlyClient:getID() })
+    send(relog, W.CMD_MODULE, { watchId = moved:getID(), slotId = "std3", install = true, itemId = onlyClient:getID() })
+end
+local slotLogs, itemLogs = 0, 0
+for _, l in ipairs(F.logs) do
+    if l:find("slot clientonly is not registered on the server", 1, true) then slotLogs = slotLogs + 1 end
+    if l:find("module item Other.ClientOnlyModule is not registered on the server", 1, true) then itemLogs = itemLogs + 1 end
+end
+check(onlyClient.container == relog.inv and W.slotRecord(moved, "clientonly") == nil and W.slotRecord(moved, "std3") == nil
+    and fails(relog) == 4, "伺服器沒登記的槽位與模組：拒絕、物品不動")
+check(slotLogs == 1 and itemLogs == 1, "每個沒登記的名稱只 log 一次（提示要放 shared）")
+F.reset()
+send(relog, W.CMD_MODULE, { watchId = moved:getID(), slotId = "std3", install = true, itemId = F.item("Base.Battery"):getID() })
+local battery = F.item("Base.Battery")
+relog.inv:AddItem(battery)
+send(relog, W.CMD_MODULE, { watchId = moved:getID(), slotId = "std3", install = true, itemId = battery:getID() })
+check(#F.logs == 0, "原版物品不是模組，不記 log")
+
 F.print()
 if F.failures > 0 then
     F.print(F.failures .. " 項失敗")

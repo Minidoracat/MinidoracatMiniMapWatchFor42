@@ -273,6 +273,11 @@ end
 -- OnFillInventoryObjectContextMenu(playerNum, context, items)：items 是物品或 { items = {...} } 疊
 -- （ISInventoryPaneContextMenu.lua:128-137、:935）。子選單照原版 ISContextMenu:getNew／addSubMenu。
 function C.slotName(slot) return getText(slot.name) end
+-- 這個槽位要用的解鎖卡物品名（其他 MOD 的槽位用擴充槽解鎖卡，不是「槽位名＋解鎖卡」）；getItemNameFromFullType＝LuaManager.java:8603-8608
+function C.cardName(slot)
+    local t = W.cardType(slot)
+    return t and getItemNameFromFullType(t) or ""
+end
 function C.moduleName(id)
     local def = W.modules[id]
     return def and getText(def.name) or id

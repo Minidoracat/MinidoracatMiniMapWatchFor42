@@ -37,10 +37,12 @@ Project Zomboid Build 42 MOD，[Minidoracat MiniMap for B42](https://steamcommun
 | `registerWatchSlot(def) --> boolean` | `def = { id, name, accepts, price }`：`accepts` 是能裝的類別陣列；`price = { rent, days, buy }` 是建議價格。開啟方式（免費／解鎖卡／不開放）與收費由地圖錶處理；最多 6 個 |
 | `getWatchModuleState(player, id) --> string` | `"disabled"`（管理員關閉了對應功能）＞`"active"`（裝在戴著、有電的錶的有效槽位）＞`"notRequired"`（地圖錶系統關閉，或規則是不需要錶／戴錶就能用而且條件成立）＞`"unpowered"`（戴著但沒電或沒電池）＞`"paused"`（所在槽位沒有開啟）＞`"missing"`（沒戴錶或沒裝）。可每幀呼叫（快取 1 秒、不配置記憶體） |
 
+**模組與槽位一定要在 `media/lua/shared/` 的檔案裡登記**，讓伺服器與客戶端各登記一次：專用伺服器不執行 `client` 資料夾（只算檢查碼），只在 client 登記的話面板看得到、伺服器卻不認得，安裝一律被拒（伺服器 log 會記一筆「is not registered on the server」）。只讀狀態的 UI 邏輯可以放在 client。
+
 **沒裝地圖錶、版本太舊，或管理員關閉了地圖錶系統時，你的功能應該照常開放**，不要因為少了地圖錶就把功能鎖住：
 
 ```lua
--- 檔案載入時註冊一次（shared 或 client 都可以；地圖錶的 shared 檔要先載入，mod.info 用 require= 或 loadModAfter=）
+-- media/lua/shared/ 的檔案，載入時註冊一次（地圖錶的 shared 檔要先載入：mod.info 用 require= 或 loadModAfter=）
 local API = MinidoracatWatchAPI
 if type(API) == "table" and type(API.watchApiVersion) == "number" and API.watchApiVersion >= 1
         and type(API.registerWatchModule) == "function" then
@@ -53,7 +55,7 @@ if type(API) == "table" and type(API.watchApiVersion) == "number" and API.watchA
     })
 end
 
--- 功能入口：模組裝著而且有電、或地圖錶不要求時才開放
+-- 功能入口（可以放 client）：模組裝著而且有電、或地圖錶不要求時才開放
 local function canShowForecast(player)
     local API = MinidoracatWatchAPI
     if not (type(API) == "table" and type(API.watchApiVersion) == "number" and API.watchApiVersion >= 1
@@ -79,6 +81,7 @@ end
 - 只看「有沒有」的功能（例如 AutoDrive 的 GPS）只認 `"active"`。
 - 模組耗電：內建模組由沙盒調整；第三方模組目前用 `drain` 建議值（管理員調整在之後的版本）。
 - 其他 MOD 的槽位開啟方式是沙盒「其他 MOD 加入的槽位的開啟方式」（預設免費開放）；選解鎖卡時用擴充槽解鎖卡。
+- 解鎖卡開啟的名額綁在帳號（登入名）。多人伺服器上分割畫面的第 2～4 位玩家無法確認身分，不能使用解鎖卡；Steam 伺服器以連線的 SteamID 確認身分，改名冒用別人讀不到對方的名額。**已知殘餘風險**：no-steam 伺服器沒有驗證因子，玩家重生時改名成離線玩家仍能使用對方已開啟的名額。
 - 你的 MOD 被移除後（沒有再登記同一個槽位 id），裝在那個槽位裡的模組會停用、不耗電，玩家照樣能從面板或錶的右鍵選單拆下來；槽位與解鎖紀錄保留，MOD 裝回來就恢復。模組的 `item` 類型如果也跟著消失，那個模組會留在錶上、拆不下來，直到 MOD 裝回來。
 
 ## 開發
