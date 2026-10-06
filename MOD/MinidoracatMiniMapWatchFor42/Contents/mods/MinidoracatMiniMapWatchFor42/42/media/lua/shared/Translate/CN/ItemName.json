@@ -26,5 +26,6 @@
     "MinidoracatWatch.MapWatch_Luthex_Right": "卢瑟斯 金表",
     "MinidoracatWatch.MapWatch_BB3000_Left": "哔哔腕机 BB-3000",
     "MinidoracatWatch.MapWatch_BB3000_Right": "哔哔腕机 BB-3000",
-    "MinidoracatWatch.Module_Light": "照明模块"
+    "MinidoracatWatch.Module_Light": "照明模块",
+    "MinidoracatWatch.LightEmitter": "地图表灯光"
 }

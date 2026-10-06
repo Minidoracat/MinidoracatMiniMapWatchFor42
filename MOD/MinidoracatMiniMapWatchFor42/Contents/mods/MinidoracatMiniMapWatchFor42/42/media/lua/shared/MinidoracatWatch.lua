@@ -463,3 +463,5 @@ if not isClient() then Events.OnTickEvenPaused.Add(W.onTick) end
 
 -- 模組、槽位、狀態快取與對外 API（扣電倍率 W.drainFactor、W.invalidate 等都在那裡）
 require "MinidoracatWatch_Modules"
+-- 照明模組（Phase 8）：開關、自動熄燈、光源物品（用到上面模組檔的 featureDecision）
+require "MinidoracatWatch_Light"

@@ -36,6 +36,9 @@ local HANDLERS = {
     [W.CMD_BATTERY] = function(player, args)
         return W.applyBatteryChange(player, args.watchId, args.install, args.batteryId)
     end,
+    [W.CMD_LIGHT] = function(player, args)
+        return W.applyLight(player, args.on)
+    end,
     [W.CMD_MODULE] = function(player, args)
         return W.applyModuleChange(player, args.watchId, args.slotId, args.install, args.itemId)
     end,

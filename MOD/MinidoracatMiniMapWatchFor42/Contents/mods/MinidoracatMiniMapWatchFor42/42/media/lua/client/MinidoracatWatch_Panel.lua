@@ -27,7 +27,7 @@ local TIER_COLOR = {
     std = { 0.65, 0.69, 0.73 }, ext = { 0.25, 0.70, 0.50 }, adv = { 0.30, 0.55, 0.96 },
     core = { 0.66, 0.44, 0.94 }, addon = { 0.89, 0.60, 0.23 }, orphan = { 0.5, 0.5, 0.5 },
 }
-local FEATURES = { "minimap", "arrow", "poi", "nav", "share", "scan", "zombie" }
+local FEATURES = { "minimap", "arrow", "poi", "nav", "share", "scan", "zombie", "light" }
 
 local function font() return UIFont.Small end
 local function fontH() return getTextManager():getFontHeight(UIFont.Small) end
@@ -80,6 +80,7 @@ end
 local function drainText(def)
     local d = W.moduleDrain(def)
     if def.id == "eco" then return getText("IGUI_MinidoracatWatch_DrainHalf") end
+    if def.id == "light" then return getText("IGUI_MinidoracatWatch_DrainLight", tostring(W.lightDrain())) end
     if d <= 0 then return getText("IGUI_MinidoracatWatch_DrainNone") end
     return getText("IGUI_MinidoracatWatch_DrainPlus", tostring(d))
 end
@@ -163,6 +164,17 @@ function Panel:createChildren()
     self.btnInsert = button(PAD, by, 150, getText("IGUI_MinidoracatWatch_InsertBattery"), Panel.onInsert)
     self.btnRemove = button(PAD + 160, by, 150, getText("IGUI_MinidoracatWatch_RemoveBattery"), Panel.onRemove)
     self.btnScreen = button(PAD + 320, by, 170, getText("IGUI_MinidoracatWatch_ScreenAmber"), Panel.onScreen)
+    -- 照明模組的開關（MinidoracatWatch_LightClient.lua）：戴著的錶裝了照明模組才出現。家族 UI 框架的 chip Button
+    -- （§3.7：setActive＝燈開著）＋`lightbulb` 圖示（rev 14 幾何圖示）；框架缺席或低於 rev 14 就不放這顆，
+    -- 錶的右鍵與快捷鍵照樣能開關。
+    local ui = MinidoracatUI and MinidoracatUI.v1
+    if ui and ui.API_MAJOR == 1 and type(ui.API_REVISION) == "number" and ui.API_REVISION >= 14
+            and ui.CAPABILITIES and ui.CAPABILITIES.controls == true and ui.Button then
+        self.btnLight = ui.Button.new({ x = self.width - PAD - 100, y = by, width = 100, height = BTN_H,
+            title = getText("IGUI_MinidoracatWatch_LightOn"), icon = "lightbulb", style = "chip", target = self,
+            onClick = Panel.onLight })
+        self:addChild(self.btnLight)
+    end
 end
 
 -- 面板對象：從右鍵選單開的那支（還在玩家身上時），否則是戴著的那支
@@ -248,6 +260,15 @@ function Panel:update()
     self.btnRemove:setEnable(w ~= nil and c ~= nil)
     self.btnScreen:setVisible(W.hasScreen(w))
     if W.hasScreen(w) then self.btnScreen:setTitle(C.screenLabel(w)) end
+    local e = self.btnLight and player and w and w == C.watchOf(self.playerNum) and W.status(player)
+    local hasLight = e and W.modState(e, "light") ~= nil
+    if self.btnLight then self.btnLight:setVisible(hasLight == true) end
+    if hasLight then
+        local on = W.lightOn(player)
+        self.btnLight:setTitle(getText(on and "IGUI_MinidoracatWatch_LightOff" or "IGUI_MinidoracatWatch_LightOn"))
+        self.btnLight:setActive(on == true)
+        self.btnLight:setEnabled(on or W.lightAllowed(player) == true)
+    end
     if not w or self:busyAction(player, w, slot) then return end
     local st = C.slotStatus(player, w, slot)
     local ui = self.payUi
@@ -458,6 +479,7 @@ function Panel:drawFooter(player, watch)
         else
             s = getText("IGUI_MinidoracatWatch_Foot_Charge", tostring(C.percent(c)), C.timeText(c, hours), full)
         end
+        if W.lightLit(player, watch) then s = getText("IGUI_MinidoracatWatch_Foot_LightOn", s) end
     end
     para(self, s, PAD, self.height - BTN_H - PAD - fontH() - 6, self.width - 2 * PAD)
 end
@@ -626,6 +648,11 @@ end
 function Panel:onScreen()
     local player, w = self:target()
     C.requestScreen(player, w)
+end
+
+function Panel:onLight()
+    local player = self:target()
+    C.toggleLight(player)
 end
 
 function Panel:onClose() C.closePanel() end

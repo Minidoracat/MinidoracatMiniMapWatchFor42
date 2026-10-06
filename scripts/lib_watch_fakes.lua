@@ -281,6 +281,33 @@ function sendServerCommand(player, module, command, args)
         broadcast = player == nil }
 end
 
+-- ===== 照明（Phase 8）：光源物品、attached、AttachedLocations =====
+-- activated 是物品自己的狀態；LightDistance 初值照 script（4）。getFirstType 全名比對、只看主背包（ItemContainer.java:1540）。
+function Item:isActivated() return self.activated == true end
+function Item:setActivated(on) self.activated = on end
+function Item:getLightDistance() return self.lightDistance or 4 end
+function Item:setLightDistance(n) self.lightDistance = n end
+function Container:getFirstType(t)
+    for _, it in ipairs(self.items) do if it.fullType == t then return it end end
+    return nil
+end
+-- setItem 對沒定義的 location 丟例外（AttachedLocationGroup.java:63-71）；MP 客戶端的本機玩家掛東西會送封包（IsoGameCharacter.java:3569-3571）
+F.attachedLocs, F.attachPackets, F.attachSent = {}, {}, {}
+AttachedLocations = { getGroup = function()
+    return { getOrCreateLocation = function(_, id) F.attachedLocs[id] = true end }
+end }
+function Player:getAttachedItem(loc) return self.attached and self.attached[loc] or nil end
+function Player:setAttachedItem(loc, item)
+    if not F.attachedLocs[loc] then error("no attached location " .. tostring(loc)) end
+    self.attached = self.attached or {}
+    self.attached[loc] = item
+    if F.mode == "client" then F.attachPackets[#F.attachPackets + 1] = { player = self, loc = loc, item = item } end
+end
+-- 伺服器的 sendAttachedItem 送範圍內客戶端（LuaManager.java:12394-12401）；其他端是 no-op
+function sendAttachedItem(player, loc, item)
+    if F.mode == "server" then F.attachSent[#F.attachSent + 1] = { player = player, loc = loc, item = item } end
+end
+
 -- ===== 原版穿戴動作（只留 isValid／complete 的形狀）=====
 ISWearClothing = { isValid = function(self) return true end,
     complete = function(self) F.wear(self.character, self.item); return true end }
@@ -336,6 +363,7 @@ end
 local MODULES = {
     MinidoracatWatch = F.MEDIA .. "/shared/MinidoracatWatch.lua",
     MinidoracatWatch_Modules = F.MEDIA .. "/shared/MinidoracatWatch_Modules.lua",
+    MinidoracatWatch_Light = F.MEDIA .. "/shared/MinidoracatWatch_Light.lua",
     MinidoracatWatch_Action = F.MEDIA .. "/client/MinidoracatWatch_Action.lua",
     MinidoracatWatch_Client = F.MEDIA .. "/client/MinidoracatWatch_Client.lua",
     MinidoracatWatch_Config = F.MEDIA .. "/server/MinidoracatWatch_Config.lua",

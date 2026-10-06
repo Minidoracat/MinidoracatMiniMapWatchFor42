@@ -162,7 +162,7 @@
     "Sandbox_MinidoracatWatch_LootBB3000": "嗶嗶腕機出現在戰利品中",
     "Sandbox_MinidoracatWatch_LootBB3000_tooltip": "軍事據點、地堡、生存裝備櫃（稀有）。關閉後容器裡不再出現，已經生成的不受影響；殭屍掉落另外設定。改了立刻生效。",
     "Sandbox_MinidoracatWatch_LootModules": "模組出現在戰利品中",
-    "Sandbox_MinidoracatWatch_LootModules_tooltip": "電器行、電子零件箱、軍警據點、生存裝備櫃。一般模組較常見，進階與核心模組很少見。照明模組目前不會出現。改了立刻生效。",
+    "Sandbox_MinidoracatWatch_LootModules_tooltip": "電器行、電子零件箱、軍警據點、生存裝備櫃。一般模組較常見，進階與核心模組很少見。改了立刻生效。",
     "Sandbox_MinidoracatWatch_LootCards": "解鎖卡出現在戰利品中",
     "Sandbox_MinidoracatWatch_LootCards_tooltip": "很少見：擴充槽在電器行，進階槽在軍警據點，核心槽在軍事地堡。用經濟系統販售槽位時可以關閉，避免玩家不付費也能開槽。改了立刻生效。",
     "Sandbox_MinidoracatWatch_AllowCraft": "允許製作模組",
@@ -170,5 +170,13 @@
     "Sandbox_MinidoracatWatch_ZombieDrops": "殭屍身上會帶地圖錶相關物品",
     "Sandbox_MinidoracatWatch_ZombieDrops_tooltip": "屍體第一次被翻找時，依伺服器設定檔的掉落規則放進物品（預設 10 條，依殭屍的服裝分組）。已經被翻找過的屍體不受影響。\n規則檔在 Zomboid/Lua/MinidoracatWatch/伺服器名稱/server-settings.json（單機是 sp_存檔名稱），沒有就自動寫一份預設。",
     "Sandbox_MinidoracatWatch_ZombieDropCap": "每隻殭屍最多掉落（件）",
-    "Sandbox_MinidoracatWatch_ZombieDropCap_tooltip": "一隻殭屍符合好幾條規則時，依序擲機率，掉到這個數量就停。"
+    "Sandbox_MinidoracatWatch_ZombieDropCap_tooltip": "一隻殭屍符合好幾條規則時，依序擲機率，掉到這個數量就停。",
+    "Sandbox_MinidoracatWatch_RuleLight": "功能：照明",
+    "Sandbox_MinidoracatWatch_RuleLight_tooltip": "照明模組的燈：開燈照亮身邊，所有玩家都看得到。\n需要模組：要把照明模組裝在戴著、有電的錶的有效槽位上。\n關閉：任何人都不能開燈，開著的燈會熄滅。",
+    "Sandbox_MinidoracatWatch_RuleLight_option1": "需要模組",
+    "Sandbox_MinidoracatWatch_RuleLight_option2": "關閉",
+    "Sandbox_MinidoracatWatch_LightRadius": "照明半徑（格）",
+    "Sandbox_MinidoracatWatch_LightRadius_tooltip": "開燈時照亮身邊的範圍，所有玩家都用這個值。",
+    "Sandbox_MinidoracatWatch_LightDrain": "照明模組開燈時耗電（%%）",
+    "Sandbox_MinidoracatWatch_LightDrain_tooltip": "燈開著時比只開小地圖多耗的電，和其他模組的耗電相加。例如 100 表示多耗一倍。\n關燈時不耗電。"
 }

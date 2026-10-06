@@ -334,6 +334,7 @@ end
 -- 內建模組的說明；通訊類模組在「需要模組」規則下接上分享距離（範圍從沙盒讀，和伺服器 W.shareAllowed 同一份；
 -- 句間空白依語言不同，所以說明本身也當 %1 交給翻譯）
 function C.moduleDesc(id)
+    if id == "light" then return getText("IGUI_MinidoracatWatch_ModuleDesc_light", tostring(W.lightRadius())) end
     local s = getText("IGUI_MinidoracatWatch_ModuleDesc_" .. id)
     if not W.enabled() or W.featureRule("share") ~= W.RULE_MODULE then return s end
     if id == "relay" then return getText("IGUI_MinidoracatWatch_ShareRangeUnlimited", s) end

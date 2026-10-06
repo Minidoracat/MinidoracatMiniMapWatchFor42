@@ -219,5 +219,14 @@
     "IGUI_MinidoracatWatch_SlotAndModule": "%1：%2",
     "IGUI_MinidoracatWatch_WatchAndSlot": "%1：%2",
     "IGUI_MinidoracatWatch_ScreenAmber": "画面を琥珀色にする",
-    "IGUI_MinidoracatWatch_ScreenGreen": "画面を緑色にする"
+    "IGUI_MinidoracatWatch_ScreenGreen": "画面を緑色にする",
+    "IGUI_MinidoracatWatch_Module_light": "ライトモジュール",
+    "IGUI_MinidoracatWatch_ModuleDesc_light": "ウォッチのライト：点灯すると周囲約 %1 マスを照らし、近くのプレイヤーにも見えます。消灯中は電力を消費しません。",
+    "IGUI_MinidoracatWatch_Reason_Need_light": "ライトモジュールが必要",
+    "IGUI_MinidoracatWatch_Feature_light": "ライト",
+    "IGUI_MinidoracatWatch_LightOn": "点灯",
+    "IGUI_MinidoracatWatch_LightOff": "消灯",
+    "IGUI_MinidoracatWatch_LightFailed": "点灯できません：ライトモジュールが動作していないか、ウォッチの電池が切れています。",
+    "IGUI_MinidoracatWatch_DrainLight": "点灯中 +%1%%",
+    "IGUI_MinidoracatWatch_Foot_LightOn": "点灯中。%1"
 }

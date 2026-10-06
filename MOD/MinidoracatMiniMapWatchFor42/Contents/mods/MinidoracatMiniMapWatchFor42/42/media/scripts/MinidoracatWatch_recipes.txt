@@ -2,7 +2,7 @@ module Base
 {
     /*
         地圖錶模組的製作（B42 craftRecipe）。只有設計稿 data.mjs MODULES 寫「可製作」的一般模組：
-        羅盤（指南針＋電子零件）、名錄（電話簿＋電子零件）、通訊（拆對講機的收發零件）。照明模組要到 Phase 8 才加。
+        羅盤（指南針＋電子零件）、名錄（電話簿＋電子零件）、通訊（拆對講機的收發零件）、照明（手電筒＋電子零件）。
         - 版型照原版 recipes_electrical.txt:101-126 MakeImprovisedFlashlight 與 AutoDrive recipes_autodrive.txt。
         - 放 module Base：短名配方引用只查 Base bucket（ScriptBucketCollection.getScript 不含 '.' 時寫死 Base，
           家族 pitfalls.md「CraftRecipe 學習管線」）。物品留在 module MinidoracatWatch，這裡寫 full type。
@@ -72,6 +72,31 @@ module Base
         outputs
         {
             item 1 MinidoracatWatch.Module_Comm,
+        }
+    }
+
+    /*
+        照明模組：拆一支手電筒（原版兩種＋自製手電筒）。手電筒是 drainable：不加 flags[ItemCount] 時引擎按剩餘用量
+        計數，空電的會被連坐銷毀（verify 第 12 項的說明）；mode:destroy＝整支用掉，不是只扣一格電。
+    */
+    craftRecipe CraftMinidoracatWatchLight
+    {
+        timedAction = MakingElectrical,
+        time = 100,
+        SkillRequired = Electricity:3,
+        OnTest = MinidoracatWatch_Recipe.canCraft,
+        Tags = AnySurfaceCraft,
+        category = Electrical,
+        xpAward = Electricity:5,
+        inputs
+        {
+            item 1 tags[base:screwdriver] mode:keep flags[Prop1],
+            item 1 [Base.HandTorch;Base.Torch;Base.Flashlight_Crafted] mode:destroy flags[ItemCount;NoBrokenItems],
+            item 2 [Base.ElectronicsScrap],
+        }
+        outputs
+        {
+            item 1 MinidoracatWatch.Module_Light,
         }
     }
 }

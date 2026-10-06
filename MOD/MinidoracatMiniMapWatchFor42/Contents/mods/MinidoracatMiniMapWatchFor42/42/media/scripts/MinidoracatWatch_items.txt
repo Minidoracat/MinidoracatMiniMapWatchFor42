@@ -415,7 +415,8 @@ module MinidoracatWatch
     }
 
     /*
-        照明模組（Phase 8 才有功能）：物品先存在，但本階段不登記成可安裝的模組、不進戰利品、配方與殭屍掉落。
+        照明模組（Phase 8）：裝在一般槽位，開燈時由伺服器在玩家主背包放一個 LightEmitter 並掛在自訂位置
+        （shared/MinidoracatWatch_Light.lua）。
     */
     item Module_Light
     {
@@ -426,6 +427,30 @@ module MinidoracatWatch
         MetalValue = 3.0,
         WorldStaticModel = Receiver,
         Tags = base:hasmetal,
+    }
+
+    /*
+        照明模組的光源（不是給玩家拿的物品）：開燈＝伺服器在主背包放一個、掛在 AttachedLocation
+        MinidoracatWatchLight；關燈＝刪掉。原版的動態光迴圈只認手上與 attached 的發光物
+        （IsoGameCharacter.getActiveLightItems:14295-14306 → LightingJNI.checkPlayerTorches），
+        attached 發光物也讓 tooDarkToRead 直接回 false（IsoPlayer.java:8604-8630）。
+        - Hidden：背包介面與交易不列出（ISInventoryPane.lua:2096、ISTradingUI.lua:181）。
+        - 沒有 StaticModel／WorldStaticModel：attached 物品只有靜態模型才畫（ModelManager.java:601-608）。
+        - LightDistance／LightStrength 只來自 script、不存檔不入封包（Item.java:1826-1829）；
+          半徑由各客戶端依沙盒 LightRadius 改記憶體副本（MinidoracatWatch_Light.lua）。
+        - base:normal：Drainable 不在手上會自己關燈（DrainableComboItem.java:244-248），這裡不要。
+    */
+    item LightEmitter
+    {
+        DisplayCategory = Junk,
+        ItemType = base:normal,
+        Weight = 0,
+        Hidden = true,
+        Icon = MinidoracatWatch_Module_Light,
+        ActivatedItem = true,
+        LightStrength = 0.8,
+        LightDistance = 4,
+        TorchCone = false,
     }
 
     /*

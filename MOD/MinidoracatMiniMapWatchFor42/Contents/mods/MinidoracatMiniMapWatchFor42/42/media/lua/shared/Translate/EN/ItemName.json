@@ -26,5 +26,6 @@
     "MinidoracatWatch.MapWatch_Luthex_Right": "Luthex Gold Watch",
     "MinidoracatWatch.MapWatch_BB3000_Left": "BB-3000 Wrist Computer",
     "MinidoracatWatch.MapWatch_BB3000_Right": "BB-3000 Wrist Computer",
-    "MinidoracatWatch.Module_Light": "Light Module"
+    "MinidoracatWatch.Module_Light": "Light Module",
+    "MinidoracatWatch.LightEmitter": "Map Watch Light"
 }
