@@ -172,7 +172,7 @@
     "Sandbox_MinidoracatWatch_ZombieDropCap": "每只僵尸最多掉落（件）",
     "Sandbox_MinidoracatWatch_ZombieDropCap_tooltip": "一只僵尸符合多条规则时，按顺序掷概率，掉到这个数量就停。",
     "Sandbox_MinidoracatWatch_RuleLight": "功能：照明",
-    "Sandbox_MinidoracatWatch_RuleLight_tooltip": "照明模块的灯：开灯照亮身边，所有玩家都看得到。\n需要模块：要把照明模块装在戴着、有电的表的有效槽位上。\n关闭：任何人都不能开灯，开着的灯会熄灭。",
+    "Sandbox_MinidoracatWatch_RuleLight_tooltip": "照明模块的灯：开灯照亮身边，附近、看得到你的玩家都看得到（和原版手电筒相同）。\n需要模块：要把照明模块装在戴着、有电的表的有效槽位上。\n关闭：任何人都不能开灯，开着的灯会熄灭。",
     "Sandbox_MinidoracatWatch_RuleLight_option1": "需要模块",
     "Sandbox_MinidoracatWatch_RuleLight_option2": "关闭",
     "Sandbox_MinidoracatWatch_LightRadius": "照明半径（格）",

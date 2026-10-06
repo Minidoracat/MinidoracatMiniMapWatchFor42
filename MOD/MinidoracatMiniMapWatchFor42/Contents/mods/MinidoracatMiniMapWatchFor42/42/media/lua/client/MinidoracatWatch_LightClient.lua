@@ -23,26 +23,13 @@ function C.toggleLight(player) C.requestLight(player, not W.lightOn(player)) end
 -- 擁有者端：伺服器的 setAttachedItem 不會到本機玩家（GameCharacterAttachedItemPacket.java:101-107），
 -- 所以照「主背包裡有啟動中的光源」自己掛上或拿下；本機 setAttachedItem 會送封包、伺服器轉給其他所有連線
 -- （IsoGameCharacter.java:3569-3571、Packet.java:122-135）。原版切燈鍵把它關掉時同樣在這裡拿下。
--- 其他客戶端收到的附掛物品副本不一定是啟動狀態（2026-10-06 watch-light-mp 實測：晚加入靠 syncActivatedItems
--- 看得到，之後開燈與走動時旁人那份沒亮）：MP 掛上時與之後每 5 秒送一次 syncItemActivated（伺服器設好再轉給
--- 範圍內客戶端，SyncItemActivatedPacket.java:85-89；遠端在 attached 裡依 ID 找，:117-135），一盞燈一個小封包。
-local RESYNC_MS = 5000
-local lastResync = {}
+-- 啟動狀態隨附掛物品的完整物品資料送出（InventoryItem.java:2032），晚加入的人另有 syncActivatedItems
+-- （GameServer.java:2775-2790），不必另送 syncItemActivated。旁人只在「自己此刻看得到的格子」上看到這盞燈
+-- （約 3.5 格內或視野錐內），和原版手電筒相同（features.md）。
 function C.syncLight(p)
     local item = W.lightItem(p)
     local want = item ~= nil and item:isActivated() and item or nil
-    local now = getTimestampMs()
-    if p:getAttachedItem(W.LIGHT_LOC) ~= want then
-        p:setAttachedItem(W.LIGHT_LOC, want)
-        lastResync[p] = nil
-    end
-    if want and isClient() then
-        local last = lastResync[p]
-        if not last or now < last or now - last >= RESYNC_MS then
-            lastResync[p] = now
-            syncItemActivated(p, want)
-        end
-    end
+    if p:getAttachedItem(W.LIGHT_LOC) ~= want then p:setAttachedItem(W.LIGHT_LOC, want) end
 end
 
 -- 半徑只來自 script、不存檔也不入封包（Item.java:1826-1829）：每台客戶端改自己記憶體裡每位玩家那份，

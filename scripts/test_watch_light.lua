@@ -5,10 +5,7 @@
 local F = dofile("scripts/lib_watch_fakes.lua")
 local check, near = F.check, F.near
 local baseReset = F.reset
-function F.reset() baseReset(); F.attachSent, F.attachPackets, F.activations = {}, {}, {} end
-F.activations = {}
--- MP 客戶端送 SyncItemActivated（LuaManager.java:12314-12324）
-function syncItemActivated(p, item) if F.mode == "client" then F.activations[#F.activations + 1] = item end end
+function F.reset() baseReset(); F.attachSent, F.attachPackets = {}, {} end
 F.mode = "server"
 require "MinidoracatWatch"
 F.load("server/MinidoracatWatch_Server.lua")
@@ -316,10 +313,6 @@ check(c:getAttachedItem(LOC) == em and #F.attachPackets == 1 and F.attachPackets
     "伺服器提醒：擁有者掛上光源（本機掛載會送封包給其他人）")
 C.syncLight(c)
 check(#F.attachPackets == 1, "已經掛著：不重送")
-check(#F.activations == 1 and F.activations[1] == em, "掛上時送一次 syncItemActivated（旁人那份要啟動）")
-F.now = F.now + 5000
-C.syncLight(c)
-check(#F.activations == 2, "燈開著：每 5 秒補送一次啟動狀態")
 check(C.toggleLight(c) == nil and F.clientCmds[#F.clientCmds].args.on == false, "燈開著：切換＝關")
 em:setActivated(false)
 C.syncLight(c)
