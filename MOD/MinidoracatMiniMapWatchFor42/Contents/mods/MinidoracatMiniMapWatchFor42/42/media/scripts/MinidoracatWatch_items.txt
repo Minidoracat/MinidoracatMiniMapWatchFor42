@@ -52,4 +52,189 @@ module MinidoracatWatch
         WorldStaticModel = DigitalWatchBlack,
         Tags = base:digital;base:hasmetal,
     }
+
+    /*
+        模組（Phase 3）：一般物品，安裝時物品離開背包、紀錄進錶的 modData（shared/MinidoracatWatch_Modules.lua）。
+        圖示暫借原版電子零件（Receiver／MotionSensor／Amplifier，Icon 是全域貼圖名，Item.java:1988-1991），
+        ColorRed/Green/Blue 染色區分種類（原版 RadioReceiver／RadioTransmitter 同款做法）；自製美術是 Phase 9。
+        取得方式（戰利品、配方、殭屍掉落）是 Phase 5：目前只能用除錯或管理員工具取得。
+    */
+    item Module_Compass
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = Receiver,
+        ColorRed = 230,
+        ColorGreen = 200,
+        ColorBlue = 90,
+        MetalValue = 3.0,
+        WorldStaticModel = Receiver,
+        Tags = base:hasmetal,
+    }
+
+    item Module_Ledger
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = Receiver,
+        ColorRed = 215,
+        ColorGreen = 130,
+        ColorBlue = 60,
+        MetalValue = 3.0,
+        WorldStaticModel = Receiver,
+        Tags = base:hasmetal,
+    }
+
+    item Module_GPS
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = Receiver,
+        ColorRed = 90,
+        ColorGreen = 200,
+        ColorBlue = 110,
+        MetalValue = 3.0,
+        WorldStaticModel = Receiver,
+        Tags = base:hasmetal,
+    }
+
+    item Module_Comm
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = Receiver,
+        ColorRed = 80,
+        ColorGreen = 140,
+        ColorBlue = 230,
+        MetalValue = 3.0,
+        WorldStaticModel = Receiver,
+        Tags = base:hasmetal,
+    }
+
+    item Module_Scan
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = Receiver,
+        ColorRed = 60,
+        ColorGreen = 200,
+        ColorBlue = 200,
+        MetalValue = 3.0,
+        WorldStaticModel = Receiver,
+        Tags = base:hasmetal,
+    }
+
+    item Module_Detect
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = Receiver,
+        ColorRed = 225,
+        ColorGreen = 80,
+        ColorBlue = 80,
+        MetalValue = 3.0,
+        WorldStaticModel = Receiver,
+        Tags = base:hasmetal,
+    }
+
+    item Module_MilDetect
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MotionSensor,
+        ColorRed = 150,
+        ColorGreen = 170,
+        ColorBlue = 80,
+        MetalValue = 3.0,
+        WorldStaticModel = MotionSensor,
+        Tags = base:hasmetal,
+    }
+
+    item Module_LongComm
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MotionSensor,
+        ColorRed = 80,
+        ColorGreen = 140,
+        ColorBlue = 230,
+        MetalValue = 3.0,
+        WorldStaticModel = MotionSensor,
+        Tags = base:hasmetal,
+    }
+
+    item Module_Relay
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = Amplifier,
+        ColorRed = 170,
+        ColorGreen = 110,
+        ColorBlue = 240,
+        MetalValue = 3.0,
+        WorldStaticModel = Amplifier,
+        Tags = base:hasmetal,
+    }
+
+    item Module_Eco
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = Amplifier,
+        ColorRed = 110,
+        ColorGreen = 220,
+        ColorBlue = 140,
+        MetalValue = 3.0,
+        WorldStaticModel = Amplifier,
+        Tags = base:hasmetal,
+    }
+
+    /*
+        槽位解鎖卡：用掉一張，帳號（username, playerNum）永久開啟對應等級的槽位；其他 MOD 加入的槽位用擴充槽解鎖卡。
+    */
+    item UnlockCard_Ext
+    {
+        DisplayCategory = Junk,
+        ItemType = base:normal,
+        Weight = 0.01,
+        Icon = CreditCard,
+        ColorRed = 63,
+        ColorGreen = 178,
+        ColorBlue = 127,
+        WorldStaticModel = CreditCard,
+    }
+
+    item UnlockCard_Adv
+    {
+        DisplayCategory = Junk,
+        ItemType = base:normal,
+        Weight = 0.01,
+        Icon = CreditCard,
+        ColorRed = 76,
+        ColorGreen = 141,
+        ColorBlue = 246,
+        WorldStaticModel = CreditCard,
+    }
+
+    item UnlockCard_Core
+    {
+        DisplayCategory = Junk,
+        ItemType = base:normal,
+        Weight = 0.01,
+        Icon = CreditCard,
+        ColorRed = 169,
+        ColorGreen = 112,
+        ColorBlue = 240,
+        WorldStaticModel = CreditCard,
+    }
 }

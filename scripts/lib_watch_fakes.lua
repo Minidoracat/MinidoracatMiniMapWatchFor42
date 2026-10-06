@@ -69,6 +69,8 @@ function Item:hasModData() return self.md ~= nil end
 function Item:getModData() self.md = self.md or {}; return self.md end
 function Item:getContainer() return self.container end
 function Item:getDisplayName() return self.fullType end
+function Item:isBroken() return self.broken == true end
+function Item:getTex() return "tex:" .. self.fullType end
 -- Battery：UseDelta 是 Java float 0.007f（Lua 讀到 0.007000000216066837）；uses 是整數格
 function Item:getUseDelta() return self.useDelta end
 function Item:getMaxUses() return math.floor(1 / self.useDelta) end
@@ -91,8 +93,11 @@ function F.item(fullType)
         it.useDelta = F.BATTERY_DELTA
         it.uses = it:getMaxUses() -- 新電池＝getMaxUses（142 格）
     end
+    if fullType == "Base.Screwdriver" then it.tags = { Screwdriver = true } end
     return it
 end
+-- 物品類型不存在時 instanceItem 回 nil（InventoryItemFactory.CreateItem）：測試把類型放進 missingTypes
+F.missingTypes = {}
 -- 全域 ModData（ModData.java:20）
 F.globalModData = {}
 ModData = { getOrCreate = function(tag)
@@ -101,7 +106,11 @@ ModData = { getOrCreate = function(tag)
 end }
 F.RIGHT = "MinidoracatWatch.MapWatch_ValuTech_Right"
 F.LEFT = "MinidoracatWatch.MapWatch_ValuTech_Left"
-function instanceItem(fullType) return F.item(fullType) end
+function instanceItem(fullType)
+    if F.missingTypes[fullType] then return nil end
+    return F.item(fullType)
+end
+ItemTag = { SCREWDRIVER = "Screwdriver" } -- ItemTag.java:370
 
 -- ===== 容器 =====
 local Container = {}
@@ -153,6 +162,17 @@ function Container:getAllTypeRecurse(fullType)
     walk(self)
     return F.javaList(out)
 end
+-- containsTagEvalRecurse(ItemTag, LuaClosure)：ItemContainer.java:1166
+function Container:containsTagEvalRecurse(tag, fn)
+    local function walk(c)
+        for _, it in ipairs(c.items) do
+            if it.tags and it.tags[tag] and fn(it) then return true end
+            if it.bag and walk(it.bag) then return true end
+        end
+        return false
+    end
+    return walk(self)
+end
 function F.container() return setmetatable({ items = {} }, Container) end
 function F.bag(inv)
     local b = F.item("Base.Bag_Schoolbag")
@@ -172,6 +192,7 @@ function Player:getPlayerNum() return self.pn end
 function Player:getUsername() return self.name end
 function Player:getOnlineID() return self.onlineId end
 function Player:removeFromHands() end
+function Player:isTimedActionInstant() return false end
 function Player:getWornItems()
     local list = {}
     for _, w in ipairs(self.worn) do list[#list + 1] = { getItem = function() return w.item end } end
@@ -239,9 +260,44 @@ function F.action(cls, character, item, extra)
     return setmetatable({ character = character, item = item, extra = extra }, { __index = cls })
 end
 
+-- ===== 計時動作（ISBaseTimedAction.lua:173-184 的形狀；ISTimedActionQueue 只留 add 與佇列）=====
+ISBaseTimedAction = {}
+ISBaseTimedAction.__index = ISBaseTimedAction
+function ISBaseTimedAction:derive(name)
+    local c = setmetatable({ Type = name }, { __index = self })
+    c.__index = c
+    return c
+end
+function ISBaseTimedAction.new(cls, character)
+    return setmetatable({ character = character, stopOnWalk = true, stopOnRun = true, maxTime = -1 }, cls)
+end
+function ISBaseTimedAction:perform() F.performed = (F.performed or 0) + 1 end
+F.queues = {}
+ISTimedActionQueue = {
+    add = function(a)
+        F.queues[a.character] = F.queues[a.character] or {}
+        table.insert(F.queues[a.character], a)
+        return a
+    end,
+    getTimedActionQueue = function(p) return { queue = F.queues[p] or {} } end,
+}
+-- 跑完一位玩家佇列裡的所有動作：isValid 為假＝動作被取消（不 perform）
+function F.runActions(p)
+    local q = F.queues[p] or {}
+    F.queues[p] = {}
+    local done = 0
+    for _, a in ipairs(q) do
+        if a:isValid() then a:perform(); done = done + 1 end
+    end
+    return done
+end
+
 -- ===== require：本 MOD 模組載真檔，原版模組已由上面的假物件代替 =====
 local MODULES = {
     MinidoracatWatch = F.MEDIA .. "/shared/MinidoracatWatch.lua",
+    MinidoracatWatch_Modules = F.MEDIA .. "/shared/MinidoracatWatch_Modules.lua",
+    MinidoracatWatch_Action = F.MEDIA .. "/client/MinidoracatWatch_Action.lua",
+    MinidoracatWatch_Client = F.MEDIA .. "/client/MinidoracatWatch_Client.lua",
 }
 local loaded = {}
 function require(name)

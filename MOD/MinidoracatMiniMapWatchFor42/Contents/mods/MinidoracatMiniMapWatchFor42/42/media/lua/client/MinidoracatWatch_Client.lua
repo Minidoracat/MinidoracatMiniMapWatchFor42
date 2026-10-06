@@ -1,64 +1,56 @@
--- MinidoracatWatch_Client.lua：小地圖閘門、家族工具列按鈕、最小電池面板、錶的右鍵選單。
--- 客戶端只讀錶的 modData、送換電池請求；扣電與換電池的權威在伺服器（單機在本機）。
+-- MinidoracatWatch_Client.lua：功能閘門、家族工具列按鈕、請求（換電池／裝卸模組／解鎖卡）、右鍵選單。
+-- 客戶端只讀錶的 modData、送請求；扣電、裝卸與解鎖的權威在伺服器（單機在本機）。面板在 MinidoracatWatch_Panel.lua。
 require "MinidoracatWatch"
-require "ISUI/ISPanel"
-require "ISUI/ISButton"
+require "MinidoracatWatch_Action"
 local W = MinidoracatWatchCore
 local C = {}
 MinidoracatWatchClient = C -- 內部表（測試與 E2E 用），不是公開 API
 
--- ===== 戴著的錶（每位本機玩家一格快取）=====
--- gateFn 與 Dock 回呼可能每幀被叫：不翻背包、不配置 table。穿脫衣物會觸發 OnClothingUpdated
--- （本機 setWornItem＝IsoGameCharacter.java:3573、伺服器同步＝SyncClothingPacket.java:222-226），
--- 事件只把世代號 +1；另有 1 秒的保險期限（漏事件時最多晚 1 秒）。電量每次直接讀快取物品的 modData，
--- 伺服器同步過來的 modData 是寫進同一件物品（SyncItemModDataPacket），不必失效。
-local CACHE_TTL_MS = 1000
-local gen = 0
-local cacheItem, cacheGen, cacheAt, warnedTwo = {}, {}, {}, {}
-
-local function refresh(pn, now)
-    local player = getSpecificPlayer(pn)
-    local item, count = nil, 0
-    if player then
-        item, count = W.wornWatch(player)
-        -- SyncClothing 先於物品封包到時，客戶端會臨時建一件同 ID 的物品掛在身上（SyncClothingPacket.java:192-199），
-        -- 它沒有 modData；改讀背包裡同 ID 的那件。穿著的物品仍在主背包（IsoGameCharacter.java:3427-3490）。
-        if item then
-            local real = player:getInventory():getItemWithID(item:getID()) -- ItemContainer.java:3112
-            if real then item = real end
-        end
-        if count > 1 then
-            if not warnedTwo[pn] then
-                warnedTwo[pn] = true
-                if HaloTextHelper then HaloTextHelper.addBadText(player, getText("IGUI_MinidoracatWatch_TwoWorn")) end
-            end
-        else
-            warnedTwo[pn] = nil
-        end
-    end
-    cacheItem[pn] = item or false
-    cacheGen[pn] = gen
-    cacheAt[pn] = now
-end
-
+-- ===== 戴著的錶 =====
+-- gateFn 與 Dock 回呼可能每幀被叫：一律讀 shared 狀態快取 W.status（期限 1 秒，不翻背包、不配置 table）。
+-- 穿脫衣物會觸發 OnClothingUpdated（本機 setWornItem＝IsoGameCharacter.java:3573、伺服器同步＝
+-- SyncClothingPacket.java:222-226）：讓快取立刻失效。電量每次直接讀錶的 modData，伺服器同步過來的 modData
+-- 是寫進同一件物品（SyncItemModDataPacket）。
 function C.watchOf(pn)
-    local now = getTimestampMs()
-    local at = cacheAt[pn]
-    if cacheGen[pn] ~= gen or not at or now < at or now - at >= CACHE_TTL_MS then refresh(pn, now) end
-    return cacheItem[pn] or nil
+    local p = getSpecificPlayer(pn)
+    return p and W.status(p).watch or nil
 end
 
-Events.OnClothingUpdated.Add(function() gen = gen + 1 end)
+Events.OnClothingUpdated.Add(function() W.invalidate() end)
 
--- ===== 小地圖閘門 =====
--- 只管 "minimap"；其他 feature 一律放行（Phase 3 才閘）。
-function C.gate(pn, feature)
-    if feature ~= "minimap" then return true end
-    local enabled, rule = W.enabled(), W.minimapRule()
-    if not enabled or rule ~= W.RULE_WATCH then return W.minimapDecision(enabled, rule, false, nil) end
-    local watch = C.watchOf(pn)
-    if not watch then return W.minimapDecision(enabled, rule, false, nil) end
-    return W.minimapDecision(enabled, rule, true, W.charge(watch))
+-- ===== 功能閘門 =====
+-- 自駕 GPS「任一即可」：AutoDrive 的 hasNavDevice（隨身充電 GPS 或所在車輛有電的 GPS）也放行 nav；
+-- 規則是「關閉」時一律擋。守衛：表存在、版本 >= 1、函式存在，pcall（拋錯當沒有、只 log 一次）。
+local navErrLogged = false
+function C.navDevice(pn)
+    local api = MinidoracatAutoDriveAPI
+    if type(api) ~= "table" or type(api.navDeviceApiVersion) ~= "number" or api.navDeviceApiVersion < 1
+            or type(api.hasNavDevice) ~= "function" then
+        return false
+    end
+    local ok, has = pcall(api.hasNavDevice, pn)
+    if not ok then
+        if not navErrLogged then
+            navErrLogged = true
+            W.log("MinidoracatAutoDriveAPI.hasNavDevice failed: " .. tostring(has))
+        end
+        return false
+    end
+    return has == true
+end
+
+function C.gate(pn, feature, surface)
+    local player = getSpecificPlayer(pn)
+    if feature == "minimap" then
+        local enabled, rule = W.enabled(), W.minimapRule()
+        if not enabled or rule ~= W.RULE_WATCH then return W.minimapDecision(enabled, rule, false, nil) end
+        local watch = player and W.status(player).watch
+        if not watch then return W.minimapDecision(enabled, rule, false, nil) end
+        return W.minimapDecision(enabled, rule, true, W.charge(watch))
+    end
+    local ok, reason, dist = W.featureDecision(player, feature, surface)
+    if not ok and feature == "nav" and reason ~= W.REASON_FEATURE_OFF and C.navDevice(pn) then return true end
+    return ok, reason, dist
 end
 
 -- 守衛先於註冊：主 MOD 太舊（沒有 featureApiVersion 1）就不設閘＝小地圖照舊開放，log 一次並提示管理員，
@@ -88,26 +80,35 @@ end
 Events.OnGameStart.Add(C.registerGate)
 
 -- ===== 文字 =====
-local function timeText(charge, fullHours)
-    local d, h = W.timeLeft(charge, fullHours)
+-- 這支錶目前的滿電續航（小時）：滿電小時數 ÷ 耗電倍率（模組、節能核心）
+function C.fullRuntime(player, watch)
+    if not player or not watch then return W.fullHours() end
+    return W.fullHours() / W.drainFactor(player, watch)
+end
+
+function C.timeText(charge, hours)
+    local d, h = W.timeLeft(charge, hours)
     if d == 0 and h == 0 then return getText("IGUI_MinidoracatWatch_TimeUnderHour") end
     if d == 0 then return getText("IGUI_MinidoracatWatch_TimeHours", tostring(h)) end
     if h == 0 then return getText("IGUI_MinidoracatWatch_TimeDays", tostring(d)) end
     return getText("IGUI_MinidoracatWatch_TimeDaysHours", tostring(d), tostring(h))
 end
 
-local function percent(charge) return math.ceil(charge * 100) end
+function C.percent(charge) return math.ceil(charge * 100) end
 
-function C.statusText(watch)
+function C.statusText(watch, player)
     if not watch then return getText("IGUI_MinidoracatWatch_Status_NoWatch") end
     local c = W.charge(watch)
     if c == nil then return getText("IGUI_MinidoracatWatch_Status_NoBattery") end
     if c <= 0 then return getText("IGUI_MinidoracatWatch_Status_Dead") end
-    return getText("IGUI_MinidoracatWatch_Status_Charge", tostring(percent(c)), timeText(c, W.fullHours()))
+    local hours = C.fullRuntime(player, watch)
+    local d, h = W.timeLeft(c, hours)
+    if d == 0 and h == 0 then return getText("IGUI_MinidoracatWatch_Status_ChargeUnderHour", tostring(C.percent(c))) end
+    return getText("IGUI_MinidoracatWatch_Status_Charge", tostring(C.percent(c)), C.timeText(c, hours))
 end
 
 -- ===== 電池圖示（Dock 與面板共用；不配置 table）=====
-local function drawBattery(el, x, y, size, watch)
+function C.drawBattery(el, x, y, size, watch)
     local c = watch and W.charge(watch)
     local bw, bh = math.floor(size * 0.72), math.floor(size * 0.42)
     local bx, by = x + math.floor((size - bw) / 2) - 1, y + math.floor((size - bh) / 2)
@@ -123,9 +124,9 @@ local function drawBattery(el, x, y, size, watch)
     end
 end
 
--- ===== 換電池請求 =====
+-- ===== 請求 =====
 -- 背包樹裡電量最高的電池（ItemContainer.getAllTypeRecurse(String)＝ItemContainer.java:1948；
--- 全名比對 :1197-1201）。只在使用者操作與面板 update（約 100ms）時呼叫，不在閘門熱路徑。
+-- 全名比對 :1197-1201）。只在使用者操作與面板 update 時呼叫，不在閘門熱路徑。
 function C.bestBattery(player)
     local list = player:getInventory():getAllTypeRecurse(W.BATTERY_TYPE)
     local best, bestC = nil, -1
@@ -137,135 +138,97 @@ function C.bestBattery(player)
     return best
 end
 
--- MP：只送純量，伺服器以連線身分重新解析並全量驗證（server/MinidoracatWatch_Server.lua）。
--- sendClientCommand(player, module, command, args)＝LuaManager.java:8932-8950。
--- 單機：直接呼叫同一份 shared 突變點（不經 OnClientCommand，不會重複執行）。
+-- 換電池與裝卸模組都是計時動作（MinidoracatWatch_Action.lua）：完成時才送純量指令或在單機直接套用。
 function C.requestBattery(player, watch, install)
     if not player or not watch then return end
-    local batteryId
+    local battery = nil
     if install then
-        local b = C.bestBattery(player)
-        if not b then return end
-        batteryId = b:getID()
+        battery = C.bestBattery(player)
+        if not battery then return end
     end
-    if isClient() then
-        sendClientCommand(player, W.MODULE, W.CMD_BATTERY,
-            { watchId = watch:getID(), install = install, batteryId = batteryId })
-        return
-    end
-    local ok, reason = W.applyBatteryChange(player, watch:getID(), install, batteryId)
-    if not ok then W.notify(player, reason or W.FAIL_GENERIC) end
+    ISTimedActionQueue.add(ISMinidoracatWatchAction:new(player, "battery", watch, nil, battery, install))
 end
 
--- 伺服器的失敗回報：只認白名單內的鍵，依 to 找本機玩家（分割畫面共用連線）
+-- item＝要裝進 slotId 的模組；nil＝拆下 slotId 那格的模組
+function C.requestModule(player, watch, slotId, item)
+    if not player or not watch or not W.slotById[slotId] then return end
+    if W.needScrewdriver() and not W.hasScrewdriver(player) then
+        W.notify(player, W.FAIL_SCREWDRIVER)
+        return
+    end
+    ISTimedActionQueue.add(ISMinidoracatWatchAction:new(player, "module", watch, slotId, item, item ~= nil))
+end
+
+function C.cards(player, slot)
+    local t = W.cardType(slot)
+    if not t then return nil end
+    return player:getInventory():getAllTypeRecurse(t)
+end
+
+-- 解鎖卡不經計時動作（不需要工具、沒有物品移進錶裡）：MP 送純量、單機直接套用
+function C.requestUnlock(player, slotId)
+    local slot = player and W.slotById[slotId]
+    local list = slot and C.cards(player, slot)
+    if not list or list:size() == 0 then return end
+    local cardId = list:get(0):getID()
+    if isClient() then
+        sendClientCommand(player, W.MODULE, W.CMD_UNLOCK, { slotId = slotId, cardId = cardId })
+        return
+    end
+    local ok, reason = W.applyUnlock(player, slotId, cardId)
+    if not ok then W.notify(player, reason) end
+end
+
+-- 伺服器回報：失敗只認白名單內的鍵；解鎖狀態只收「槽位 id＝true」。依 to 找本機玩家（分割畫面共用連線）
 Events.OnServerCommand.Add(function(module, command, args)
-    if module ~= W.MODULE or command ~= W.CMD_FAILED or type(args) ~= "table" then return end
-    if not W.FAIL_KEYS[args.reason] then return end
-    for pn = 0, getNumActivePlayers() - 1 do
-        local p = getSpecificPlayer(pn)
-        if p and p:getUsername() == args.to then W.notify(p, args.reason) end
+    if module ~= W.MODULE or type(args) ~= "table" or type(args.to) ~= "string" then return end
+    if command == W.CMD_FAILED then
+        if not W.FAIL_KEYS[args.reason] then return end
+        for pn = 0, getNumActivePlayers() - 1 do
+            local p = getSpecificPlayer(pn)
+            if p and p:getUsername() == args.to then W.notify(p, args.reason) end
+        end
+    elseif command == W.CMD_UNLOCKS and type(args.slots) == "table" then
+        local slots = {}
+        for k, v in pairs(args.slots) do
+            if type(k) == "string" and v == true then slots[k] = true end
+        end
+        W.clientUnlocks[args.to] = slots
+        W.invalidate()
     end
 end)
 
--- ===== 最小電池面板（Phase 2：電量、大約還能用多久、裝入／取出電池）=====
-local Panel = ISPanel:derive("MinidoracatWatchPanel")
-local panel -- 單例
-local PAD, BTN_H = 10, 24
-
-function Panel:createChildren()
-    local by = self.height - BTN_H - PAD
-    self.btnInsert = ISButton:new(PAD, by, 150, BTN_H, getText("IGUI_MinidoracatWatch_InsertBattery"), self, Panel.onInsert)
-    self.btnInsert:initialise()
-    self:addChild(self.btnInsert)
-    self.btnRemove = ISButton:new(PAD + 160, by, 150, BTN_H, getText("IGUI_MinidoracatWatch_RemoveBattery"), self, Panel.onRemove)
-    self.btnRemove:initialise()
-    self:addChild(self.btnRemove)
-    self.btnClose = ISButton:new(self.width - 22 - PAD / 2, PAD / 2, 22, 22, "X", self, Panel.onClose)
-    self.btnClose:initialise()
-    self:addChild(self.btnClose)
-end
-
--- 面板對象：從右鍵選單開的那支（還在玩家身上時），否則是戴著的那支
-function Panel:target()
-    local player = getSpecificPlayer(self.playerNum)
-    if not player then return nil, nil end
-    local w = self.watchItem
-    if w and player:getInventory():getItemWithIDRecursiv(w:getID()) ~= w then
-        w = nil
-        self.watchItem = nil
-    end
-    return player, w or C.watchOf(self.playerNum)
-end
-
-function Panel:update()
-    ISPanel.update(self)
-    local player, w = self:target()
-    local c = w and W.charge(w)
-    self.btnInsert:setTitle(getText(c ~= nil and "IGUI_MinidoracatWatch_ReplaceBattery" or "IGUI_MinidoracatWatch_InsertBattery"))
-    self.btnInsert:setEnable(w ~= nil and C.bestBattery(player) ~= nil)
-    self.btnRemove:setEnable(w ~= nil and c ~= nil)
-end
-
-function Panel:prerender()
-    ISPanel.prerender(self)
-    local _, w = self:target()
-    local title = w and w:getDisplayName() or getText("IGUI_MinidoracatWatch_DockLabel")
-    self:drawText(title, PAD, PAD, 1, 1, 1, 1, UIFont.Medium)
-    local c = w and W.charge(w)
-    local right = self.width - 22 - PAD
-    if c ~= nil then
-        local pct = percent(c) .. "%"
-        local tw = getTextManager():MeasureStringX(UIFont.Small, pct)
-        self:drawText(pct, right - tw - 6, PAD + 2, 1, 1, 1, 1, UIFont.Small)
-        right = right - tw - 6
-    end
-    drawBattery(self, right - 30, PAD - 4, 28, w)
-    local fh = getTextManager():getFontHeight(UIFont.Small)
-    local y = PAD + getTextManager():getFontHeight(UIFont.Medium) + 8
-    self:drawText(C.statusText(w), PAD, y, 0.9, 0.9, 0.9, 1, UIFont.Small)
-    if w then
-        self:drawText(getText("IGUI_MinidoracatWatch_FullRuntime", timeText(1, W.fullHours())),
-            PAD, y + fh + 2, 0.6, 0.6, 0.6, 1, UIFont.Small)
+-- ===== 每秒：戴兩支提示、onStateChanged（客戶端與單機）、MP 補要一次解鎖狀態 =====
+-- 伺服器第一次看到玩家時會主動送解鎖狀態（MinidoracatWatch.lua visit）；客戶端在自己第一個 tick 再要一次，
+-- 補上「伺服器送的時候客戶端還在載入」的空檔。
+local POLL_MS = 1000
+local lastPoll = nil
+local warnedTwo, asked = {}, {}
+function C.poll()
+    local now = getTimestampMs()
+    if lastPoll and now >= lastPoll and now - lastPoll < POLL_MS then return end
+    lastPoll = now
+    for pn = 0, getNumActivePlayers() - 1 do
+        local p = getSpecificPlayer(pn)
+        if p and not p:isDead() then
+            if isClient() and not asked[pn] then
+                asked[pn] = true
+                sendClientCommand(p, W.MODULE, W.CMD_UNLOCKS_REQ, {})
+            end
+            if W.status(p).count > 1 then
+                if not warnedTwo[pn] then
+                    warnedTwo[pn] = true
+                    if HaloTextHelper then HaloTextHelper.addBadText(p, getText("IGUI_MinidoracatWatch_TwoWorn")) end
+                end
+            else
+                warnedTwo[pn] = nil
+            end
+            if not isServer() then W.pollStateCallbacks(p, pn) end
+        end
     end
 end
-
-function Panel:onInsert()
-    local player, w = self:target()
-    C.requestBattery(player, w, true)
-end
-
-function Panel:onRemove()
-    local player, w = self:target()
-    C.requestBattery(player, w, false)
-end
-
-function Panel:onClose() C.closePanel() end
-
-function C.closePanel()
-    if panel then panel:removeFromUIManager() end
-    panel = nil
-end
-
-function C.openPanel(pn, watchItem)
-    C.closePanel()
-    local w, h = 360, 120
-    local o = ISPanel.new(Panel, math.floor((getCore():getScreenWidth() - w) / 2),
-        math.floor(getCore():getScreenHeight() * 0.3), w, h)
-    o.moveWithMouse = true
-    o.backgroundColor = { r = 0.06, g = 0.07, b = 0.08, a = 0.94 }
-    o.borderColor = { r = 0.45, g = 0.47, b = 0.5, a = 1 }
-    o.playerNum = pn
-    o.watchItem = watchItem
-    o:initialise()
-    o:addToUIManager()
-    panel = o
-end
-
-function C.togglePanel(pn)
-    if panel then C.closePanel() else C.openPanel(pn, nil) end
-end
-
-function C.isPanelOpen() return panel ~= nil end
+Events.OnTick.Add(C.poll)
+Events.OnCreatePlayer.Add(function() W.clearStatus() end) -- 重生是新的 IsoPlayer：舊的快取不留
 
 -- ===== 家族工具列（Dock，UI 框架 API rev 13）=====
 -- 回呼可能每幀被叫：不建 table。框架缺席、版本不足或登記失敗＝沒有工具列按鈕，面板仍可從錶的右鍵選單開啟。
@@ -273,8 +236,8 @@ local DOCK_SPEC = {
     id = "minimapwatch",
     order = 12,
     label = function() return getText("IGUI_MinidoracatWatch_DockLabel") end,
-    drawIcon = function(btn, x, y, size) drawBattery(btn, x, y, size, C.watchOf(0)) end,
-    getStatus = function() return C.statusText(C.watchOf(0)) end,
+    drawIcon = function(btn, x, y, size) C.drawBattery(btn, x, y, size, C.watchOf(0)) end,
+    getStatus = function() return C.statusText(C.watchOf(0), getSpecificPlayer(0)) end,
     getState = function()
         local w = C.watchOf(0)
         if not w then return nil end
@@ -289,7 +252,7 @@ local DOCK_SPEC = {
         if c == nil or c <= 0 then return -1 end
         return 0
     end,
-    isActive = function() return panel ~= nil end,
+    isActive = function() return C.isPanelOpen() end,
     isAvailable = function() return W.enabled() end,
     onClick = function() C.togglePanel(0) end,
 }
@@ -305,11 +268,108 @@ do
     if not C.docked then W.log("family Dock unavailable: open the watch panel from the watch context menu") end
 end
 
--- ===== 錶的右鍵選單 =====
+-- ===== 右鍵選單 =====
 -- OnFillInventoryObjectContextMenu(playerNum, context, items)：items 是物品或 { items = {...} } 疊
--- （ISInventoryPaneContextMenu.lua:128-137、:935）
-local function onContextOpen(watch, pn) C.openPanel(pn, watch) end
-local function onContextBattery(watch, pn, install) C.requestBattery(getSpecificPlayer(pn), watch, install) end
+-- （ISInventoryPaneContextMenu.lua:128-137、:935）。子選單照原版 ISContextMenu:getNew／addSubMenu。
+function C.slotName(slot) return getText(slot.name) end
+function C.moduleName(id)
+    local def = W.modules[id]
+    return def and getText(def.name) or id
+end
+
+-- 身上的地圖錶：戴著的那支排第一
+function C.watchesOn(player)
+    local out = {}
+    local worn = W.status(player).watch
+    if worn then out[1] = worn end
+    for t in pairs(W.WATCH_TYPES) do
+        local list = player:getInventory():getAllTypeRecurse(t)
+        for i = 0, list:size() - 1 do
+            local w = list:get(i)
+            if w ~= worn then out[#out + 1] = w end
+        end
+    end
+    return out
+end
+
+-- 這個模組能裝進這支錶的哪些槽位：有效、空著、類別相符
+function C.installTargets(player, watch, def)
+    local out = {}
+    local slots = W.slotsOf(watch)
+    for _, slot in ipairs(W.slotList) do
+        if slot.accepts[def.class] and not (slots and slots[slot.id] ~= nil) and W.slotValid(player, slot) then
+            out[#out + 1] = slot
+        end
+    end
+    return out
+end
+
+local function subMenu(context, text)
+    local opt = context:addOption(text)
+    local sub = ISContextMenu:getNew(context)
+    context:addSubMenu(opt, sub)
+    return sub, opt
+end
+
+local function onOpen(watch, pn) C.openPanel(pn, watch) end
+local function onBattery(watch, pn, install) C.requestBattery(getSpecificPlayer(pn), watch, install) end
+local function onModule(watch, pn, slotId, item) C.requestModule(getSpecificPlayer(pn), watch, slotId, item) end
+local function onUnlock(slotId, pn) C.requestUnlock(getSpecificPlayer(pn), slotId) end
+
+local function watchMenu(context, player, pn, item)
+    context:addOption(getText("IGUI_MinidoracatWatch_Open"), item, onOpen, pn)
+    local hasBattery = W.charge(item) ~= nil
+    if C.bestBattery(player) then
+        context:addOption(getText(hasBattery and "IGUI_MinidoracatWatch_ReplaceBattery"
+            or "IGUI_MinidoracatWatch_InsertBattery"), item, onBattery, pn, true)
+    end
+    if hasBattery then
+        context:addOption(getText("IGUI_MinidoracatWatch_RemoveBattery"), item, onBattery, pn, false)
+    end
+    local sub = nil
+    for _, slot in ipairs(W.slotList) do
+        local rec = W.slotRecord(item, slot.id)
+        if rec then
+            sub = sub or subMenu(context, getText("IGUI_MinidoracatWatch_RemoveModule"))
+            sub:addOption(getText("IGUI_MinidoracatWatch_SlotAndModule", C.slotName(slot), C.moduleName(rec.id)),
+                item, onModule, pn, slot.id, nil)
+        end
+    end
+end
+
+local function moduleMenu(context, player, pn, item, def)
+    local any = false
+    local sub, opt = subMenu(context, getText("IGUI_MinidoracatWatch_InstallToWatch"))
+    for _, w in ipairs(C.watchesOn(player)) do
+        for _, slot in ipairs(C.installTargets(player, w, def)) do
+            any = true
+            sub:addOption(getText("IGUI_MinidoracatWatch_WatchAndSlot", w:getDisplayName(), C.slotName(slot)),
+                w, onModule, pn, slot.id, item)
+        end
+    end
+    if not any then
+        opt.notAvailable = true
+        opt.subOption = nil
+    end
+end
+
+local function cardMenu(context, player, pn, item)
+    local any = false
+    local sub, opt = subMenu(context, getText("IGUI_MinidoracatWatch_UseCard"))
+    for _, slot in ipairs(W.slotList) do
+        if W.cardType(slot) == item:getFullType() and W.slotMode(slot) == "card" and not W.isUnlocked(player, slot.id) then
+            any = true
+            sub:addOption(getText("IGUI_MinidoracatWatch_OpenSlot", C.slotName(slot)), slot.id, onUnlock, pn)
+        end
+    end
+    if not any then
+        opt.notAvailable = true
+        opt.subOption = nil
+    end
+end
+
+local CARD_TYPES = {}
+for _, t in pairs(W.CARD_TYPES) do CARD_TYPES[t] = true end
 
 Events.OnFillInventoryObjectContextMenu.Add(function(pn, context, items)
     if not W.enabled() then return end
@@ -319,17 +379,12 @@ Events.OnFillInventoryObjectContextMenu.Add(function(pn, context, items)
     for _, v in ipairs(items) do
         local item = v
         if not instanceof(v, "InventoryItem") then item = v.items and v.items[1] end
-        if W.isWatch(item) and inv:getItemWithIDRecursiv(item:getID()) == item then
-            context:addOption(getText("IGUI_MinidoracatWatch_Open"), item, onContextOpen, pn)
-            local hasBattery = W.charge(item) ~= nil
-            if C.bestBattery(player) then
-                context:addOption(getText(hasBattery and "IGUI_MinidoracatWatch_ReplaceBattery"
-                    or "IGUI_MinidoracatWatch_InsertBattery"), item, onContextBattery, pn, true)
-            end
-            if hasBattery then
-                context:addOption(getText("IGUI_MinidoracatWatch_RemoveBattery"), item, onContextBattery, pn, false)
-            end
-            return
+        if item and inv:getItemWithIDRecursiv(item:getID()) == item then
+            local t = item:getFullType()
+            if W.isWatch(item) then return watchMenu(context, player, pn, item) end
+            local def = W.moduleByItem[t]
+            if def then return moduleMenu(context, player, pn, item, def) end
+            if CARD_TYPES[t] then return cardMenu(context, player, pn, item) end
         end
     end
 end)

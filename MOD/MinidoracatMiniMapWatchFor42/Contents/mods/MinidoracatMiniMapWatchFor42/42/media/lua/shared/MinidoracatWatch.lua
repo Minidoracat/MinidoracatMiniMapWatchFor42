@@ -1,5 +1,5 @@
--- MinidoracatWatch.lua（shared）：地圖錶的電池、扣電、穿戴限制與閘門判定。
--- MinidoracatWatchCore 是本 addon 的內部表，不是公開 API（公開 API MinidoracatWatchAPI 等 Phase 3 模組做好才開）。
+-- MinidoracatWatch.lua（shared）：地圖錶的電池、扣電、穿戴限制與小地圖決策表。
+-- MinidoracatWatchCore 是本 addon 的內部表，不是公開 API（公開 API MinidoracatWatchAPI 在 MinidoracatWatch_Modules.lua）。
 --
 -- 電量放在錶的 modData[KEY]：nil＝全新的錶（視為裝著滿電電池）、-1＝沒有電池、0..1＝剩餘電量。
 -- 原版的耗電類別用不上：AlarmClockClothing 與 DrainableComboItem 都是 final
@@ -16,7 +16,7 @@ MinidoracatWatchCore = W
 W.MOD_ID = "MinidoracatMiniMapWatchFor42"
 W.MODULE = "MinidoracatWatch" -- client／server command module
 W.CMD_BATTERY = "battery"
-W.CMD_FAILED = "batteryFailed"
+W.CMD_FAILED = "failed"
 W.KEY = "MinidoracatWatchBattery"
 W.NO_BATTERY = -1
 W.BATTERY_TYPE = "Base.Battery"
@@ -95,10 +95,10 @@ function W.setCharge(item, charge)
     item:getModData()[W.KEY] = charge
 end
 
--- 續航（現實時間）＝滿電小時數 ÷（1＋模組耗電%÷100）。Phase 2 沒有模組，只有基礎耗電。
-function W.drain(charge, ms, fullHours)
+-- 續航（現實時間）＝滿電小時數 ÷ 耗電倍率（1＋模組耗電%÷100，節能核心再減半；W.drainFactor）
+function W.drain(charge, ms, fullHours, factor)
     if charge == nil or ms <= 0 then return charge end
-    local c = charge - ms / (fullHours * 3600000)
+    local c = charge - ms * (factor or 1) / (fullHours * 3600000)
     if c < 0 then return 0 end
     return c
 end
@@ -262,6 +262,7 @@ function W.applyBatteryChange(player, watchId, install, batteryId)
     end
     -- 只有伺服器能同步 modData：sendToRelative 給玩家附近的所有連線（含本人），客戶端以容器＋物品 ID
     -- 找到同一件物品後整表覆蓋（LuaManager.java:12326-12334、SyncItemModDataPacket；單機是 no-op）
+    W.invalidate()
     if isServer() then syncItemModData(player, watch) end
     return true
 end
@@ -296,25 +297,25 @@ local function sync(player, w)
     end
 end
 
-local function drainWatch(w, ms, fullHours)
+local function drainWatch(player, w, ms, fullHours)
     if ms <= 0 then return false end
     local c = W.charge(w)
     if c == nil or c <= 0 then return false end
-    W.setCharge(w, W.drain(c, ms, fullHours))
+    W.setCharge(w, W.drain(c, ms, fullHours, W.drainFactor(player, w)))
     return true
 end
 
-local function accrue(s, fullHours, enabled)
+local function accrue(player, s, fullHours, enabled)
     local ms = activeMs - s.mark
     s.mark = activeMs
-    if s.watch and enabled and drainWatch(s.watch, ms, fullHours) then s.dirty = true end
+    if s.watch and enabled and drainWatch(player, s.watch, ms, fullHours) then s.dirty = true end
 end
 
--- 換電池與穿戴動作完成前呼叫：把這位玩家還沒入帳的耗電立刻記到目前那支錶上
+-- 換電池、安裝／拆下模組與穿戴動作完成前呼叫：把這位玩家還沒入帳的耗電立刻記到目前那支錶上
 function W.settleNow(player)
     if isClient() or not player then return end
     local s = state[player]
-    if s then accrue(s, W.fullHours(), W.enabled()) end
+    if s then accrue(player, s, W.fullHours(), W.enabled()) end
 end
 
 local function visit(player, now, doSync, seen, drainOffline, fullHours, enabled)
@@ -323,13 +324,14 @@ local function visit(player, now, doSync, seen, drainOffline, fullHours, enabled
     local w = W.wornWatch(player) or false
     local s = state[player]
     if not s then
-        -- 第一次看到（登入、讀檔、重生）：只有「離線也耗電」開啟時補扣離線時間
+        -- 第一次看到（登入、讀檔、重生）：只有「離線也耗電」開啟時補扣離線時間；MP 順便送這位玩家自己的解鎖狀態
         s = { mark = activeMs, watch = w, dirty = false }
-        if w and enabled and drainWatch(w, W.offlineMs(now, seen[key], drainOffline), fullHours) then
+        if w and enabled and drainWatch(player, w, W.offlineMs(now, seen[key], drainOffline), fullHours) then
             s.dirty = true
         end
+        W.pushUnlocks(player)
     else
-        accrue(s, fullHours, enabled)
+        accrue(player, s, fullHours, enabled)
         if s.watch ~= w then
             if s.dirty and s.watch then sync(player, s.watch) end
             s.watch, s.dirty = w, false
@@ -340,6 +342,8 @@ local function visit(player, now, doSync, seen, drainOffline, fullHours, enabled
         s.dirty = false
     end
     seen[key] = now
+    -- 第三方模組的 onStateChanged：MP 伺服器在這裡比對；客戶端與單機在客戶端迴圈（MinidoracatWatch_Client.lua）
+    if isServer() then W.pollStateCallbacks(player, player) end
     return s
 end
 
@@ -362,7 +366,12 @@ function W.visitAll(now, doSync)
             if s then state[p] = s; nextState[p] = s end
         end
     end
-    state = nextState -- 每分鐘重建一次：離線與死亡的玩家掉出去
+    if doSync then
+        -- 每分鐘重建一次：離線與死亡的玩家掉出去（扣電狀態、模組狀態快取、onStateChanged 的上次狀態）
+        state = nextState
+        W.clearStatus()
+        if isServer() then W.pruneStateCallbacks(nextState) end
+    end
 end
 
 function W.onTick()
@@ -378,3 +387,6 @@ function W.onTick()
 end
 
 if not isClient() then Events.OnTickEvenPaused.Add(W.onTick) end
+
+-- 模組、槽位、狀態快取與對外 API（扣電倍率 W.drainFactor、W.invalidate 等都在那裡）
+require "MinidoracatWatch_Modules"

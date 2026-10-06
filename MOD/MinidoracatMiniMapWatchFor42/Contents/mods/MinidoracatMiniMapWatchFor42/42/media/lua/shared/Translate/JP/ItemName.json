@@ -1,4 +1,17 @@
 {
     "MinidoracatWatch.MapWatch_ValuTech_Right": "ValuTech マップウォッチ",
-    "MinidoracatWatch.MapWatch_ValuTech_Left": "ValuTech マップウォッチ"
+    "MinidoracatWatch.MapWatch_ValuTech_Left": "ValuTech マップウォッチ",
+    "MinidoracatWatch.Module_Compass": "コンパスモジュール",
+    "MinidoracatWatch.Module_Ledger": "ディレクトリモジュール",
+    "MinidoracatWatch.Module_GPS": "測位モジュール",
+    "MinidoracatWatch.Module_Comm": "通信モジュール",
+    "MinidoracatWatch.Module_Scan": "スキャナーモジュール",
+    "MinidoracatWatch.Module_Detect": "探知モジュール",
+    "MinidoracatWatch.Module_MilDetect": "軍用探知モジュール",
+    "MinidoracatWatch.Module_LongComm": "長距離通信モジュール",
+    "MinidoracatWatch.Module_Relay": "中継コア",
+    "MinidoracatWatch.Module_Eco": "省電力コア",
+    "MinidoracatWatch.UnlockCard_Ext": "拡張スロットのアンロックカード",
+    "MinidoracatWatch.UnlockCard_Adv": "上級スロットのアンロックカード",
+    "MinidoracatWatch.UnlockCard_Core": "コアスロットのアンロックカード"
 }

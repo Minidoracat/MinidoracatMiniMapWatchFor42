@@ -96,6 +96,97 @@ F.reset()
 tick(60000, 500)
 check(#F.synced == 1 and F.synced[1].item == moved, "扣電跟著換手後的新物品")
 
+-- 指令經 OnClientCommand（player＝連線身分）：每個指令之間隔開節流期
+local function send(player, cmd, args)
+    F.now = F.now + 300
+    F.fire("OnClientCommand", W.MODULE, cmd, player, args)
+end
+local function fails(player)
+    local n = 0
+    for _, c in ipairs(F.serverCmds) do
+        if c.player == player and c.command == W.CMD_FAILED and W.FAIL_KEYS[c.args.reason] then n = n + 1 end
+    end
+    return n
+end
+
+F.print("情境四：裝卸模組（client command）→ 物品進出、錶同步、功能狀態")
+local SB = SandboxVars.MinidoracatWatch
+local API = MinidoracatWatchAPI
+local driver = F.item("Base.Screwdriver")
+alice.inv:AddItem(driver)
+local gps = F.item("MinidoracatWatch.Module_GPS")
+alice.inv:AddItem(gps)
+F.reset()
+check(API.getWatchModuleState(alice, "gps") == "missing", "裝之前定位模組 missing")
+send(alice, W.CMD_MODULE, { watchId = moved:getID(), slotId = "std1", install = true, itemId = gps:getID() })
+check(gps.container == nil and W.slotRecord(moved, "std1").id == "gps" and #F.synced == 1 and F.removed[1] == gps,
+    "安裝：模組離開背包、紀錄進錶、同步")
+check(API.getWatchModuleState(alice, "gps") == "active", "伺服器上 getWatchModuleState＝active（AutoDrive 讀這個）")
+F.reset()
+local c0 = W.charge(moved)
+tick(60000, 500)
+check(near((c0 - W.charge(moved)) * 72 * H, 60000 * 1.25, 1000) and #F.synced == 1,
+    "定位模組 +25%：一分鐘扣 1.25 分鐘的電，照樣每分鐘同步一次")
+F.reset()
+send(alice, W.CMD_MODULE, { watchId = moved:getID(), slotId = "std1", install = false })
+local back = alice.inv:getAllTypeRecurse("MinidoracatWatch.Module_GPS")
+check(back:size() == 1 and W.slotRecord(moved, "std1") == nil and F.added[1] == back:get(0), "拆下：物品回背包、送新增封包")
+check(API.getWatchModuleState(alice, "gps") == "missing", "拆下後 missing")
+F.reset()
+send(mallory, W.CMD_MODULE, { watchId = moved:getID(), slotId = "std1", install = true, itemId = back:get(0):getID() })
+check(W.slotRecord(moved, "std1") == nil and back:get(0).container == alice.inv and fails(mallory) == 1,
+    "冒用別人的錶與模組：不動、失敗只回給送指令的人")
+send(alice, W.CMD_MODULE, { watchId = moved:getID(), slotId = "ext", install = true, itemId = back:get(0):getID() })
+check(W.slotRecord(moved, "ext") == nil and fails(alice) == 1, "擴充槽（預設經濟系統＝解鎖卡）未開啟：拒絕")
+send(alice, W.CMD_MODULE, "junk")
+send(alice, W.CMD_MODULE, { watchId = tostring(moved:getID()), slotId = "std1", install = true, itemId = back:get(0):getID() })
+check(W.slotRecord(moved, "std1") == nil, "非 table／字串 id 一律不處理")
+
+F.print("情境五：解鎖卡（client command）→ 伺服器紀錄、只送給本人、不能重複、客戶端偽造無效")
+local card = F.item("MinidoracatWatch.UnlockCard_Ext")
+alice.inv:AddItem(card)
+F.reset()
+send(alice, W.CMD_UNLOCKS, { to = "alice", slots = { ext = true, adv = true, core = true } })
+send(alice, W.CMD_UNLOCK, { slotId = "adv", cardId = card:getID() })
+check(not W.isUnlocked(alice, "ext") and not W.isUnlocked(alice, "adv") and card.container == alice.inv,
+    "客戶端送 unlocks 或拿錯卡：伺服器不認、卡不被吃")
+F.reset()
+send(alice, W.CMD_UNLOCK, { slotId = "ext", cardId = card:getID() })
+check(W.isUnlocked(alice, "ext") and card.container == nil, "擴充槽解鎖卡：開啟、卡用掉")
+local pushed = F.serverCmds[1]
+check(pushed and pushed.player == alice and pushed.command == W.CMD_UNLOCKS and pushed.args.slots.ext == true,
+    "只把 alice 的解鎖狀態送給 alice")
+local card2 = F.item("MinidoracatWatch.UnlockCard_Ext")
+alice.inv:AddItem(card2)
+send(alice, W.CMD_UNLOCK, { slotId = "ext", cardId = card2:getID() })
+check(card2.container == alice.inv and fails(alice) == 1, "第二張卡：拒絕、不被吃")
+check(not W.isUnlocked(mallory, "ext"), "mallory 沒有因此開啟")
+send(alice, W.CMD_MODULE, { watchId = moved:getID(), slotId = "ext", install = true, itemId = back:get(0):getID() })
+check(W.slotRecord(moved, "ext") and W.slotRecord(moved, "ext").id == "gps", "開啟後裝得上擴充槽")
+F.reset()
+send(alice, W.CMD_UNLOCKS_REQ, {})
+check(F.serverCmds[1] and F.serverCmds[1].player == alice and F.serverCmds[1].args.slots.ext == true, "客戶端補要：回自己的那份")
+
+F.print("情境六：槽位失效 → 模組 paused、不耗電；重登（新的 IsoPlayer）解鎖還在、登入時送解鎖狀態")
+SB.SlotExt = 4
+tick(1500, 500)
+check(API.getWatchModuleState(alice, "gps") == "paused", "擴充槽改成不開放：paused")
+check(W.drainFactor(alice, moved) == 1, "paused 的模組不耗電")
+SB.SlotExt = nil
+-- 重登：伺服器上是新的 IsoPlayer 物件，同帳號同 playerNum；錶在背包裡（modData 隨物品存檔）
+local relog = F.player("alice", 0)
+relog.inv = alice.inv
+relog.worn = alice.worn
+F.players = { relog, mallory }
+F.reset()
+tick(2000, 500)
+local sent = false
+for _, c in ipairs(F.serverCmds) do
+    if c.player == relog and c.command == W.CMD_UNLOCKS and c.args.slots.ext == true then sent = true end
+end
+check(sent, "第一次看到重登的玩家：主動送解鎖狀態")
+check(W.isUnlocked(relog, "ext") and API.getWatchModuleState(relog, "gps") == "active", "重登後解鎖與模組都還在")
+
 F.print()
 if F.failures > 0 then
     F.print(F.failures .. " 項失敗")

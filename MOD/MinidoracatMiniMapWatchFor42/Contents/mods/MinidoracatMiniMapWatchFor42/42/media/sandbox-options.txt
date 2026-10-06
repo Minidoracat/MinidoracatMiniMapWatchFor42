@@ -1,6 +1,6 @@
 VERSION = 1,
 
-/* 地圖錶（Phase 2 最小集合）。命名空間與 MOD ID 脫鉤，日後併回主 MOD 時設定可沿用 */
+/* 地圖錶。命名空間與 MOD ID 脫鉤，日後併回主 MOD 時設定可沿用 */
 
 option MinidoracatWatch.Enabled
 {type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_Enabled,}
@@ -17,3 +17,76 @@ option MinidoracatWatch.DrainOffline
 
 option MinidoracatWatch.DrainPaused
 {type = boolean, default = false, page = MinidoracatWatch, translation = MinidoracatWatch_DrainPaused,}
+
+/* 功能規則（Phase 3）：1 不需要錶、2 戴錶就能用、3 需要模組（預設）、4 關閉 */
+option MinidoracatWatch.RuleArrow
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_RuleArrow,}
+
+option MinidoracatWatch.RulePoi
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_RulePoi,}
+
+option MinidoracatWatch.RuleNav
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_RuleNav,}
+
+option MinidoracatWatch.RuleShare
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_RuleShare,}
+
+option MinidoracatWatch.RuleScan
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_RuleScan,}
+
+option MinidoracatWatch.RuleZombie
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_RuleZombie,}
+
+/* 付費槽位的開啟方式：1 免費開放、2 解鎖卡、3 經濟系統（Phase 6 之前一律當解鎖卡）、4 不開放；其他 MOD 的槽位預設免費 */
+option MinidoracatWatch.SlotExt
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_SlotExt,}
+
+option MinidoracatWatch.SlotAdv
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAdv,}
+
+option MinidoracatWatch.SlotCore
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_SlotCore,}
+
+option MinidoracatWatch.SlotAddon
+{type = enum, numValues = 4, default = 1, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAddon,}
+
+option MinidoracatWatch.NeedScrewdriver
+{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_NeedScrewdriver,}
+
+/* 範圍（格）：照設計稿「進階：範圍與距離」 */
+option MinidoracatWatch.ScanRadius
+{type = integer, min = 1, max = 1000, default = 60, page = MinidoracatWatch, translation = MinidoracatWatch_ScanRadius,}
+
+option MinidoracatWatch.DetectRadius
+{type = integer, min = 1, max = 1000, default = 40, page = MinidoracatWatch, translation = MinidoracatWatch_DetectRadius,}
+
+option MinidoracatWatch.MilDetectRadius
+{type = integer, min = 1, max = 1000, default = 80, page = MinidoracatWatch, translation = MinidoracatWatch_MilDetectRadius,}
+
+/* 內建模組耗電（%，比只開小地圖多耗的電；照設計稿 data.mjs MODULES）。節能核心不耗電、讓整支錶耗電減半 */
+option MinidoracatWatch.DrainCompass
+{type = integer, min = 0, max = 1000, default = 10, page = MinidoracatWatch, translation = MinidoracatWatch_DrainCompass,}
+
+option MinidoracatWatch.DrainLedger
+{type = integer, min = 0, max = 1000, default = 10, page = MinidoracatWatch, translation = MinidoracatWatch_DrainLedger,}
+
+option MinidoracatWatch.DrainGPS
+{type = integer, min = 0, max = 1000, default = 25, page = MinidoracatWatch, translation = MinidoracatWatch_DrainGPS,}
+
+option MinidoracatWatch.DrainComm
+{type = integer, min = 0, max = 1000, default = 25, page = MinidoracatWatch, translation = MinidoracatWatch_DrainComm,}
+
+option MinidoracatWatch.DrainScan
+{type = integer, min = 0, max = 1000, default = 25, page = MinidoracatWatch, translation = MinidoracatWatch_DrainScan,}
+
+option MinidoracatWatch.DrainDetect
+{type = integer, min = 0, max = 1000, default = 50, page = MinidoracatWatch, translation = MinidoracatWatch_DrainDetect,}
+
+option MinidoracatWatch.DrainMilDetect
+{type = integer, min = 0, max = 1000, default = 50, page = MinidoracatWatch, translation = MinidoracatWatch_DrainMilDetect,}
+
+option MinidoracatWatch.DrainLongComm
+{type = integer, min = 0, max = 1000, default = 25, page = MinidoracatWatch, translation = MinidoracatWatch_DrainLongComm,}
+
+option MinidoracatWatch.DrainRelay
+{type = integer, min = 0, max = 1000, default = 25, page = MinidoracatWatch, translation = MinidoracatWatch_DrainRelay,}

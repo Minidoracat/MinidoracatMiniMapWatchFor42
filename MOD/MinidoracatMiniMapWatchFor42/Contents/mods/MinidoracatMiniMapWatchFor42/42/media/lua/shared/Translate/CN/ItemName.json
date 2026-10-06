@@ -1,4 +1,17 @@
 {
     "MinidoracatWatch.MapWatch_ValuTech_Right": "ValuTech 地图表",
-    "MinidoracatWatch.MapWatch_ValuTech_Left": "ValuTech 地图表"
+    "MinidoracatWatch.MapWatch_ValuTech_Left": "ValuTech 地图表",
+    "MinidoracatWatch.Module_Compass": "罗盘模块",
+    "MinidoracatWatch.Module_Ledger": "名录模块",
+    "MinidoracatWatch.Module_GPS": "定位模块",
+    "MinidoracatWatch.Module_Comm": "通讯模块",
+    "MinidoracatWatch.Module_Scan": "扫描模块",
+    "MinidoracatWatch.Module_Detect": "侦测模块",
+    "MinidoracatWatch.Module_MilDetect": "军规侦测模块",
+    "MinidoracatWatch.Module_LongComm": "长距通讯模块",
+    "MinidoracatWatch.Module_Relay": "中继核心",
+    "MinidoracatWatch.Module_Eco": "节能核心",
+    "MinidoracatWatch.UnlockCard_Ext": "扩展槽解锁卡",
+    "MinidoracatWatch.UnlockCard_Adv": "进阶槽解锁卡",
+    "MinidoracatWatch.UnlockCard_Core": "核心槽解锁卡"
 }
