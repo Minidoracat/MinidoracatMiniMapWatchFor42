@@ -403,6 +403,42 @@ tick(1000, 500)
 check(API.getWatchModuleState(dave, "scan") == "active", "自動續租扣到款的通知：恢復 active")
 MinidoracatEconomy = nil
 
+F.print("情境十二：充電 → 發動的車上充電並推給本人、熄火停充；有電的室內充電不碰發電機；預設不開放")
+local gail = F.player("gail", 0)
+local gw = F.item(F.LEFT)
+gail.inv:AddItem(gw)
+F.action(ISWearClothing, gail, gw):complete()
+W.setCharge(gw, 0.5)
+gail.vehicle = F.vehicle(true)
+tick(2000, 500)
+local gc = W.charge(gw)
+tick(60000, 500)
+check(W.charge(gw) < gc, "預設不開放：發動的車上照樣扣電")
+SandboxVars.MinidoracatWatch.ChargeCar = true
+F.reset()
+tick(1000, 500)
+gc = W.charge(gw)
+tick(60000, 500)
+local pushed
+for _, c in ipairs(F.serverCmds) do if c.command == W.CMD_CHARGE then pushed = c end end
+check(near(W.charge(gw) - gc, 60000 / (6 * H), 1e-6) and pushed and pushed.player == gail and pushed.args.kind == "car",
+    "車上：一分鐘充 1/360、推 kind=car 給本人")
+check(W.chargeState(gail) == "car", "伺服器的 chargeState＝car")
+gail.vehicle.running = false
+tick(2000, 500)
+gc = W.charge(gw)
+tick(60000, 500)
+check(W.charge(gw) < gc and W.chargeState(gail) == nil, "熄火：停充、恢復扣電")
+gail.vehicle = nil
+local fuel = { fuel = 3 }
+gail.square = F.square({}, fuel, false)
+SandboxVars.MinidoracatWatch.ChargeHouse = true
+tick(2000, 500)
+gc = W.charge(gw)
+tick(60000, 500)
+check(near(W.charge(gw) - gc, 60000 / (12 * H), 1e-6) and fuel.fuel == 3, "發電機供電的室內：12 小時速率、燃料不變")
+SandboxVars.MinidoracatWatch.ChargeCar, SandboxVars.MinidoracatWatch.ChargeHouse = nil, nil
+
 F.print()
 if F.failures > 0 then
     F.print(F.failures .. " 項失敗")

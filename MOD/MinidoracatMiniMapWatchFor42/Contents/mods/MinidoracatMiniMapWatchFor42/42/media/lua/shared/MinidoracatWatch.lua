@@ -355,10 +355,96 @@ local function drainWatch(player, w, ms, fullHours)
     return true
 end
 
+-- ===== 充電（使用者裁定：預設只能換電池；管理員可開放車上、有電的建築）=====
+-- 淨值規則：這段時間有外部供電（s.power，上一次入帳時取樣）＝錶由外部供電，不扣電、只充電，
+-- 以「充滿小時數」的速率加到 1 封頂；所以沙盒寫的「從沒電到充滿約 N 小時」與模組、照明無關。沒有外部供電才照常扣電。
+W.CMD_CHARGE = "charge"
+W.CHARGE_CAR, W.CHARGE_HOUSE = "car", "house"
+
+function W.chargeHours(kind)
+    local key, default = "CarHours", 6
+    if kind == W.CHARGE_HOUSE then key, default = "HouseHours", 12 end
+    local h = tonumber(W.sandbox(key, default))
+    if not h or h ~= h or h < 1 then return 1 end
+    if h > 168 then return 168 end
+    return h
+end
+
+function W.recharge(charge, ms, hours)
+    if charge == nil or ms <= 0 then return charge end
+    local c = charge + ms / (hours * 3600000)
+    if c > 1 then return 1 end
+    return c
+end
+
+-- 外部供電來源（伺服器／單機）：坐在引擎發動的車上（駕駛或乘客，BaseVehicle.isEngineRunning）優先；
+-- 其次室內且所在格有電，照原版車用電瓶充電器的判定（IsoCarBatteryCharger.java:134：發電機 haveElectricity
+-- 或市電 hasGridPower）。只讀不寫：不加發電機負載、不扣車輛電瓶。沒戴錶、沒電池不算；滿了照樣算
+-- （滿電時由外部供電、不扣電，電量不會在 1 上下來回）。
+function W.powerSource(player, watch)
+    if not watch or W.charge(watch) == nil then return nil end
+    if W.sandbox("ChargeCar", false) == true then
+        local v = player:getVehicle()
+        if v and v:isEngineRunning() then return W.CHARGE_CAR end
+    end
+    if W.sandbox("ChargeHouse", false) == true then
+        local sq = player:getCurrentSquare()
+        if sq and sq:getRoom() and (sq:haveElectricity() or sq:hasGridPower()) then return W.CHARGE_HOUSE end
+    end
+    return nil
+end
+
 local function accrue(player, s, fullHours, enabled)
     local ms = activeMs - s.mark
     s.mark = activeMs
-    if s.watch and enabled and drainWatch(player, s.watch, ms, fullHours) then s.dirty = true end
+    if not s.watch or not enabled then return end
+    if not s.power then
+        if drainWatch(player, s.watch, ms, fullHours) then s.dirty = true end
+        return
+    end
+    local c = W.charge(s.watch)
+    if c == nil or c >= 1 or ms <= 0 then return end
+    c = W.recharge(c, ms, W.chargeHours(s.power))
+    W.setCharge(s.watch, c)
+    s.dirty = true
+    if c >= 1 then sync(player, s.watch); s.dirty = false end -- 充飽立刻同步：客戶端的「充電中」跟著消失
+end
+
+-- MP 客戶端：伺服器推來的外部供電來源（[本機 IsoPlayer] = "car"|"house"）
+local clientPower = {}
+Events.OnServerCommand.Add(function(module, command, args)
+    if module ~= W.MODULE or command ~= W.CMD_CHARGE or type(args) ~= "table" then return end
+    local kind = args.kind
+    if kind ~= W.CHARGE_CAR and kind ~= W.CHARGE_HOUSE then kind = nil end
+    for pn = 0, getNumActivePlayers() - 1 do
+        local p = getSpecificPlayer(pn)
+        if p and p:getUsername() == args.to then clientPower[p] = kind end
+    end
+end)
+
+-- 給面板：正在充電回 "car"／"house"，否則 nil（沒戴錶、沒電池、已充飽也是 nil）。可每幀呼叫、不配置 table。
+function W.chargeState(player)
+    if not player then return nil end
+    local kind
+    if isClient() then
+        kind = clientPower[player]
+    else
+        local s = state[player]
+        kind = s and s.power
+    end
+    if not kind then return nil end
+    local w = W.wornWatch(player)
+    local c = w and W.charge(w)
+    if not c or c >= 1 then return nil end
+    return kind
+end
+
+-- 給面板：充電中時「大約多久充滿」（現實小時，浮點）；沒在充電回 nil。watch＝戴著的那支。
+function W.chargeHoursToFull(player, watch)
+    local kind = W.chargeState(player)
+    local c = kind and watch and W.charge(watch)
+    if not c or c >= 1 then return nil end
+    return (1 - c) * W.chargeHours(kind)
 end
 
 -- 換電池、安裝／拆下模組與穿戴動作完成前呼叫：把這位玩家還沒入帳的耗電立刻記到目前那支錶上
@@ -407,6 +493,13 @@ local function visit(player, now, doSync, seen, drainOffline, fullHours, enabled
         if s.watch ~= w then
             if s.dirty and s.watch then sync(player, s.watch) end
             s.watch, s.dirty = w, false
+        end
+    end
+    local power = enabled and W.powerSource(player, w) or nil
+    if power ~= s.power then
+        s.power = power
+        if isServer() then
+            sendServerCommand(player, W.MODULE, W.CMD_CHARGE, { to = player:getUsername(), kind = power })
         end
     end
     if doSync and s.dirty and w then

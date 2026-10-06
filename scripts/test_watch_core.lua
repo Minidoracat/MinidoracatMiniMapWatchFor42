@@ -339,4 +339,158 @@ check(#F.synced == 0, "單機不送同步封包")
 F.paused = false
 SandboxVars.MinidoracatWatch.DrainPaused = false
 
+-- ===== 充電：車上（引擎發動）、有電的室內；外部供電期間不扣電，只充電 =====
+check(W.chargeHours("car") == 6 and W.chargeHours("house") == 12, "預設車上 6、建築 12 小時充滿")
+check(near(W.recharge(0, 3 * H, 6), 0.5) and W.recharge(0, 6 * H, 6) == 1, "6 小時的速率：3 小時半滿、6 小時全滿")
+check(W.recharge(0.9, 6 * H, 6) == 1, "充過頭夾在 1")
+check(W.recharge(nil, H, 6) == nil and W.recharge(0.4, 0, 6) == 0.4 and W.recharge(0.4, -5, 6) == 0.4,
+    "沒電池不充、零或負時間不充")
+local sbw = SandboxVars.MinidoracatWatch
+sbw.CarHours, sbw.HouseHours = 0, 999
+check(W.chargeHours("car") == 1 and W.chargeHours("house") == 168, "小時數夾在 1..168")
+sbw.CarHours, sbw.HouseHours = 0 / 0, nil
+check(W.chargeHours("car") == 1 and W.chargeHours("house") == 12, "NaN 當 1、沒設定用預設")
+sbw.CarHours = nil
+
+F.mode, F.paused = "server", false
+F.players = {}
+run(61000, 1000) -- 前面的玩家掉出去
+local cp = F.player("erin", 0)
+local cw = F.item(F.LEFT)
+cp.inv:AddItem(cw); F.wear(cp, cw)
+W.setCharge(cw, 0.5)
+run(2000, 1000)
+local CAR, HOUSE = 1 / (6 * H), 1 / (12 * H)
+local function measure(ms)
+    local before = W.charge(cw)
+    run(ms, 1000)
+    return W.charge(cw) - before
+end
+local function chargeCmds()
+    local out = {}
+    for _, c in ipairs(F.serverCmds) do if c.command == W.CMD_CHARGE then out[#out + 1] = c end end
+    return out
+end
+
+cp.vehicle = F.vehicle(true)
+check(measure(60000) < 0 and W.chargeState(cp) == nil, "預設不開放：坐在發動的車上照樣扣電")
+sbw.ChargeCar = true
+F.reset()
+run(1000, 1000) -- 取樣到外部供電（下一段起算）
+local cmds = chargeCmds()
+check(#cmds == 1 and cmds[1].player == cp and cmds[1].args.to == "erin" and cmds[1].args.kind == "car",
+    "開始充電：只送給本人一次（kind=car）")
+sbw.FullHours = 1 -- 扣電極快：充電期間若還在扣，數字會差很多
+check(near(measure(60000), 60000 * CAR, 1e-9), "車上：一分鐘充 1/360，不扣電（FullHours=1 也一樣）")
+check(W.chargeState(cp) == "car", "chargeState＝car")
+check(near(W.chargeHoursToFull(cp, cw), (1 - W.charge(cw)) * 6, 1e-9), "大約多久充滿＝剩餘比例 × 6 小時")
+check(#chargeCmds() == 1, "充電中狀態沒變就不再送")
+sbw.FullHours = nil
+
+cp.vehicle.running = false
+F.reset()
+run(1000, 1000)
+cmds = chargeCmds()
+check(#cmds == 1 and cmds[1].args.kind == nil, "熄火：送一次停止（kind=nil）")
+check(measure(60000) < 0 and W.chargeState(cp) == nil and W.chargeHoursToFull(cp, cw) == nil, "熄火後停充、照常扣電")
+cp.vehicle = nil
+check(measure(60000) < 0, "不在車上不充")
+
+-- 充耗同時：同一分鐘裡前 30 秒在車上、後 30 秒下車＝+30 秒充電 −30 秒耗電（誤差一次取樣 1 秒）
+cp.vehicle = F.vehicle(true)
+run(1000, 1000)
+local mixBefore = W.charge(cw)
+run(30000, 1000)
+cp.vehicle = nil
+run(30000, 1000)
+local drainPer = 1 / (72 * H)
+check(math.abs((W.charge(cw) - mixBefore) - (30000 * CAR - 30000 * drainPer)) <= 1000 * (CAR + drainPer),
+    "前 30 秒充、後 30 秒扣，淨值相加")
+
+-- 建築：室內＋（發電機或市電）；不開放、室外、停電都不充；發電機燃料不動
+local gen = { fuel = 5 }
+cp.square = F.square({}, gen, false)
+check(measure(60000) < 0, "建築充電預設不開放")
+sbw.ChargeHouse = true
+run(1000, 1000)
+check(near(measure(60000), 60000 * HOUSE, 1e-9) and W.chargeState(cp) == "house", "發電機供電的室內：12 小時的速率")
+check(gen.fuel == 5, "發電機燃料不變")
+cp.square = F.square({}, nil, true)
+run(1000, 1000)
+check(near(measure(60000), 60000 * HOUSE, 1e-9), "市電的室內也充")
+cp.square = F.square(nil, gen, true)
+run(1000, 1000)
+check(measure(60000) < 0 and W.chargeState(cp) == nil, "室外（沒有房間）不充")
+cp.square = F.square({}, nil, false)
+run(1000, 1000)
+check(measure(60000) < 0, "停電（沒市電、沒發電機）不充")
+cp.square = F.square({}, { fuel = 0 }, false)
+run(1000, 1000)
+check(measure(60000) < 0, "發電機沒油＝沒電，不充")
+cp.square = F.square({}, gen, false)
+cp.vehicle = F.vehicle(true)
+run(1000, 1000)
+check(W.chargeState(cp) == "car" and near(measure(60000), 60000 * CAR, 1e-9), "兩個條件都成立：車上優先")
+cp.vehicle = nil
+
+-- 上限：充到 1 停、充飽立刻同步、之後照樣外部供電不扣電；chargeState 回 nil
+W.setCharge(cw, 1 - 2000 * HOUSE)
+F.reset()
+run(5000, 1000)
+check(W.charge(cw) == 1, "充到 1 停")
+check(#F.synced == 1 and F.synced[1].item == cw, "充飽當下同步一次（不等一分鐘）")
+run(120000, 1000)
+check(W.charge(cw) == 1, "滿電時仍由外部供電，不在 1 上下來回")
+check(W.chargeState(cp) == nil and W.chargeHoursToFull(cp, cw) == nil, "充飽後不算充電中")
+
+-- 沒電池不充；總開關關閉不充
+W.setCharge(cw, W.NO_BATTERY)
+run(61000, 1000)
+check(W.charge(cw) == nil and W.chargeState(cp) == nil, "沒有電池不充")
+W.setCharge(cw, 0)
+run(1000, 1000)
+check(measure(60000) > 0, "沒電的電池照樣能充")
+sbw.Enabled = false
+check(measure(60000) == 0, "總開關關閉不充")
+sbw.Enabled = true
+
+-- 離線不充（離線也耗電開著時照樣只補扣）
+run(1000, 1000)
+local offBefore = W.charge(cw)
+F.players = {}
+run(61000, 1000)
+F.now = F.now + 6 * H
+F.players = { cp }
+run(1000, 1000)
+check(W.charge(cw) - offBefore <= 1000 * HOUSE + 1e-12, "離線 6 小時不充")
+
+-- 單機暫停：跟 DrainPaused 同一套（不允許暫停耗電＝暫停期間不充；允許＝照充）
+F.mode = "sp"
+run(2000, 1000)
+F.paused = true
+run(2000, 100)
+local pausedAt = W.charge(cw)
+run(120000, 100)
+check(W.charge(cw) == pausedAt, "單機暫停時不充")
+sbw.DrainPaused = true
+run(60000, 100)
+check(W.charge(cw) > pausedAt, "允許暫停耗電時暫停期間也照充")
+sbw.DrainPaused, F.paused = false, false
+check(W.chargeState(cp) == "house", "單機直接讀本機狀態")
+
+-- MP 客戶端：只信伺服器推的 kind（白名單），依 to 找本機玩家
+F.mode = "client"
+local other = F.player("frank", 1)
+F.fire("OnServerCommand", W.MODULE, W.CMD_CHARGE, { to = "erin", kind = "car" })
+check(W.chargeState(cp) == "car" and W.chargeState(other) == nil, "客戶端：收到 car，只套在 erin")
+check(near(W.chargeHoursToFull(cp, cw), (1 - W.charge(cw)) * 6, 1e-9), "客戶端也算得出多久充滿")
+F.fire("OnServerCommand", W.MODULE, W.CMD_CHARGE, { to = "erin", kind = "bogus" })
+check(W.chargeState(cp) == nil, "不認得的 kind 當作沒在充電")
+F.fire("OnServerCommand", W.MODULE, W.CMD_CHARGE, { to = "erin", kind = "house" })
+F.fire("OnServerCommand", W.MODULE, W.CMD_CHARGE, { to = "erin" })
+check(W.chargeState(cp) == nil, "收到 kind=nil 停止")
+check(W.chargeState(nil) == nil, "沒有玩家回 nil")
+sbw.ChargeCar, sbw.ChargeHouse = nil, nil
+F.mode = "sp"
+
 F.finish("test_watch_core")

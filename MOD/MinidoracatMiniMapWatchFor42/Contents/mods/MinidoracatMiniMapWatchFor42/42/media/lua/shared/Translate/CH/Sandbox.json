@@ -178,5 +178,13 @@
     "Sandbox_MinidoracatWatch_LightRadius": "照明半徑（格）",
     "Sandbox_MinidoracatWatch_LightRadius_tooltip": "開燈時照亮身邊的範圍，所有玩家都用這個值。",
     "Sandbox_MinidoracatWatch_LightDrain": "照明模組開燈時耗電（%%）",
-    "Sandbox_MinidoracatWatch_LightDrain_tooltip": "燈開著時比只開小地圖多耗的電，和其他模組的耗電相加。例如 100 表示多耗一倍。\n關燈時不耗電。"
+    "Sandbox_MinidoracatWatch_LightDrain_tooltip": "燈開著時比只開小地圖多耗的電，和其他模組的耗電相加。例如 100 表示多耗一倍。\n關燈時不耗電。",
+    "Sandbox_MinidoracatWatch_ChargeCar": "坐在發動中的車上會充電",
+    "Sandbox_MinidoracatWatch_ChargeCar_tooltip": "預設關閉：只能換電池。\n開啟時，坐在引擎發動中的車上（駕駛或乘客），戴著的地圖錶會以現實時間慢慢充電；充電期間不耗電，也不扣車子的電瓶。離線時不充電。",
+    "Sandbox_MinidoracatWatch_CarHours": "車上充滿所需時間（小時）",
+    "Sandbox_MinidoracatWatch_CarHours_tooltip": "現實時間，1 到 168 小時：在車上從沒電到充滿大約多久。",
+    "Sandbox_MinidoracatWatch_ChargeHouse": "在有電的建築裡會充電",
+    "Sandbox_MinidoracatWatch_ChargeHouse_tooltip": "預設關閉：只能換電池。\n開啟時，待在有市電或發電機供電的室內，戴著的地圖錶會以現實時間慢慢充電；充電期間不耗電，也不消耗發電機燃料。離線時不充電。",
+    "Sandbox_MinidoracatWatch_HouseHours": "建築裡充滿所需時間（小時）",
+    "Sandbox_MinidoracatWatch_HouseHours_tooltip": "現實時間，1 到 168 小時：在有電的建築裡從沒電到充滿大約多久。"
 }
