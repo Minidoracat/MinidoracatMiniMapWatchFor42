@@ -1,4 +1,4 @@
--- MinidoracatWatch_Server.lua：換電池、安裝／拆下模組、解鎖卡的伺服器權威入口（MP）。
+-- MinidoracatWatch_Server.lua：換電池、安裝／拆下模組、解鎖卡的伺服器權威入口（MP），以及陣營分享的通訊距離。
 -- MP 客戶端也會載入 media/lua/server（GameLoadingState.java:148），所以先以 isClient() 早退。
 -- 單機不經這裡：客戶端直接呼叫 shared 的 apply*（不發指令，不會重複執行）。
 if isClient() then return end
@@ -61,3 +61,16 @@ local function onClientCommand(module, command, player, args)
 end
 
 Events.OnClientCommand.Add(onClientCommand)
+
+-- ===== 陣營分享的通訊距離（Phase 7）=====
+-- 守衛先於註冊：主 MOD 的 server 檔依 MOD 載入序先跑（LoadDirBase 逐 MOD 載入，LuaManager.java:1153-1189；
+-- require= 讓主 MOD 排在前面），所以檔案頂層就查得到 API。太舊或註冊失敗＝分享照舊不限距離，log 一次；
+-- 管理員提示在客戶端（MinidoracatWatch_Client.lua registerGate，主 MOD 的 server 檔在客戶端也會載入）。
+-- 撤回（clearShared）主 MOD 不過濾，收過舊座標的人一定收得到撤回。
+local S = W.shareApi()
+local ok, res = false, nil
+if S then ok, res = pcall(S.registerShareFilter, W.MOD_ID, W.shareAllowed) end
+W.shareFilterActive = ok and res == true
+if not W.shareFilterActive then
+    W.log("MinidoracatMiniMapServerAPI.shareApiVersion >= 1 not found: faction sharing has no comm range")
+end

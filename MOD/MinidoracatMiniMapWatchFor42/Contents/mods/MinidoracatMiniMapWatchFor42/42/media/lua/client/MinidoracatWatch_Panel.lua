@@ -355,7 +355,7 @@ function Panel:drawInspector(player, watch, slot)
         self:drawText(def and C.moduleName(def.id) or rec.item, x, y, 1, 1, 1, 1, UIFont.Medium)
         y = y + getTextManager():getFontHeight(UIFont.Medium) + 6
         if def and W.BUILTIN[def.id] then
-            y = para(self, getText("IGUI_MinidoracatWatch_ModuleDesc_" .. def.id), x, y, width) + 4
+            y = para(self, C.moduleDesc(def.id), x, y, width) + 4
         end
         if def then
             text(self, getText("IGUI_MinidoracatWatch_KV_Class", className(def.class)), x, y, 0.75, 0.75, 0.75)

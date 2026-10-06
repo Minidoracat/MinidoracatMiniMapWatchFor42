@@ -437,6 +437,56 @@ function W.featureDecision(player, feature, surface)
     return false, "IGUI_MinidoracatWatch_Reason_Need_" .. list[1]
 end
 
+-- ===== 陣營分享距離（Phase 7；伺服器 registerShareFilter 與面板文案共用）=====
+-- 使用者裁定（規劃書 §4 Phase 7）：量分享者到收件者的距離，以兩人中範圍較大的錶為準；兩人都要有運作中的
+-- 通訊類模組。範圍（格）是沙盒值；中繼核心不限距離。
+W.SHARE_RANGE = { comm = { "CommRange", 2000 }, longcomm = { "LongCommRange", 8000 } }
+W.RANGE_UNLIMITED = -1
+
+-- 這位玩家的通訊範圍：中繼核心＝RANGE_UNLIMITED；沒戴錶、沒電、沒有運作中的通訊類模組＝nil
+function W.shareRange(player)
+    local e = player and W.status(player)
+    if not (e and powered(e)) then return nil end
+    if W.modState(e, "relay") == "active" then return W.RANGE_UNLIMITED end
+    local best = nil
+    for id, k in pairs(W.SHARE_RANGE) do
+        if W.modState(e, id) == "active" then
+            local r = W.radius(k[1], k[2])
+            if not best or r > best then best = r end
+        end
+    end
+    return best
+end
+
+-- 伺服器轉送一筆分享給這位收件者嗎（MP 伺服器上 status 讀的是伺服器自己的穿戴與錶的 modData，不信客戶端）。
+-- 總開關關、不需要錶＝放行；關閉＝不轉；戴錶就能用＝兩人都戴著有電的錶、不限距離；需要模組＝上述距離規則。
+-- 距離用兩人當下的位置（歐氏距離，剛好等於範圍也算在內）；分割畫面每位玩家各自是一個 IsoPlayer、各自判斷。
+function W.shareAllowed(sender, recipient)
+    local rule = W.featureRule("share")
+    if not W.enabled() or rule == W.RULE_FREE then return true end
+    if rule == W.RULE_OFF or not sender or not recipient then return false end
+    if rule == W.RULE_WATCH then
+        return W.featureDecision(sender, "share") == true and W.featureDecision(recipient, "share") == true
+    end
+    local a, b = W.shareRange(sender), W.shareRange(recipient)
+    if not (a and b) then return false end
+    if a == W.RANGE_UNLIMITED or b == W.RANGE_UNLIMITED then return true end
+    local r = math.max(a, b)
+    local dx, dy = sender:getX() - recipient:getX(), sender:getY() - recipient:getY()
+    return dx * dx + dy * dy <= r * r
+end
+
+-- 主 MOD 的伺服器分享過濾 API（主 MOD 的 server 檔在 MP 客戶端也會載入，GameLoadingState.java:148，所以客戶端
+-- 也用這個判斷要不要提示管理員）。不足回 nil。
+function W.shareApi()
+    local S = MinidoracatMiniMapServerAPI
+    if type(S) == "table" and type(S.shareApiVersion) == "number" and S.shareApiVersion >= 1
+            and type(S.registerShareFilter) == "function" then
+        return S
+    end
+    return nil
+end
+
 -- onStateChanged：每秒比對一次（MP 伺服器在扣電迴圈、客戶端與單機在客戶端迴圈），只在狀態改變時呼叫
 -- def.onStateChanged(player, newState, oldState)。第一次看到這位玩家時 oldState＝nil。拋錯只 log 一次。
 -- 紀錄記下是哪個 IsoPlayer：同一座位換了新物件（重生、分割畫面換人，AddCoopPlayer.java:153-162）就從頭算。

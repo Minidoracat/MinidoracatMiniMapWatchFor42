@@ -63,6 +63,13 @@ option MinidoracatWatch.DetectRadius
 option MinidoracatWatch.MilDetectRadius
 {type = integer, min = 1, max = 1000, default = 80, page = MinidoracatWatch, translation = MinidoracatWatch_MilDetectRadius,}
 
+/* 陣營分享距離（格，Phase 7）：分享者到收件者，取兩人中較大的範圍；中繼核心不限距離 */
+option MinidoracatWatch.CommRange
+{type = integer, min = 1, max = 50000, default = 2000, page = MinidoracatWatch, translation = MinidoracatWatch_CommRange,}
+
+option MinidoracatWatch.LongCommRange
+{type = integer, min = 1, max = 50000, default = 8000, page = MinidoracatWatch, translation = MinidoracatWatch_LongCommRange,}
+
 /* 內建模組耗電（%，比只開小地圖多耗的電；照設計稿 data.mjs MODULES）。節能核心不耗電、讓整支錶耗電減半 */
 option MinidoracatWatch.DrainCompass
 {type = integer, min = 0, max = 1000, default = 10, page = MinidoracatWatch, translation = MinidoracatWatch_DrainCompass,}

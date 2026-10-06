@@ -198,6 +198,8 @@ function Player:getOnlineID() return self.onlineId end
 function Player:getSteamID() return self.sid or 0 end
 function Player:removeFromHands() end
 function Player:isTimedActionInstant() return false end
+function Player:getX() return self.x or 0 end
+function Player:getY() return self.y or 0 end
 function Player:getWornItems()
     local list = {}
     for _, w in ipairs(self.worn) do list[#list + 1] = { getItem = function() return w.item end } end

@@ -24,6 +24,24 @@
 local F = dofile("scripts/lib_watch_fakes.lua")
 local check, near = F.check, F.near
 
+-- 主 MOD 伺服器分享 API 的替身（照 MinidoracatMiniMapServer.lua shareFilterAllows：逐收件者問每個 filter，
+-- 明確 false 才不轉、拋錯放行）。要在載入 server 檔之前就在（主 MOD 依載入序先跑）。
+local shareFilters = {}
+MinidoracatMiniMapServerAPI = { shareApiVersion = 1, registerShareFilter = function(owner, fn)
+    shareFilters[owner] = fn; return true end }
+local function shareTarget(sender, members, x, y)
+    local got = {}
+    for _, m in ipairs(members) do
+        local pass = true
+        for _, fn in pairs(shareFilters) do
+            local ok, res = pcall(fn, sender, m, x, y)
+            if ok and res == false then pass = false end
+        end
+        if pass then got[#got + 1] = m:getUsername() end
+    end
+    return table.concat(got, ",")
+end
+
 -- 專用伺服器視角：載入真正的 shared 與 server 檔
 F.mode = "server"
 require "MinidoracatWatch"
@@ -234,6 +252,40 @@ local battery = F.item("Base.Battery")
 relog.inv:AddItem(battery)
 send(relog, W.CMD_MODULE, { watchId = moved:getID(), slotId = "std3", install = true, itemId = battery:getID() })
 check(#F.logs == 0, "原版物品不是模組，不記 log")
+
+F.print("情境九：陣營分享的通訊距離（主 MOD 逐收件者呼叫 filter）→ 範圍內收得到、超出收不到、裝長距後收得到、拆模組後收不到")
+check(MinidoracatWatchCore.shareFilterActive == true and shareFilters[W.MOD_ID] ~= nil, "server 檔向主 MOD 註冊分享過濾")
+SB.SlotAdv = 1
+local function member(name, x, modules)
+    local p = F.player(name, 0)
+    local w = F.item(F.RIGHT)
+    p.inv:AddItem(w)
+    F.action(ISWearClothing, p, w):complete()
+    p.inv:AddItem(F.item("Base.Screwdriver"))
+    for slotId, t in pairs(modules) do
+        local m = F.item("MinidoracatWatch.Module_" .. t)
+        p.inv:AddItem(m)
+        send(p, W.CMD_MODULE, { watchId = w:getID(), slotId = slotId, install = true, itemId = m:getID() })
+    end
+    p.x, p.y = x, 0
+    return p, w
+end
+local sender = member("sender", 0, { std1 = "Comm" })
+local nearP = member("near", 1500, { std1 = "Comm" })
+local farP = member("far", 2500, { std1 = "Comm" })
+local noComm = member("nocomm", 10, { std1 = "GPS" })
+local team = { nearP, farP, noComm }
+tick(1500, 500)
+check(shareTarget(sender, team, 1, 2) == "near", "通訊 2000 格：1500 格的收得到、2500 格與沒有通訊模組的收不到")
+local long = F.item("MinidoracatWatch.Module_LongComm")
+farP.inv:AddItem(long)
+send(farP, W.CMD_MODULE, { watchId = W.wornWatch(farP):getID(), slotId = "adv", install = true, itemId = long:getID() })
+check(shareTarget(sender, team, 1, 2) == "near,far", "收件者裝長距通訊（8000）：2500 格也收得到（取兩人中較大者）")
+send(nearP, W.CMD_MODULE, { watchId = W.wornWatch(nearP):getID(), slotId = "std1", install = false })
+check(shareTarget(sender, team, 1, 2) == "far", "收件者拆掉通訊模組：馬上收不到")
+W.setCharge(W.wornWatch(sender), 0)
+check(shareTarget(sender, team, 1, 2) == "", "分享者的錶沒電：誰都收不到")
+SB.SlotAdv = nil
 
 F.print()
 if F.failures > 0 then

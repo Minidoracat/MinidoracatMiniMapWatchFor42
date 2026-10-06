@@ -55,15 +55,18 @@ end
 
 -- 守衛先於註冊：主 MOD 太舊（沒有 featureApiVersion 1）就不設閘＝小地圖照舊開放，log 一次並提示管理員，
 -- 不讓伺服器以為鎖了其實沒鎖。註冊放 OnGameStart：所有 MOD 的 client 檔都已載入。
+-- MP 另查主 MOD 的伺服器分享過濾 API（伺服器會自己 log；主 MOD 的 server 檔在客戶端也會載入，GameLoadingState.java:148
+-- 早於 OnGameStart＝IngameState.java:766，兩端是同一版主 MOD）：太舊＝通訊距離沒生效，也提示管理員。
 C.gateActive = false
+local notices = {}
 local function adminNotice()
     Events.OnTick.Remove(adminNotice)
-    if not W.enabled() then return end
     local player = getSpecificPlayer(0)
     -- isAdmin() 只在 MP 客戶端為真（LuaManager.java:9032-9038）；單機玩家就是自己的管理員
-    if player and HaloTextHelper and (not isClient() or isAdmin()) then
-        HaloTextHelper.addBadText(player, getText("IGUI_MinidoracatWatch_ApiMissing"))
+    if W.enabled() and player and HaloTextHelper and (not isClient() or isAdmin()) then
+        for _, key in ipairs(notices) do HaloTextHelper.addBadText(player, getText(key)) end
     end
+    notices = {}
 end
 
 function C.registerGate()
@@ -73,9 +76,14 @@ function C.registerGate()
         local ok, res = pcall(API.registerFeatureGate, W.MOD_ID, C.gate)
         C.gateActive = ok and res == true
     end
-    if C.gateActive then return end
-    W.log("MinidoracatMiniMapAPI.featureApiVersion >= 1 not found: the minimap stays open without a watch")
-    Events.OnTick.Add(adminNotice) -- halo 要等玩家在場：第一個 tick 再提示
+    if not C.gateActive then
+        W.log("MinidoracatMiniMapAPI.featureApiVersion >= 1 not found: the minimap stays open without a watch")
+        notices[#notices + 1] = "IGUI_MinidoracatWatch_ApiMissing"
+    end
+    if isClient() and not W.shareApi() and W.featureRule("share") ~= W.RULE_FREE then
+        notices[#notices + 1] = "IGUI_MinidoracatWatch_ShareApiMissing"
+    end
+    if #notices > 0 then Events.OnTick.Add(adminNotice) end -- halo 要等玩家在場：第一個 tick 再提示
 end
 Events.OnGameStart.Add(C.registerGate)
 
@@ -281,6 +289,17 @@ end
 function C.moduleName(id)
     local def = W.modules[id]
     return def and getText(def.name) or id
+end
+
+-- 內建模組的說明；通訊類模組在「需要模組」規則下接上分享距離（範圍從沙盒讀，和伺服器 W.shareAllowed 同一份；
+-- 句間空白依語言不同，所以說明本身也當 %1 交給翻譯）
+function C.moduleDesc(id)
+    local s = getText("IGUI_MinidoracatWatch_ModuleDesc_" .. id)
+    if not W.enabled() or W.featureRule("share") ~= W.RULE_MODULE then return s end
+    if id == "relay" then return getText("IGUI_MinidoracatWatch_ShareRangeUnlimited", s) end
+    local k = W.SHARE_RANGE[id]
+    if not k then return s end
+    return getText("IGUI_MinidoracatWatch_ShareRange", s, tostring(math.floor(W.radius(k[1], k[2]))))
 end
 
 -- 身上的地圖錶：戴著的那支排第一

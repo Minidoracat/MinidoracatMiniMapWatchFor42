@@ -93,6 +93,7 @@ end
 -- ===== 版本守衛 =====
 F.reset()
 MinidoracatMiniMapAPI = nil
+MinidoracatMiniMapServerAPI = { shareApiVersion = 1, registerShareFilter = function() return true end }
 F.fire("OnGameStart")
 check(C.gateActive == false, "主 MOD 沒有 API：不設閘")
 check(#F.logs == 1 and F.logs[1]:find("featureApiVersion", 1, true) ~= nil, "log 一次")
@@ -124,6 +125,50 @@ F.reset()
 C.registerGate()
 check(C.gateActive == true and registered.owner == W.MOD_ID and registered.fn == C.gate, "featureApiVersion >= 1 才註冊")
 check(#F.logs == 0, "註冊成功不 log")
+
+-- 主 MOD 的伺服器分享過濾 API 太舊：通訊距離沒生效，MP 管理員收到提示（伺服器自己 log）。
+-- 先清掉上面「註冊拋錯」那次排進來的提示。
+F.fire("OnTick")
+local function shareHalo()
+    for _, h in ipairs(F.halos) do if h.text == "IGUI_MinidoracatWatch_ShareApiMissing" then return true end end
+    return false
+end
+MinidoracatMiniMapServerAPI = { shareApiVersion = 0, registerShareFilter = function() return true end }
+F.reset()
+C.registerGate()
+F.fire("OnTick")
+check(shareHalo() and #F.halos == 1, "分享 API 太舊：管理員只收到通訊距離的提示（閘門已註冊）")
+F.reset()
+SB.RuleShare = 1
+C.registerGate()
+F.fire("OnTick")
+check(not shareHalo(), "陣營分享是「不需要錶」：本來就不限制，不提示")
+SB.RuleShare = nil
+F.admin = false
+F.reset()
+C.registerGate()
+F.fire("OnTick")
+check(#F.halos == 0, "一般玩家不提示")
+F.admin = true
+MinidoracatMiniMapServerAPI = { shareApiVersion = 1, registerShareFilter = function() return true end }
+F.reset()
+C.registerGate()
+F.fire("OnTick")
+check(#F.halos == 0, "分享 API 足夠：不提示")
+
+-- 通訊類模組說明的分享距離從沙盒讀（不寫死 2000／8000）
+check(C.moduleDesc("comm") == "IGUI_MinidoracatWatch_ShareRange|IGUI_MinidoracatWatch_ModuleDesc_comm|2000"
+    and C.moduleDesc("longcomm") == "IGUI_MinidoracatWatch_ShareRange|IGUI_MinidoracatWatch_ModuleDesc_longcomm|8000",
+    "預設：通訊 2000、長距 8000")
+SB.CommRange, SB.LongCommRange = 1234, 30000
+check(C.moduleDesc("comm"):find("|1234", 1, true) and C.moduleDesc("longcomm"):find("|30000", 1, true), "說明的距離跟著沙盒改")
+SB.CommRange, SB.LongCommRange = nil, nil
+check(C.moduleDesc("relay") == "IGUI_MinidoracatWatch_ShareRangeUnlimited|IGUI_MinidoracatWatch_ModuleDesc_relay",
+    "中繼核心：不限距離")
+check(C.moduleDesc("gps") == "IGUI_MinidoracatWatch_ModuleDesc_gps", "其他模組沒有距離")
+SB.RuleShare = 2
+check(C.moduleDesc("comm") == "IGUI_MinidoracatWatch_ModuleDesc_comm", "陣營分享不是「需要模組」：不量距離，不寫")
+SB.RuleShare = nil
 
 -- ===== 小地圖閘門 =====
 local gate = registered.fn
