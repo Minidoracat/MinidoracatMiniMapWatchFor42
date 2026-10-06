@@ -618,6 +618,56 @@ check(opts[1].notAvailable, "已開啟：選項停用")
 check(#context({ F.item(F.LEFT) }) == 0, "不在身上的錶不加選項")
 check(#context({ F.item("Base.Battery") }) == 0, "其他物品不加選項")
 
+-- ===== 孤立槽位（提供槽位的 MOD 被移除）：面板與右鍵選單照樣列出、能拆下 =====
+F.queues[p] = {}
+watch:getModData()[W.SLOTS_KEY].gone = { id = "scan", item = MOD("Scan") }
+W.invalidate()
+tick()
+check(MinidoracatWatchAPI.getWatchModuleState(p, "scan") == "paused", "孤立槽位裡的模組 paused")
+check(C.slotStatus(p, watch, W.orphanSlot("gone")) == "paused", "面板把孤立槽位標成已停用（不是運作中）")
+opts = context({ watch })
+local orphanOpt
+for _, o in ipairs(opts) do
+    if o.name == "IGUI_MinidoracatWatch_RemoveModule" then
+        for _, so in ipairs(o.sub.options) do if so.b == "gone" then orphanOpt = so end end
+    end
+end
+check(orphanOpt and orphanOpt.name == "IGUI_MinidoracatWatch_SlotAndModule|IGUI_MinidoracatWatch_Slot_orphan|IGUI_MinidoracatWatch_Module_scan",
+    "錶的右鍵「拆下模組 ▸」列出孤立槽位")
+if orphanOpt then pick(orphanOpt) end
+check(F.queues[p] and F.queues[p][1] and F.queues[p][1].slotId == "gone" and F.queues[p][1].install == false,
+    "選單拆下孤立槽位：排動作")
+F.queues[p] = {}
+C.openPanel(0, nil)
+panel = F.lastPanel
+panel:update()
+local orphanIdx
+for i, s in ipairs(panel.slots and panel:slots() or W.slotList) do if s.id == "gone" then orphanIdx = i end end
+check(orphanIdx ~= nil, "面板列出孤立槽位")
+if orphanIdx then
+    local ox, oy, os = panel:socketRect(orphanIdx)
+    panel:onMouseDown(ox + os / 2, oy + os / 2)
+    tick()
+    panel:update()
+    F.draws = 0
+    panel:prerender()
+    check(panel:selectedSlot().id == "gone" and panel.btnRemoveModule.visible and F.draws > 0,
+        "選孤立槽位：檢視區畫得出來、有「拆下模組」")
+    panel.btnRemoveModule.onclick(panel)
+    check(F.queues[p][1] and F.queues[p][1].slotId == "gone", "面板拆下孤立槽位：排動作")
+end
+F.queues[p] = {}
+F.mode = "sp"
+local scansBefore = p.inv:getAllTypeRecurse(MOD("Scan")):size()
+C.requestModule(p, watch, "gone", nil)
+F.runActions(p)
+F.mode = "client"
+check(W.slotRecord(watch, "gone") == nil and p.inv:getAllTypeRecurse(MOD("Scan")):size() == scansBefore + 1,
+    "單機：孤立槽位的模組拆下回背包")
+C.requestModule(p, watch, "nope", nil)
+check(not F.queues[p][1], "沒有紀錄的未知槽位：不排動作")
+C.closePanel()
+
 -- ===== UI 框架版本不足：不登記、不出錯 =====
 MinidoracatUI.v1.API_REVISION = 12
 dockSpec = nil

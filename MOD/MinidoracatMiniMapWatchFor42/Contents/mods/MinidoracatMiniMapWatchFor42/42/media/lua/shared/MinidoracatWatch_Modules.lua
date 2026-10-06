@@ -204,6 +204,7 @@ function W.isUnlocked(player, slotId)
 end
 
 function W.slotValid(player, slot)
+    if slot.orphan then return false end
     local mode = W.slotMode(slot)
     if mode == "free" then return true end
     if mode == "off" then return false end
@@ -224,6 +225,36 @@ function W.slotRecord(watch, slotId)
     local rec = slots and slots[slotId]
     if type(rec) ~= "table" or type(rec.id) ~= "string" or type(rec.item) ~= "string" then return nil end
     return rec
+end
+
+-- ===== 孤立槽位：提供槽位的 MOD 被移除（這次啟動沒有人登記這個 slotId），錶上還留著模組紀錄 =====
+-- 使用者裁定：模組隨時能拆；槽位與付費權益凍結保留（紀錄與解鎖都不刪，MOD 裝回來就恢復）。
+-- 孤立槽位一律無效：裡面的模組 paused、不耗電、不能再裝。模組類型也沒登記（提供模組的 MOD 也被移除）時
+-- 拆不出物品（applyModuleChange 只建回已登記的類型），這種紀錄不列出、留在錶上。
+-- 假槽位依 id 快取（不每次配置）；錶的 modData 是 KahluaTableImpl（LinkedHashMap），pairs 順序＝寫入順序。
+local orphanById = {}
+function W.orphanSlot(id)
+    local s = orphanById[id]
+    if not s then
+        s = { id = id, name = "IGUI_MinidoracatWatch_Slot_orphan", tier = "orphan", orphan = true,
+            accepts = {}, acceptsList = {} }
+        orphanById[id] = s
+    end
+    return s
+end
+
+-- 這支錶上拆得下來的孤立槽位（使用者操作與面板掃描時呼叫，不在閘門熱路徑）
+function W.orphanSlots(watch)
+    local out = {}
+    local slots = W.slotsOf(watch)
+    if not slots then return out end
+    for id in pairs(slots) do
+        if type(id) == "string" and not W.slotById[id] then
+            local rec = W.slotRecord(watch, id)
+            if rec and W.moduleByItem[rec.item] then out[#out + 1] = W.orphanSlot(id) end
+        end
+    end
+    return out
 end
 
 -- 錶的耗電倍率：Σ（有效槽位裡、功能沒被關閉的模組耗電%）；節能核心運作時整支錶減半（設計稿 fullRuntime）
@@ -288,6 +319,14 @@ function W.status(player)
                 n = n + 1
                 e.ids[n] = rec.id
                 e.states[n] = W.slotValid(player, slot) and "active" or "paused"
+            end
+        end
+        -- 孤立槽位裡的模組一律 paused（槽位凍結）
+        for id, rec in pairs(slots) do
+            if not W.slotById[id] and type(rec) == "table" and W.modules[rec.id] then
+                n = n + 1
+                e.ids[n] = rec.id
+                e.states[n] = "paused"
             end
         end
     end
@@ -407,6 +446,7 @@ API.getWatchModuleState = W.moduleState
 -- （getItemWithIDRecursiv＝ItemContainer.java:3094）。所有驗證都在第一個突變之前：失敗不留半套。
 -- 拆下時只建回「已登記的模組物品類型」：錶的紀錄就算被改，也變不出其他物品；提供模組的 MOD 被移除時
 -- （instanceItem 回 nil、或類型不再登記）拆不下來，模組留在錶上，不會被吃掉。
+-- 孤立槽位（提供槽位的 MOD 被移除）只能拆、不能裝：slotId 沒登記時只接受格式合法的 id 與拆下。
 -- 只複製純資料（字串／數字／布林／巢狀表），深度上限擋住循環參照。
 function W.copyTable(t, depth)
     depth = depth or 0
@@ -445,7 +485,8 @@ function W.applyModuleChange(player, watchId, slotId, install, itemId)
     end
     if install and not W.isFiniteInt(itemId) then return false, W.FAIL_MODULE end
     local slot = W.slotById[slotId]
-    if not slot or not player or player:isDead() then return false, W.FAIL_MODULE end
+    if not slot and (install or not validId(slotId)) then return false, W.FAIL_MODULE end
+    if not player or player:isDead() then return false, W.FAIL_MODULE end
     local inv = player:getInventory()
     if not inv then return false, W.FAIL_MODULE end
     local watch = inv:getItemWithIDRecursiv(watchId)

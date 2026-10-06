@@ -149,9 +149,10 @@ function C.requestBattery(player, watch, install)
     ISTimedActionQueue.add(ISMinidoracatWatchAction:new(player, "battery", watch, nil, battery, install))
 end
 
--- item＝要裝進 slotId 的模組；nil＝拆下 slotId 那格的模組
+-- item＝要裝進 slotId 的模組；nil＝拆下 slotId 那格的模組（孤立槽位也能拆：錶上有紀錄就排動作，伺服器再驗）
 function C.requestModule(player, watch, slotId, item)
-    if not player or not watch or not W.slotById[slotId] then return end
+    if not player or not watch then return end
+    if not (W.slotById[slotId] or (item == nil and W.slotRecord(watch, slotId))) then return end
     if W.needScrewdriver() and not W.hasScrewdriver(player) then
         W.notify(player, W.FAIL_SCREWDRIVER)
         return
@@ -327,7 +328,7 @@ local function watchMenu(context, player, pn, item)
         context:addOption(getText("IGUI_MinidoracatWatch_RemoveBattery"), item, onBattery, pn, false)
     end
     local sub = nil
-    for _, slot in ipairs(W.slotList) do
+    local function addRemove(slot)
         local rec = W.slotRecord(item, slot.id)
         if rec then
             sub = sub or subMenu(context, getText("IGUI_MinidoracatWatch_RemoveModule"))
@@ -335,6 +336,8 @@ local function watchMenu(context, player, pn, item)
                 item, onModule, pn, slot.id, nil)
         end
     end
+    for _, slot in ipairs(W.slotList) do addRemove(slot) end
+    for _, slot in ipairs(W.orphanSlots(item)) do addRemove(slot) end
 end
 
 local function moduleMenu(context, player, pn, item, def)

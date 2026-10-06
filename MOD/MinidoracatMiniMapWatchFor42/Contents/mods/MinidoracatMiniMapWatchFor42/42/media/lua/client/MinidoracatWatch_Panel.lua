@@ -24,7 +24,7 @@ local SCAN_MS = 250
 local BUSY_TYPE = "ISMinidoracatWatchAction"
 local TIER_COLOR = {
     std = { 0.65, 0.69, 0.73 }, ext = { 0.25, 0.70, 0.50 }, adv = { 0.30, 0.55, 0.96 },
-    core = { 0.66, 0.44, 0.94 }, addon = { 0.89, 0.60, 0.23 },
+    core = { 0.66, 0.44, 0.94 }, addon = { 0.89, 0.60, 0.23 }, orphan = { 0.5, 0.5, 0.5 },
 }
 local FEATURES = { "minimap", "arrow", "poi", "nav", "share", "scan", "zombie" }
 
@@ -153,7 +153,14 @@ function Panel:target()
     return player, w or C.watchOf(self.playerNum)
 end
 
-function Panel:selectedSlot() return W.slotList[self.sel] or W.slotList[1] end
+-- 面板上的槽位：登記的槽位，後面接這支錶的孤立槽位（提供槽位的 MOD 被移除、模組還在錶上；只能拆）。
+-- 清單在 scan（250ms）重建，繪製與點擊只讀。
+function Panel:slots() return self.slotView or W.slotList end
+
+function Panel:selectedSlot()
+    local list = self:slots()
+    return list[self.sel] or list[1]
+end
 
 -- 正在對這支錶的這個槽位跑的計時動作（佇列第一個；ISTimedActionQueue.getTimedActionQueue）
 function Panel:busyAction(player, watch, slot)
@@ -163,7 +170,7 @@ function Panel:busyAction(player, watch, slot)
     return nil
 end
 
--- 槽位外框（i＝W.slotList 的索引）：內建 6 格排 3×2，其他 MOD 的槽位在下面一列一列排
+-- 槽位外框（i＝self:slots() 的索引）：內建 6 格排 3×2，其他 MOD 的槽位在下面一列一列排
 function Panel:socketRect(i)
     if i <= 6 then
         local col, row = (i - 1) % 3, math.floor((i - 1) / 3)
@@ -175,18 +182,27 @@ function Panel:socketRect(i)
 end
 
 function Panel:socketAt(x, y)
-    for i = 1, #W.slotList do
+    for i = 1, #self:slots() do
         local sx, sy, s = self:socketRect(i)
         if x >= sx and x < sx + s and y >= sy and y < sy + s then return i end
     end
     return nil
 end
 
--- 背包掃描（模組、解鎖卡、電池）每 250ms 一次，不在每幀翻背包
-function Panel:scan(player, slot)
+-- 背包與錶的掃描（解鎖卡、電池、孤立槽位）每 250ms 一次，不在每幀翻背包
+function Panel:scan(player, watch, slot)
     local now = getTimestampMs()
     if self.scanAt and now >= self.scanAt and now - self.scanAt < SCAN_MS and self.scanSlot == slot then return end
     self.scanAt, self.scanSlot = now, slot
+    local orphans = watch and W.orphanSlots(watch)
+    if orphans and #orphans > 0 then
+        local view = {}
+        for i, s in ipairs(W.slotList) do view[i] = s end
+        for _, s in ipairs(orphans) do view[#view + 1] = s end
+        self.slotView = view
+    else
+        self.slotView = W.slotList
+    end
     local list = C.cards(player, slot)
     self.cardCount = list and list:size() or 0
     self.hasBattery = C.bestBattery(player) ~= nil
@@ -199,7 +215,7 @@ function Panel:update()
     self.btnInstall:setVisible(false)
     self.btnRemoveModule:setVisible(false)
     self.btnCard:setVisible(false)
-    if player then self:scan(player, slot) end
+    if player then self:scan(player, w, slot) end
     local c = w and W.charge(w)
     self.btnInsert:setTitle(getText(c ~= nil and "IGUI_MinidoracatWatch_ReplaceBattery" or "IGUI_MinidoracatWatch_InsertBattery"))
     self.btnInsert:setEnable(w ~= nil and self.hasBattery == true)
@@ -236,7 +252,7 @@ local function drawLock(el, x, y)
 end
 
 function Panel:drawSocket(i, player, watch, hover)
-    local slot = W.slotList[i]
+    local slot = self:slots()[i]
     local x, y, s = self:socketRect(i)
     local col = TIER_COLOR[slot.tier] or TIER_COLOR.std
     local st, rec = C.slotStatus(player, watch, slot)
@@ -282,15 +298,16 @@ function Panel:drawFace(player, watch)
     local item, def = draggedModule()
     local over = item and self:socketAt(self:getMouseX(), self:getMouseY())
     local why = nil
-    for i = 1, #W.slotList do
+    local list = self:slots()
+    for i = 1, #list do
         local hover = nil
         if i == over then
-            local ok, reason = C.dropCheck(player, watch, W.slotList[i], def)
+            local ok, reason = C.dropCheck(player, watch, list[i], def)
             hover, why = ok, reason
         end
         self:drawSocket(i, player, watch, hover)
     end
-    if #W.slotList > 6 then
+    if #list > 6 then
         text(self, getText("IGUI_MinidoracatWatch_OtherMods"), PAD, ADDON_Y - fontH() - 4, 0.6, 0.6, 0.6)
     end
     if why then para(self, why, PAD, FEAT_Y - 3 * fontH() - 8, LEFT_W, 1, 0.55, 0.45) end
@@ -348,7 +365,9 @@ function Panel:drawInspector(player, watch, slot)
         end
         text(self, getText("IGUI_MinidoracatWatch_KV_Slot", name), x, y, 0.75, 0.75, 0.75)
         y = y + fh + 4
-        if st == "paused" then
+        if slot.orphan then
+            y = para(self, getText("IGUI_MinidoracatWatch_Desc_Orphan"), x, y, width, 1, 0.65, 0.2) + 4
+        elseif st == "paused" then
             y = para(self, getText("IGUI_MinidoracatWatch_Desc_Paused", name), x, y, width, 1, 0.65, 0.2) + 4
         elseif st == "dead" then
             y = para(self, getText("IGUI_MinidoracatWatch_Desc_Dead"), x, y, width, 1, 0.65, 0.2) + 4
@@ -455,7 +474,7 @@ function Panel:onMouseUp(x, y)
         local player, w = self:target()
         if i and player and w then
             self.sel = i
-            self:dropOn(player, w, W.slotList[i], item, def)
+            self:dropOn(player, w, self:slots()[i], item, def)
         end
         return true
     end

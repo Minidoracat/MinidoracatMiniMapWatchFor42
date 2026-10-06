@@ -335,6 +335,64 @@ local per = 1 / (72 * H)
 check(near((1 - W.charge(w3)) / per, 60000 * 0.95, 1200), "伺服器扣電套用模組倍率（"
     .. math.floor((1 - W.charge(w3)) / per) .. " ms 當量）")
 
+-- ===== 提供槽位的 MOD 被移除（孤立槽位）：槽位與權益凍結、模組停用不耗電、隨時能拆 =====
+-- 登記表是內部資料：測試直接拿掉／放回，模擬 MOD 移除與裝回
+local function dropSlot(id)
+    for i = #W.slotList, 1, -1 do if W.slotList[i].id == id then table.remove(W.slotList, i) end end
+    local s = W.slotById[id]
+    W.slotById[id] = nil
+    W.invalidate()
+    return s
+end
+local function reregister(s)
+    W.slotList[#W.slotList + 1] = s
+    W.slotById[s.id] = s
+    W.invalidate()
+end
+check(API.getWatchModuleState(alice, "radar") == "active", "孤立前：第三方槽位裡的模組 active")
+local forecast = dropSlot("forecast")
+local orphans = W.orphanSlots and W.orphanSlots(w3) or {}
+check(#orphans == 1 and orphans[1].id == "forecast" and orphans[1].orphan == true, "錶上列得出孤立槽位")
+check(orphans[1] and W.slotValid(alice, orphans[1]) == false, "孤立槽位一律無效（就算原本是免費或已解鎖）")
+check(API.getWatchModuleState(alice, "radar") == "paused", "孤立槽位裡的模組 paused")
+check(near(W.drainFactor(alice, w3), 1.60 / 2), "孤立槽位裡的模組不耗電")
+local spareRadar = give(alice, "Other.Radar")
+local okI = W.applyModuleChange(alice, w3:getID(), "forecast", true, spareRadar:getID())
+check(okI == false and spareRadar.container == alice.inv, "不能裝進孤立槽位")
+local okBad, rBad = W.applyModuleChange(alice, w3:getID(), "bad id!", false)
+check(okBad == false and rBad == W.FAIL_MODULE, "格式不對的槽位 id 一律拒絕")
+local okNone, rNone = W.applyModuleChange(alice, w3:getID(), "ghost", false)
+check(okNone == false and rNone == W.FAIL_SLOT_EMPTY, "錶上沒有紀錄的未知槽位：拆不出東西")
+w3:getModData()[W.SLOTS_KEY].forecast.md = { tag = "R1" }
+local radarsBefore = alice.inv:getAllTypeRecurse("Other.Radar"):size()
+F.reset()
+check(remove(alice, w3, "forecast") == true, "孤立槽位裡的模組可以拆下")
+local radars = alice.inv:getAllTypeRecurse("Other.Radar")
+check(radars:size() == radarsBefore + 1 and W.slotRecord(w3, "forecast") == nil and #F.synced == 1,
+    "拆下：物品回背包、紀錄清掉、同步錶")
+local restored = false
+for i = 0, radars:size() - 1 do
+    local it = radars:get(i)
+    if it:hasModData() and it:getModData().tag == "R1" then restored = true end
+end
+check(restored, "拆下的物品還原 modData")
+check(#(W.orphanSlots and W.orphanSlots(w3) or { 0 }) == 0, "拆空之後不再列出")
+reregister(forecast)
+SB.SlotAddon = 2
+check(W.slotValid(alice, forecast), "MOD 裝回：解鎖卡開啟的權益還在（凍結保留）")
+check(install(alice, w3, "forecast", radars:get(0)) == true, "MOD 裝回：可以再裝")
+dropSlot("forecast")
+local radarDef = W.modules.radar
+W.modules.radar, W.moduleByItem["Other.Radar"] = nil, nil
+W.invalidate()
+check(#(W.orphanSlots and W.orphanSlots(w3) or { 0 }) == 0, "模組類型也沒登記：不列出")
+local okU = remove(alice, w3, "forecast")
+check(okU == false and W.slotRecord(w3, "forecast") ~= nil, "模組類型也沒登記：拆不下來、紀錄留在錶上")
+W.modules.radar, W.moduleByItem["Other.Radar"] = radarDef, radarDef
+reregister(forecast)
+check(API.getWatchModuleState(alice, "radar") == "active", "兩個 MOD 都裝回：恢復運作")
+SB.SlotAddon = 1
+
 -- ===== getWatchModuleState 優先序真值表 =====
 -- 欄位：Enabled、RuleArrow（1 免／2 錶／3 模組／4 關）、戴錶、電量（nil＝沒電池）、羅盤在擴充槽、擴充槽有效 → 預期
 local st = F.player("tess", 5)
@@ -364,14 +422,15 @@ local rows = {
     { true, 3, false, 0.5, true, true, "missing" },
 }
 local allRows = true
+local stash = nil -- 「沒裝」列：紀錄先拿出錶外（放進錶上任何別的鍵都會變成孤立槽位）
 for i, r in ipairs(rows) do
     SB.Enabled, SB.RuleArrow = r[1], r[2]
     st.worn = {}
     if r[3] then F.wear(st, tw) end
     W.setCharge(tw, r[4] == nil and W.NO_BATTERY or r[4])
     local slotsT = tw:getModData()[W.SLOTS_KEY]
-    if r[5] then slotsT.ext = slotsT.ext or slotsT._ext; slotsT._ext = nil
-    else slotsT._ext = slotsT.ext or slotsT._ext; slotsT.ext = nil end
+    if r[5] then slotsT.ext = slotsT.ext or stash; stash = nil
+    else stash = slotsT.ext or stash; slotsT.ext = nil end
     SB.SlotExt = r[6] and 1 or 4
     W.invalidate()
     local got = API.getWatchModuleState(st, "compass")

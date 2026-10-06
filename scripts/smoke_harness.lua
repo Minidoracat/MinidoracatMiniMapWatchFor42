@@ -187,6 +187,30 @@ end
 check(sent, "第一次看到重登的玩家：主動送解鎖狀態")
 check(W.isUnlocked(relog, "ext") and API.getWatchModuleState(relog, "gps") == "active", "重登後解鎖與模組都還在")
 
+F.print("情境七：其他 MOD 的槽位 → 那個 MOD 被移除（下次啟動沒人登記）→ 模組 paused、不耗電，照樣能拆、不能再裝")
+check(API.registerWatchSlot({ id = "forecast", name = "IGUI_X_Slot", accepts = { "standard" },
+    price = { rent = 80, days = 7, buy = 600 } }) == true, "第三方 MOD 登記槽位")
+local comm = F.item("MinidoracatWatch.Module_Comm")
+relog.inv:AddItem(comm)
+send(relog, W.CMD_MODULE, { watchId = moved:getID(), slotId = "forecast", install = true, itemId = comm:getID() })
+check(W.slotRecord(moved, "forecast") and comm.container == nil, "裝進第三方槽位")
+-- 模擬下次啟動沒有那個 MOD：登記表裡沒有這個槽位（錶的 modData 隨存檔還在）
+for i = #W.slotList, 1, -1 do if W.slotList[i].id == "forecast" then table.remove(W.slotList, i) end end
+W.slotById.forecast = nil
+W.invalidate()
+check(API.getWatchModuleState(relog, "comm") == "paused" and W.drainFactor(relog, moved) == 1.25,
+    "孤立槽位裡的通訊模組 paused、不耗電（只剩擴充槽的定位模組 +25%）")
+local spare = F.item("MinidoracatWatch.Module_Scan")
+relog.inv:AddItem(spare)
+F.reset()
+send(relog, W.CMD_MODULE, { watchId = moved:getID(), slotId = "forecast", install = false })
+local backComm = relog.inv:getAllTypeRecurse("MinidoracatWatch.Module_Comm")
+check(W.slotRecord(moved, "forecast") == nil and backComm:size() == 1 and F.added[1] == backComm:get(0) and #F.synced == 1,
+    "孤立槽位的模組拆下：回背包、送新增封包、同步錶")
+send(relog, W.CMD_MODULE, { watchId = moved:getID(), slotId = "forecast", install = true, itemId = spare:getID() })
+check(W.slotRecord(moved, "forecast") == nil and spare.container == relog.inv and fails(relog) == 1,
+    "孤立槽位不能再裝")
+
 F.print()
 if F.failures > 0 then
     F.print(F.failures .. " 項失敗")
