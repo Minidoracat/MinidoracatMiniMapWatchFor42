@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Static\Clothes\MinidoracatWatch_Ranger_M_Left.x</m_MaleModel>
+	<m_FemaleModel>media\models_X\Static\Clothes\MinidoracatWatch_Ranger_F_Left.x</m_FemaleModel>
+	<m_GUID>e874326e-b1f6-4f0d-887c-74afcdabe85b</m_GUID>
+	<m_Static>true</m_Static>
+	<m_AllowRandomHue>false</m_AllowRandomHue>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone>Bip01_L_Forearm</m_AttachBone>
+	<m_MasksFolder>none</m_MasksFolder>
+	<textureChoices>MinidoracatWatch_Ranger</textureChoices>
+</clothingItem>

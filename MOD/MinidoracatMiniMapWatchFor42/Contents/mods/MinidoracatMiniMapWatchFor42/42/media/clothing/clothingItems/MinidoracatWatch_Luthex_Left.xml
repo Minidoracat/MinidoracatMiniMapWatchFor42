@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+	<m_MaleModel>media\models_X\Static\Clothes\MinidoracatWatch_Luthex_M_Left.x</m_MaleModel>
+	<m_FemaleModel>media\models_X\Static\Clothes\MinidoracatWatch_Luthex_F_Left.x</m_FemaleModel>
+	<m_GUID>4c57d43a-80a5-4fdc-8f6d-54eb194857ed</m_GUID>
+	<m_Static>true</m_Static>
+	<m_AllowRandomHue>false</m_AllowRandomHue>
+	<m_AllowRandomTint>false</m_AllowRandomTint>
+	<m_AttachBone>Bip01_L_Forearm</m_AttachBone>
+	<m_MasksFolder>none</m_MasksFolder>
+	<textureChoices>MinidoracatWatch_Luthex</textureChoices>
+</clothingItem>
