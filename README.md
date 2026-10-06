@@ -26,6 +26,60 @@ Project Zomboid Build 42 MOD，[Minidoracat MiniMap for B42](https://steamcommun
 - Steam Workshop：（首次上傳後補上連結）
 - 手動安裝：把 `MOD/MinidoracatMiniMapWatchFor42/Contents/mods/MinidoracatMiniMapWatchFor42` 複製到 `%USERPROFILE%\Zomboid\mods\` 並將資料夾改名為 `MinidoracatMiniMapWatchFor42`
 
+## 給其他 MOD 的 API
+
+其他 MOD 可以註冊自己的地圖錶模組，也可以增加槽位。介面是 shared 的全域表 `MinidoracatWatchAPI`（伺服器與客戶端都有）。
+
+| 成員 | 說明 |
+|---|---|
+| `watchApiVersion` | 目前是 `1`。一律用 `>=` 檢查（不要用 `==`，否則地圖錶升版時你的 MOD 會被擋掉）；新增或改動成員時遞增 |
+| `registerWatchModule(def) --> boolean` | `def = { id, name, class, drain, item, onStateChanged }`：`id` 英數字與底線、不可重複；`name` 是翻譯鍵；`class` 是 `"standard"`／`"advanced"`／`"core"`（決定能裝在哪種槽位）；`drain` 是建議耗電百分比（0–1000）；`item` 是模組物品的完整類型（不可和其他模組共用）；`onStateChanged(player, newState, oldState)` 選用，狀態改變時呼叫（每秒比對一次，第一次的 `oldState` 是 `nil`）。驗證失敗整筆拒收、記一筆 log、回 `false` |
+| `registerWatchSlot(def) --> boolean` | `def = { id, name, accepts, price }`：`accepts` 是能裝的類別陣列；`price = { rent, days, buy }` 是建議價格。開啟方式（免費／解鎖卡／不開放）與收費由地圖錶處理；最多 6 個 |
+| `getWatchModuleState(player, id) --> string` | `"disabled"`（管理員關閉了對應功能）＞`"active"`（裝在戴著、有電的錶的有效槽位）＞`"notRequired"`（地圖錶系統關閉，或規則是不需要錶／戴錶就能用而且條件成立）＞`"unpowered"`（戴著但沒電或沒電池）＞`"paused"`（所在槽位沒有開啟）＞`"missing"`（沒戴錶或沒裝）。可每幀呼叫（快取 1 秒、不配置記憶體） |
+
+**沒裝地圖錶、版本太舊，或管理員關閉了地圖錶系統時，你的功能應該照常開放**，不要因為少了地圖錶就把功能鎖住：
+
+```lua
+-- 檔案載入時註冊一次（shared 或 client 都可以；地圖錶的 shared 檔要先載入，mod.info 用 require= 或 loadModAfter=）
+local API = MinidoracatWatchAPI
+if type(API) == "table" and type(API.watchApiVersion) == "number" and API.watchApiVersion >= 1
+        and type(API.registerWatchModule) == "function" then
+    API.registerWatchModule({
+        id = "weather",
+        name = "IGUI_MyWeather_Module",  -- translation key
+        class = "standard",              -- standard / advanced / core
+        drain = 15,                      -- suggested extra drain, percent
+        item = "MyWeather.WeatherModule",
+    })
+end
+
+-- 功能入口：模組裝著而且有電、或地圖錶不要求時才開放
+local function canShowForecast(player)
+    local API = MinidoracatWatchAPI
+    if not (type(API) == "table" and type(API.watchApiVersion) == "number" and API.watchApiVersion >= 1
+            and type(API.getWatchModuleState) == "function") then
+        return true -- no Map Watch: keep the feature open
+    end
+    local ok, state = pcall(API.getWatchModuleState, player, "weather")
+    return not ok or state == "active" or state == "notRequired"
+end
+
+-- 選用：增加一個槽位（顯示在面板錶面下方「其他 MOD」那一列）
+if type(API) == "table" and type(API.watchApiVersion) == "number" and API.watchApiVersion >= 1
+        and type(API.registerWatchSlot) == "function" then
+    API.registerWatchSlot({
+        id = "forecast",
+        name = "IGUI_MyWeather_Slot",
+        accepts = { "standard" },
+        price = { rent = 80, days = 7, buy = 600 },
+    })
+end
+```
+
+- 只看「有沒有」的功能（例如 AutoDrive 的 GPS）只認 `"active"`。
+- 模組耗電：內建模組由沙盒調整；第三方模組目前用 `drain` 建議值（管理員調整在之後的版本）。
+- 其他 MOD 的槽位開啟方式是沙盒「其他 MOD 加入的槽位的開啟方式」（預設免費開放）；選解鎖卡時用擴充槽解鎖卡。
+
 ## 開發
 
 - `link_workshop.bat`：手動同步、唯讀狀態與歸檔卸載；MOD 以實體副本放入 `Zomboid\Workshop\` 與 `Zomboid\mods\`，不使用目錄連結
