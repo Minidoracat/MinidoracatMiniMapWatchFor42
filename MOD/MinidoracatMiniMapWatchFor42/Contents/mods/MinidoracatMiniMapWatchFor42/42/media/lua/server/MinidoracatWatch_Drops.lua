@@ -10,6 +10,7 @@
 if isClient() then return end
 require "MinidoracatWatch"
 require "MinidoracatWatch_Config"
+require "MinidoracatWatch_DropData"
 local W = MinidoracatWatchCore
 local D = {}
 W.Drops = D
@@ -17,26 +18,8 @@ W.Drops = D
 D.MAX_RULES = 200
 D.MAX_OUTFITS = 64
 
--- 服裝分組（設計稿 data.mjs ZOMBIE_GROUPS；每個名字都在原版 media/clothing/clothing.xml 查過 m_Name，大小寫照原文）。
--- all＝所有殭屍（含沒有服裝名的）；custom＝規則自己帶 outfits。
-D.GROUPS = {
-    army = { "ArmyCamoGreen", "ArmyCamoDesert", "ArmyInstructor", "ArmyServiceUniform", "Ghillie", "PrivateMilitia" },
-    police = { "Police", "PoliceState", "Police_SWAT", "PoliceRiot", "PrisonGuard" },
-    fire = { "Fireman", "FiremanFullSuit" },
-    medic = { "Doctor", "Nurse", "AmbulanceDriver", "Pharmacist" },
-    worker = { "Mechanic", "MetalWorker", "ConstructionWorker", "Foreman" },
-    office = { "OfficeWorker", "OfficeWorkerSkirt", "Trader" },
-    student = { "Student", "HonorStudent" },
-    survivalist = {},
-    rich = { "Classy", "Gaudy" },
-    spiffo = { "Spiffo", "Waiter_Spiffo", "Cook_Spiffos" },
-    outdoor = { "Hunter", "Ranger", "Camper" },
-}
-for _, base in ipairs({ "Survivalist", "Survivalist02", "Survivalist03", "Survivalist04", "Survivalist05" }) do
-    for _, suffix in ipairs({ "", "_Mid", "_Late" }) do
-        table.insert(D.GROUPS.survivalist, base .. suffix)
-    end
-end
+-- 服裝分組、掉落物 id、預設規則在 shared/MinidoracatWatch_DropData.lua（管理員視窗共用）
+D.GROUPS = W.DROP_GROUPS
 D.groupsOf = {} -- [服裝名] = { [分組] = true }
 for g, list in pairs(D.GROUPS) do
     for _, o in ipairs(list) do
@@ -44,27 +27,12 @@ for g, list in pairs(D.GROUPS) do
         D.groupsOf[o][g] = true
     end
 end
-
--- 掉落物（設計稿 DROP_ITEMS）：watch:<款>、watch:any、mod:<模組 id>、mod:any（隨機一般模組）、card:<槽位等級>、battery
-D.STYLE_BY_ID = { valutech = "ValuTech", paws = "Paws", nexus = "Nexus", spiffo = "Spiffo", ranger = "Ranger",
-    luthex = "Luthex", crt = "BB3000" }
-D.STYLE_IDS = { "valutech", "paws", "nexus", "spiffo", "ranger", "luthex", "crt" }
-D.GENERAL_MODULES = { "compass", "ledger", "gps", "comm", "scan", "detect", "light" }
-D.CARD_TIERS = { ext = true, adv = true, core = true }
-
--- 預設 10 條（設計稿 DEFAULT_DROPS；機率單位是 %）
-function D.defaults()
-    local out = {}
-    for _, r in ipairs({
-        { "all", "watch:valutech", 0.2 }, { "army", "watch:ranger", 2 }, { "army", "mod:mildetect", 1 },
-        { "police", "mod:comm", 2 }, { "survivalist", "watch:crt", 3 }, { "spiffo", "watch:spiffo", 5 },
-        { "rich", "watch:luthex", 1 }, { "student", "watch:paws", 1 }, { "office", "watch:nexus", 1 },
-        { "worker", "mod:any", 2 },
-    }) do
-        out[#out + 1] = { group = r[1], item = r[2], chance = r[3] }
-    end
-    return out
-end
+D.STYLE_BY_ID = W.STYLE_BY_ID
+D.STYLE_IDS = W.STYLE_IDS
+D.GENERAL_MODULES = W.GENERAL_MODULES
+D.CARD_TIERS = {}
+for _, t in ipairs(W.CARD_TIERS) do D.CARD_TIERS[t] = true end
+D.defaults = W.defaultDrops
 
 -- 掉落物 id 合法嗎（mod:<id> 要是已登記的模組；第三方模組在 shared 檔登記，伺服器讀設定檔時已登記完）
 function D.itemValid(id)
@@ -130,13 +98,19 @@ function D.parse(raw)
     return out
 end
 
+-- 寫回檔案與推給管理員視窗的形狀：只留設定檔的欄位（parse 多出來的 outfitSet 不寫出）
+function D.export(rules)
+    local out = {}
+    for i, r in ipairs(rules or {}) do
+        out[i] = { group = r.group, item = r.item, chance = r.chance, outfits = r.outfits }
+    end
+    return out
+end
+
 W.Config.section("zombieDrops", {
-    default = function()
-        local out = {}
-        for i, r in ipairs(D.defaults()) do out[i] = { group = r.group, item = r.item, chance = r.chance } end
-        return out
-    end,
+    default = D.defaults,
     parse = D.parse,
+    export = D.export,
 })
 
 function D.matches(rule, outfit)

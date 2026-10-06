@@ -600,7 +600,7 @@ function M:banner(player, watch)
     return nil
 end
 
--- 底部電量列的文字（充電中：MinidoracatWatch.lua 的 W.chargeState／W.chargeHoursToFull，有才顯示）
+-- 底部電量列的文字（充電中另加「約多久充滿」，MinidoracatWatch.lua 的 W.chargeState／W.chargeHoursToFull）
 function M:composeFoot(player, watch)
     local c = watch and W.charge(watch)
     if not watch then return getText("IGUI_MinidoracatWatch_Status_NoWatch") end
@@ -616,9 +616,9 @@ function M:composeFoot(player, watch)
         s = getText("IGUI_MinidoracatWatch_Foot_Charge", tostring(C.percent(c)), C.timeText(c, hours), full)
     end
     if W.lightLit(player, watch) then s = getText("IGUI_MinidoracatWatch_Foot_LightOn", s) end
-    local where = type(W.chargeState) == "function" and W.chargeState(player)
-    local toFull = where and type(W.chargeHoursToFull) == "function" and W.chargeHoursToFull(player, watch)
-    if (where == "car" or where == "house") and toFull then
+    local where = W.chargeState(player)
+    local toFull = where and W.chargeHoursToFull(player, watch)
+    if toFull then
         s = getText(where == "car" and "IGUI_MinidoracatWatch_Foot_ChargingCar" or "IGUI_MinidoracatWatch_Foot_ChargingHouse",
             s, C.timeText(1, toFull))
     end

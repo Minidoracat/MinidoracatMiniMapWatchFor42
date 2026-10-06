@@ -224,3 +224,13 @@ option MinidoracatWatch.ChargeHouse
 
 option MinidoracatWatch.HouseHours
 {type = integer, min = 1, max = 168, default = 12, page = MinidoracatWatch, translation = MinidoracatWatch_HouseHours,}
+
+/* 取得方式的數量（Phase 4）：1 很少（×0.25）、2 少（×0.5）、3 一般（建議值）、4 多（×2），乘在每筆分佈的機率上（server/MinidoracatWatch_Loot.lua） */
+option MinidoracatWatch.LootWatchAmount
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_LootWatchAmount,}
+
+option MinidoracatWatch.LootModuleAmount
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_LootModuleAmount,}
+
+option MinidoracatWatch.LootCardAmount
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_LootCardAmount,}

@@ -652,14 +652,15 @@ tick()
 panel:update()
 panel:prerender()
 check(not panel.btnBanner.visible and panel.btnInsert.style == "normal", "電量正常：沒有橫幅按鈕")
--- 充電（另一個分支提供 W.chargeState／W.chargeHoursToFull）：有才顯示
+-- 充電（W.chargeState／W.chargeHoursToFull 換成固定值，看電量列怎麼寫）
+local realState, realToFull = W.chargeState, W.chargeHoursToFull
 W.chargeState = function() return "car" end
 W.chargeHoursToFull = function() return 5 end
 panel:update()
 check(panel.footText:find("Foot_ChargingCar", 1, true) and panel.footText:find("TimeHours|5", 1, true), "車上充電：電量列寫充電中與充滿時間")
-W.chargeState, W.chargeHoursToFull = nil, nil
+W.chargeState, W.chargeHoursToFull = realState, realToFull
 panel:update()
-check(not panel.footText:find("Charging", 1, true), "沒有充電 API：照舊")
+check(not panel.footText:find("Charging", 1, true), "沒在充電：照舊")
 p.inv:DoRemoveItem(watch)
 F.unwear(p, watch)
 F.fire("OnClothingUpdated", p)

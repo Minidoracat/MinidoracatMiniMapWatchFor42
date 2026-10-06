@@ -439,6 +439,49 @@ tick(60000, 500)
 check(near(W.charge(gw) - gc, 60000 / (12 * H), 1e-6) and fuel.fuel == 3, "發電機供電的室內：12 小時速率、燃料不變")
 SandboxVars.MinidoracatWatch.ChargeCar, SandboxVars.MinidoracatWatch.ChargeHouse = nil, nil
 
+F.print("情境十三：管理員設定（Phase 4）→ 管理員讀到設定、改第三方模組耗電並寫檔、廣播清單；一般玩家偽造指令被拒；舊版本被擋")
+local files = {}
+function getFileReader(path)
+    local text = files[path]
+    if text == nil then return nil end
+    local i, lines = 0, {}
+    for line in (text .. "\n"):gmatch("([^\n]*)\n") do lines[#lines + 1] = line end
+    return { readLine = function() i = i + 1; return lines[i] end, close = function() end }
+end
+function cacheFileExists(path) return files[path] ~= nil end
+function getFileWriter(path, create, append)
+    local buf = {}
+    return { write = function(_, s) buf[#buf + 1] = s end,
+        close = function() files[path] = ((append and files[path]) or "") .. table.concat(buf):gsub("\n$", "") end }
+end
+function getServerName() return "smoke" end
+Capability = { SandboxOptions = "SandboxOptions" }
+F.load("server/MinidoracatWatch_Admin.lua")
+local boss, eve = F.player("boss"), F.player("eve")
+getmetatable(boss).getRole = function(self) return self.role end
+boss.role = { hasCapability = function(_, c) return c == Capability.SandboxOptions end }
+local function adminCmd(player, cmd, args)
+    F.reset()
+    F.now = F.now + 1000
+    F.fire("OnClientCommand", W.MODULE, cmd, player, args)
+    return F.serverCmds
+end
+local out = adminCmd(boss, W.CMD_ADMIN_GET, {})
+local st = out[1] and out[1].args
+check(out[1] and out[1].command == W.CMD_ADMIN_STATE and #st.zombieDrops == 10, "管理員讀到設定與預設掉落規則")
+local args = { expected = st.rev, reason = "smoke", changes = { "weather +40%" }, lists = { moduleDrains = { weather = 40 } } }
+out = adminCmd(eve, W.CMD_ADMIN_SET, args)
+check(out[1].args.code == "denied" and W.Config.get("moduleDrains").weather == nil, "一般玩家偽造 adminSet：拒絕、設定不變")
+out = adminCmd(boss, W.CMD_ADMIN_SET, args)
+local listed = false
+for _, c in ipairs(out) do
+    if c.command == W.CMD_LISTS and c.broadcast and c.args.moduleDrains.weather == 40 then listed = true end
+end
+check(out[#out].args.ok == true and W.Config.get("moduleDrains").weather == 40 and listed,
+    "管理員套用：寫進設定檔並廣播清單")
+out = adminCmd(boss, W.CMD_ADMIN_SET, args)
+check(out[1].args.code == "conflict", "同一個舊版本再送一次：衝突，不覆蓋")
+
 F.print()
 if F.failures > 0 then
     F.print(F.failures .. " 項失敗")
