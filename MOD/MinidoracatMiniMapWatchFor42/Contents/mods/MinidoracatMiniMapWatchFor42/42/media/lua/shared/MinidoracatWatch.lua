@@ -436,7 +436,11 @@ local function accrue(player, s, fullHours, metered)
     s.mark = activeMs
     if not s.watch or not metered then return end
     if not s.power then
-        if drainWatch(player, s.watch, ms, fullHours) then s.dirty = true end
+        if drainWatch(player, s.watch, ms, fullHours) then
+            s.dirty = true
+            -- 沒電立刻同步（同充飽）：客戶端的「無訊號」、沒電提示與自動熄燈同一刻，不等每分鐘那次
+            if W.charge(s.watch) == 0 then sync(player, s.watch); s.dirty = false end
+        end
         return
     end
     local c = W.charge(s.watch)

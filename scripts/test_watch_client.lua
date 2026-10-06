@@ -572,8 +572,15 @@ sk.cur = slotIndex("std1")
 check(sk:onFocusKey(Keyboard.KEY_LEFT) == false and sk.cur == slotIndex("std1"), "最左邊再 ←：不處理、游標不動")
 sk.cur = slotIndex("std2")
 check(sk:onFocusKey(Keyboard.KEY_RETURN) and panel.sel == slotIndex("std2"), "Enter：選取游標那格")
-check(sk._focusLabel == "IGUI_MinidoracatWatch_SlotAndModule|IGUI_MinidoracatWatch_Slot_std2|IGUI_MinidoracatWatch_St_empty",
-    "焦點說明：槽位名＋狀態")
+local std2Label = "IGUI_MinidoracatWatch_SlotAndModule|IGUI_MinidoracatWatch_Slot_std2|IGUI_MinidoracatWatch_St_empty"
+check(sk._focusLabel == std2Label and sk:focusLabel() == std2Label, "焦點說明：槽位名＋狀態")
+check(sk.tooltip == std2Label, "框架 rev 15（不讀 focusLabel）：說明退回每幀讀的 tooltip")
+local ui = C.ui()
+ui.API_REVISION, ui.CAPABILITIES.focusLabel = 16, true
+sk.cur = slotIndex("std1")
+check(sk:onFocusKey(Keyboard.KEY_RIGHT) and sk:focusLabel() == std2Label and sk.tooltip == nil,
+    "框架 rev 16＋focusLabel：游標換格就換說明，不再借 tooltip")
+ui.API_REVISION, ui.CAPABILITIES.focusLabel = 15, nil
 sk.cur = slotIndex("std3")
 sk:forceClick()
 check(panel.sel == slotIndex("std3"), "forceClick（手把 A）：選取")

@@ -87,6 +87,40 @@ local function notify(player, text)
     if player and HaloTextHelper then HaloTextHelper.addBadText(player, text) end
 end
 
+-- Economy 客戶端 facade 的上架入口（API_MAJOR 1、rev 4＋CAPABILITIES.shopAdd；Economy docs/entitlements-api.md
+-- 「到商店上架」；late bind、不 require）：回 facade 或 nil, 原因鍵
+function AU.shopApi()
+    local EC = MinidoracatEconomy
+    local CL = type(EC) == "table" and type(EC.v1) == "table" and EC.v1.Client or nil
+    if type(CL) ~= "table" then return nil, "ShopNoEcon" end
+    local caps = CL.CAPABILITIES
+    if CL.API_MAJOR == 1 and type(CL.API_REVISION) == "number" and CL.API_REVISION >= 4 and type(caps) == "table"
+            and caps.shopAdd == true and type(CL.openAdminShop) == "function" then
+        return CL
+    end
+    return nil, "ShopOldEcon"
+end
+
+-- 上架清單：七款地圖錶（左手款，和戰利品、掉落同一個物品）、內建模組（含照明）、電池；解鎖卡不列（付費槽位有自己的流程）
+function AU.shopItems()
+    local out = {}
+    for _, st in ipairs(W.STYLES) do out[#out + 1] = W.watchType(st) end
+    for _, def in ipairs(W.moduleList) do
+        if W.BUILTIN[def.id] then out[#out + 1] = def.item end
+    end
+    out[#out + 1] = W.BATTERY_TYPE
+    return out
+end
+
+function AU.openShop(S)
+    local CL = AU.shopApi()
+    if not CL then return end
+    local ok, res, err = pcall(CL.openAdminShop, W.MOD_ID, AU.shopItems())
+    if ok and res == true then return end
+    W.log("Economy openAdminShop failed: " .. tostring(ok and err or res))
+    notify(S and S.player or getSpecificPlayer(0), T(ok and err == "forbidden" and "ShopForbidden" or "ShopFailed"))
+end
+
 -- ===== UI 框架 =====
 -- 需要 rev 16（ScrollPanel、Text.wrap、TextField:setInvalid）＋window／controls／dialog／dropdown／table；Toast 選用。
 -- widget 檔不保證排在本檔之前，自己 pcall require。
@@ -515,7 +549,14 @@ local function buildAcquire(S, p)
     sbField(S, p, lx, y, 50, "CraftLevel")
     row("AllowCraft", T("Craft"), T("Craft_desc"))
     row("NeedScrewdriver", T("Tool"), T("Tool_desc"))
-    -- 「到經濟中心上架」不做：Economy 沒有讓其他 MOD 帶入物品的公開 API（只有內部的 C.AdminWindow.addItem，一次一件）
+    -- 到經濟中心上架（設計稿 adm-shop）：Economy 開商店頁、每個還沒上架的物品一筆草稿，價格由管理員填、按套用才寫 catalog
+    local bw = math.max(150, measure(T("ShopBtn")) + 30)
+    text(p, T("Shop"), 0, y, "text")
+    local dy = para(p, T("Shop_desc"), 0, y + FH + 4, w - bw - GAP)
+    local _, why = AU.shopApi()
+    S.shopBtn = button(p, w - bw, y, T("ShopBtn"), function() AU.openShop(S) end, "normal", bw)
+    S.shopBtn:setEnabled(why == nil)
+    if why then para(p, T(why), 0, dy, w - bw - GAP, "errorText") end
 end
 
 -- ===== 分類：殭屍掉落 =====

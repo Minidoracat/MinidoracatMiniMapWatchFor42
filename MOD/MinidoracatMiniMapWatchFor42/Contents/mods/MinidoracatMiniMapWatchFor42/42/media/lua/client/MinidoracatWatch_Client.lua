@@ -129,13 +129,13 @@ function C.ui()
     return nil
 end
 
--- 面板與付款相關的通知：右上角 Toast（面板開著時避開面板，見 Panel 的 Toast.setAvoid）；框架缺席退回角色頭上的字
-function C.toast(player, text)
+-- 面板、付款與重要事件的通知：右上角 Toast（面板開著時避開面板，見 Panel 的 Toast.setAvoid）；框架缺席退回角色頭上的字
+function C.toast(player, text, title)
     local UI = C.ui()
     if UI and UI.CAPABILITIES.toast and UI.Toast then
-        UI.Toast.show({ message = text, maxLines = 3 })
+        UI.Toast.show({ title = title, message = text, maxLines = 3 })
     elseif player and HaloTextHelper then
-        HaloTextHelper.addBadText(player, text)
+        HaloTextHelper.addBadText(player, title and (title .. " " .. text) or text)
     end
 end
 

@@ -9,7 +9,8 @@ require "MinidoracatWatch_Pay"
 local W, C = MinidoracatWatchCore, MinidoracatWatchClient
 local SRC = W.ECON_SOURCE
 
-local P = { orders = {}, busy = {}, msg = {}, sheet = nil, requested = {} }
+-- paidAt[pid]＝面板付款完成的時間：續租成功的 Toast 只報自動續租，面板自己付的已經在檢視區說了（MinidoracatWatch_Hud.lua）
+local P = { orders = {}, busy = {}, msg = {}, sheet = nil, requested = {}, paidAt = {} }
 C.Pay = P
 local VIEW_MS = 250
 local REQUEST_MS = 30000
@@ -461,6 +462,7 @@ end
 -- 訂單有了最終結果：付款完成而且勾了自動續租，就替這張新租約（id＝訂單 id）送同意，條款＝報價的方案版本
 function P.finish(pid, o, res, key)
     P.orders[pid] = nil
+    if key == "PayPaidDone" then P.paidAt[pid] = getTimestampMs() end
     local auto = o and o.auto
     if auto and o.orderId ~= nil and key == "PayPaidDone" then
         local snap = tbl(res.snapshot)

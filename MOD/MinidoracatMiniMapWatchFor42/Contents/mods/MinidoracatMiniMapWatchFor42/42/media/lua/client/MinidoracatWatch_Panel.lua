@@ -94,6 +94,7 @@ local function drainText(def)
     if d <= 0 then return getText("IGUI_MinidoracatWatch_DrainNone") end
     return getText("IGUI_MinidoracatWatch_DrainPlus", tostring(d))
 end
+C.className, C.drainText = className, drainText -- 物品停留說明（MinidoracatWatch_Hud.lua）同一份文字
 
 -- 槽位狀態：empty／locked（未開啟）／lapsed（經濟系統的租約到期、槽位空著）／off（不開放）／active／paused（槽位失效）／
 -- dead（錶沒電或沒電池）
@@ -417,6 +418,9 @@ end
 
 function Sockets:forceClick() panel:select(self.cur or panel.sel) end
 
+-- 焦點說明（UI 框架 rev 16 每幀讀 focusLabel()）：游標那格的名稱與狀態，scan 每 250ms 與換格時重算，這裡只回快取
+function Sockets:focusLabel() return self.liveLabel end
+
 -- ===== 面板（UI.Window 子類別；類別在第一次開面板時才建：框架可能比本檔晚載入）=====
 local M = {}
 local Panel
@@ -454,10 +458,11 @@ function M:refreshFocusLabel()
     local slot = self:slots()[self.sockets.cur or self.sel]
     if not (slot and player and w) then return end
     local st = C.slotStatus(player, w, slot)
-    -- 焦點說明：Focus 在聚焦那一刻記下描述的 label，之後游標換格不會更新；captionOf 每幀讀控制項的 tooltip
-    -- （Focus.lua captionOf：沒有 title 時用 tooltip），所以游標那格的名稱與狀態放在 tooltip
     local label = getText("IGUI_MinidoracatWatch_SlotAndModule", C.slotName(slot), getText("IGUI_MinidoracatWatch_St_" .. st))
-    self.sockets._focusLabel, self.sockets.tooltip = label, label
+    local s, UI = self.sockets, C.ui()
+    s._focusLabel, s.liveLabel = label, label
+    -- 框架 rev 14／15 不讀 focusLabel()，聚焦那一刻記下的 label 之後不更新：退回每幀讀的 tooltip（Focus.lua captionOf）
+    s.tooltip = not (UI.API_REVISION >= 16 and UI.CAPABILITIES.focusLabel == true) and label or nil
 end
 
 -- 正在對這支錶的這個槽位跑的計時動作（佇列第一個；ISTimedActionQueue.getTimedActionQueue）

@@ -251,9 +251,11 @@ local c1 = W.charge(worn)
 run(120000, 100)
 check(W.charge(worn) == c1, "總開關關閉時不扣")
 SandboxVars.MinidoracatWatch.Enabled = true
-W.setCharge(worn, 0.00001)
-run(120000, 100)
+W.setCharge(worn, 0.000001)
+F.reset()
+run(1500, 100) -- 遠小於一分鐘
 check(W.charge(worn) == 0, "沒電後停在 0")
+check(#F.synced == 1 and F.synced[1].item == worn, "沒電當下同步一次（不等一分鐘：客戶端的無訊號、提示與熄燈同一刻）")
 F.reset()
 run(120000, 100)
 check(#F.synced == 0, "沒電的錶不再同步")
