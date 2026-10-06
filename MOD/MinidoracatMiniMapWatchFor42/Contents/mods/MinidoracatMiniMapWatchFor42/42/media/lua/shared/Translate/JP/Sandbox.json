@@ -178,5 +178,13 @@
     "Sandbox_MinidoracatWatch_LightRadius": "ライトの半径（マス）",
     "Sandbox_MinidoracatWatch_LightRadius_tooltip": "点灯したときに照らす範囲です。すべてのプレイヤーに同じ値が使われます。",
     "Sandbox_MinidoracatWatch_LightDrain": "ライトモジュール点灯中の消費電力（%%）",
-    "Sandbox_MinidoracatWatch_LightDrain_tooltip": "ライト点灯中に、ミニマップだけの場合に比べて増える消費電力で、他のモジュールの消費電力に加算されます。たとえば 100 なら消費電力が 2 倍になります。\n消灯中は消費しません。"
+    "Sandbox_MinidoracatWatch_LightDrain_tooltip": "ライト点灯中に、ミニマップだけの場合に比べて増える消費電力で、他のモジュールの消費電力に加算されます。たとえば 100 なら消費電力が 2 倍になります。\n消灯中は消費しません。",
+    "Sandbox_MinidoracatWatch_ChargeCar": "エンジンのかかった車内で充電する",
+    "Sandbox_MinidoracatWatch_ChargeCar_tooltip": "初期設定はオフ：電池の交換のみです。\nオンにすると、エンジンのかかった車に乗っている間（運転席・助手席とも）、身につけたマップウォッチが現実時間でゆっくり充電されます。充電中は電池が減らず、車のバッテリーも消費しません。オフライン中は充電しません。",
+    "Sandbox_MinidoracatWatch_CarHours": "車内での充電時間（時間）",
+    "Sandbox_MinidoracatWatch_CarHours_tooltip": "現実時間で 1～168 時間：車内で空から満充電になるまでのおおよその時間です。",
+    "Sandbox_MinidoracatWatch_ChargeHouse": "電気の来ている建物内で充電する",
+    "Sandbox_MinidoracatWatch_ChargeHouse_tooltip": "初期設定はオフ：電池の交換のみです。\nオンにすると、送電網か発電機の電気が来ている屋内にいる間、身につけたマップウォッチが現実時間でゆっくり充電されます。充電中は電池が減らず、発電機の燃料も消費しません。オフライン中は充電しません。",
+    "Sandbox_MinidoracatWatch_HouseHours": "建物内での充電時間（時間）",
+    "Sandbox_MinidoracatWatch_HouseHours_tooltip": "現実時間で 1～168 時間：電気の来ている建物内で空から満充電になるまでのおおよその時間です。"
 }

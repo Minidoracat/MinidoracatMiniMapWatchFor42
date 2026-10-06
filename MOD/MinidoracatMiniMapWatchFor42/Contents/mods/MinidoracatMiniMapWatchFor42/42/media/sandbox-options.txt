@@ -211,3 +211,16 @@ option MinidoracatWatch.LightRadius
 
 option MinidoracatWatch.LightDrain
 {type = integer, min = 0, max = 1000, default = 100, page = MinidoracatWatch, translation = MinidoracatWatch_LightDrain,}
+
+/* 充電（使用者裁定：預設只能換電池）：坐在引擎發動的車上、在有市電或發電機供電的室內慢慢充電；小時數＝現實時間從沒電到充滿 */
+option MinidoracatWatch.ChargeCar
+{type = boolean, default = false, page = MinidoracatWatch, translation = MinidoracatWatch_ChargeCar,}
+
+option MinidoracatWatch.CarHours
+{type = integer, min = 1, max = 168, default = 6, page = MinidoracatWatch, translation = MinidoracatWatch_CarHours,}
+
+option MinidoracatWatch.ChargeHouse
+{type = boolean, default = false, page = MinidoracatWatch, translation = MinidoracatWatch_ChargeHouse,}
+
+option MinidoracatWatch.HouseHours
+{type = integer, min = 1, max = 168, default = 12, page = MinidoracatWatch, translation = MinidoracatWatch_HouseHours,}

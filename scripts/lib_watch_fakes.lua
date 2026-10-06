@@ -245,6 +245,18 @@ end
 function F.unwear(player, item)
     for i = #player.worn, 1, -1 do if player.worn[i].item == item then table.remove(player.worn, i) end end
 end
+-- 充電：所在車輛（BaseVehicle.isEngineRunning）與所在格（IsoGridSquare 的 getRoom／haveElectricity／hasGridPower）。
+-- 格子只給這三個方法，發電機（{ fuel = n }）藏在 closure 裡：被測程式碰到別的方法就當場報錯，也碰不到燃料。
+function Player:getVehicle() return self.vehicle end
+function Player:getCurrentSquare() return self.square end
+function F.vehicle(running)
+    return { running = running, isEngineRunning = function(v) return v.running == true end }
+end
+function F.square(room, generator, grid)
+    return { getRoom = function() return room end,
+        haveElectricity = function() return generator ~= nil and generator.fuel > 0 end,
+        hasGridPower = function() return grid == true end }
+end
 
 F.players = {}
 function F.player(name, pn)

@@ -178,5 +178,13 @@
     "Sandbox_MinidoracatWatch_LightRadius": "照明半径（格）",
     "Sandbox_MinidoracatWatch_LightRadius_tooltip": "开灯时照亮身边的范围，所有玩家都使用这个值。",
     "Sandbox_MinidoracatWatch_LightDrain": "照明模块开灯时耗电（%%）",
-    "Sandbox_MinidoracatWatch_LightDrain_tooltip": "灯开着时比只开小地图多耗的电，与其他模块的耗电相加。例如 100 表示多耗一倍。\n关灯时不耗电。"
+    "Sandbox_MinidoracatWatch_LightDrain_tooltip": "灯开着时比只开小地图多耗的电，与其他模块的耗电相加。例如 100 表示多耗一倍。\n关灯时不耗电。",
+    "Sandbox_MinidoracatWatch_ChargeCar": "坐在发动中的车上会充电",
+    "Sandbox_MinidoracatWatch_ChargeCar_tooltip": "默认关闭：只能更换电池。\n开启时，坐在引擎发动中的车上（驾驶或乘客），戴着的地图表会以现实时间慢慢充电；充电期间不耗电，也不消耗车辆的电瓶。离线时不充电。",
+    "Sandbox_MinidoracatWatch_CarHours": "车上充满所需时间（小时）",
+    "Sandbox_MinidoracatWatch_CarHours_tooltip": "现实时间，1 到 168 小时：在车上从没电到充满大约多久。",
+    "Sandbox_MinidoracatWatch_ChargeHouse": "在有电的建筑里会充电",
+    "Sandbox_MinidoracatWatch_ChargeHouse_tooltip": "默认关闭：只能更换电池。\n开启时，待在有市电或发电机供电的室内，戴着的地图表会以现实时间慢慢充电；充电期间不耗电，也不消耗发电机燃料。离线时不充电。",
+    "Sandbox_MinidoracatWatch_HouseHours": "建筑里充满所需时间（小时）",
+    "Sandbox_MinidoracatWatch_HouseHours_tooltip": "现实时间，1 到 168 小时：在有电的建筑里从没电到充满大约多久。"
 }

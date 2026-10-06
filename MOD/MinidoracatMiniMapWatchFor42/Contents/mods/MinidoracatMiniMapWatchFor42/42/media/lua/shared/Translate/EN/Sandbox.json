@@ -178,5 +178,13 @@
     "Sandbox_MinidoracatWatch_LightRadius": "Light radius (tiles)",
     "Sandbox_MinidoracatWatch_LightRadius_tooltip": "How far the light reaches when on. The same for every player.",
     "Sandbox_MinidoracatWatch_LightDrain": "Light Module drain while on (%%)",
-    "Sandbox_MinidoracatWatch_LightDrain_tooltip": "Extra power used while the light is on, on top of the minimap alone and added to the other modules. For example, 100 means double drain.\nNo drain while off."
+    "Sandbox_MinidoracatWatch_LightDrain_tooltip": "Extra power used while the light is on, on top of the minimap alone and added to the other modules. For example, 100 means double drain.\nNo drain while off.",
+    "Sandbox_MinidoracatWatch_ChargeCar": "Charge in a running vehicle",
+    "Sandbox_MinidoracatWatch_ChargeCar_tooltip": "Off by default: batteries can only be swapped.\nWhen on, a worn map watch slowly charges in real time while you sit in a vehicle with the engine running (driver or passenger). It doesn't drain while charging and doesn't use the vehicle's battery. No charging while offline.",
+    "Sandbox_MinidoracatWatch_CarHours": "Vehicle charge time (hours)",
+    "Sandbox_MinidoracatWatch_CarHours_tooltip": "Real time, 1 to 168 hours: roughly how long a vehicle takes to charge a watch from empty to full.",
+    "Sandbox_MinidoracatWatch_ChargeHouse": "Charge in a powered building",
+    "Sandbox_MinidoracatWatch_ChargeHouse_tooltip": "Off by default: batteries can only be swapped.\nWhen on, a worn map watch slowly charges in real time while you're indoors where there's grid or generator power. It doesn't drain while charging and doesn't use generator fuel. No charging while offline.",
+    "Sandbox_MinidoracatWatch_HouseHours": "Building charge time (hours)",
+    "Sandbox_MinidoracatWatch_HouseHours_tooltip": "Real time, 1 to 168 hours: roughly how long a powered building takes to charge a watch from empty to full."
 }
