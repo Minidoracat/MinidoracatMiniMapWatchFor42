@@ -11,7 +11,7 @@
 [*] Drag modules onto the panel's slots (screwdriver, about 3 seconds) to unlock navigation, resource points and more
 [*] When it's dead, use "Insert Battery" or "Replace Battery" in the panel or the watch's right-click menu
 [/olist]
-Rules are set by the server: the sandbox "Map Watch" page, or "Map Watch Admin" in MiniMap settings (gear), visible to admins only.
+Rules are set by the server: the four sandbox pages "Minidoracat Map Watch" (Features, Slots & Prices, Battery, Obtaining — the same split as the settings window), or "Map Watch Admin" in MiniMap settings (gear), visible to admins only.
 
 [h2]🧰 Features in detail[/h2]
 
@@ -114,7 +114,7 @@ Rules are set by the server: the sandbox "Map Watch" page, or "Map Watch Admin" 
 [h3]Selling in the Economy Center[/h3]
 "Sell in Economy Center" on the Obtaining page opens the Economy admin shop page with a draft for each of the seven watches, eleven modules and the battery not yet sold; you set prices, and nothing goes on sale until you apply. Needs a newer Economy and Economy Center admin access. Paid slot prices are sandbox options, sent to Economy within 5 seconds of startup or a change.
 
-[h3]Sandbox options ("Map Watch" page) and defaults[/h3]
+[h3]Sandbox options (the four "Minidoracat Map Watch" pages) and defaults[/h3]
 [list]
 [*] Enable map watch: on | Minimap rule: Watch required
 [*] Feature rules (arrow, resource points, navigation, faction sharing, vehicles & animals, zombie positions, light): Module required

@@ -63,8 +63,10 @@ end)
 
 -- ===== 齒輪設定的分類（主 MOD settingsApiVersion >= 3 的 visible(pn)）=====
 -- v2 以下會忽略 visible、所有人都看得到（主 MOD docs/addon-api.md 3.12）：不足就不註冊、log 一次。
+-- icon／group／order 是 settingsApiVersion 5 的欄位（設定視窗「管理員」群組的圖標與排序），舊版主 MOD 忽略。
 AU.SECTION = {
     label = "IGUI_MinidoracatWatch_Admin_Section",
+    icon = "settings", group = "admin", order = 12,
     actions = { { label = "IGUI_MinidoracatWatch_Admin_Open", tooltip = "IGUI_MinidoracatWatch_Admin_Open_tooltip",
         run = function(pn) AU.open(pn) end } },
     visible = function(pn) return W.isSettingsAdmin(getSpecificPlayer(pn)) end,

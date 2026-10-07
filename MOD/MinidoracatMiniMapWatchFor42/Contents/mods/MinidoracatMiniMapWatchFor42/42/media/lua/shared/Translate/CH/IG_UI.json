@@ -463,6 +463,7 @@
     "IGUI_MinidoracatWatch_Toast_Paused": "%1已停用",
     "IGUI_MinidoracatWatch_Toast_Paused_msg": "%1：已失效，模組還在錶上；可以拆下來，改裝到其他有效的槽位。",
     "IGUI_MinidoracatWatch_Sound_Section": "地圖錶",
+    "IGUI_MinidoracatWatch_Options": "Minidoracat 地圖錶",
     "IGUI_MinidoracatWatch_Sound_Volume": "地圖錶音效音量",
     "IGUI_MinidoracatWatch_Sound_Volume_tooltip": "裝好或拆下模組、開關燈、電量不足、沒電、租約到期與掃描提示音的音量。只有你自己聽得到；調到 0%% 就不播。",
     "IGUI_MinidoracatWatch_Sound_ScanPing": "定時掃描更新時播提示音",

@@ -1,260 +1,263 @@
 VERSION = 1,
 
-/* 地圖錶。命名空間與 MOD ID 脫鉤，日後併回主 MOD 時設定可沿用 */
+/* 地圖錶。命名空間與 MOD ID 脫鉤，日後併回主 MOD 時設定可沿用。
+   分四頁、順序照管理員設定視窗的分頁與畫面順序（client/MinidoracatWatch_AdminModel.lua M.FIELDS 照本檔順序）；選項鍵不可改名 */
+
+/* ===== MinidoracatWatchFeatures：設定視窗「總覽」與「功能」頁 ===== */
 
 option MinidoracatWatch.Enabled
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_Enabled,}
+{type = boolean, default = true, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_Enabled,}
 
-/* 1 不需要錶、2 戴錶才能用、3 關閉小地圖 */
+/* 小地圖規則：1 不需要錶、2 戴錶才能用、3 關閉小地圖 */
 option MinidoracatWatch.MinimapRule
-{type = enum, numValues = 3, default = 2, page = MinidoracatWatch, translation = MinidoracatWatch_MinimapRule,}
+{type = enum, numValues = 3, default = 2, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_MinimapRule,}
 
-option MinidoracatWatch.FullHours
-{type = integer, min = 1, max = 720, default = 72, page = MinidoracatWatch, translation = MinidoracatWatch_FullHours,}
-
-option MinidoracatWatch.DrainOffline
-{type = boolean, default = false, page = MinidoracatWatch, translation = MinidoracatWatch_DrainOffline,}
-
-option MinidoracatWatch.DrainPaused
-{type = boolean, default = false, page = MinidoracatWatch, translation = MinidoracatWatch_DrainPaused,}
-
-/* 功能規則（Phase 3）：1 不需要錶、2 戴錶就能用、3 需要模組（預設）、4 關閉 */
+/* 功能規則（Phase 3）：1 不需要錶、2 戴錶就能用、3 需要模組（預設）、4 關閉；照明（Phase 8）只有 1 需要模組（預設）、2 關閉 */
 option MinidoracatWatch.RuleArrow
-{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_RuleArrow,}
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_RuleArrow,}
 
 option MinidoracatWatch.RulePoi
-{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_RulePoi,}
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_RulePoi,}
 
 option MinidoracatWatch.RuleNav
-{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_RuleNav,}
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_RuleNav,}
 
 option MinidoracatWatch.RuleShare
-{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_RuleShare,}
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_RuleShare,}
 
 option MinidoracatWatch.RuleScan
-{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_RuleScan,}
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_RuleScan,}
 
 option MinidoracatWatch.RuleZombie
-{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_RuleZombie,}
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_RuleZombie,}
 
-/* 付費槽位的開啟方式：1 免費開放、2 解鎖卡、3 經濟系統（Phase 6 之前一律當解鎖卡）、4 不開放；其他 MOD 的槽位預設免費 */
-option MinidoracatWatch.SlotExt
-{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_SlotExt,}
+option MinidoracatWatch.RuleLight
+{type = enum, numValues = 2, default = 1, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_RuleLight,}
 
-option MinidoracatWatch.SlotAdv
-{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAdv,}
-
-option MinidoracatWatch.SlotCore
-{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_SlotCore,}
-
-option MinidoracatWatch.SlotAddon
-{type = enum, numValues = 4, default = 1, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAddon,}
-
-/* 經濟系統（Phase 6，Minidoracat Economy 選用）：開啟方式是「經濟系統」的槽位的買斷與租用，價格照設計稿 data.mjs PRICES，其他 MOD 的槽位共用 SlotAddon*；開服與改設定後 5 秒內用 setPlan 推給 Economy */
-option MinidoracatWatch.SlotExtBuy
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_SlotExtBuy,}
-
-option MinidoracatWatch.SlotExtBuyPrice
-{type = integer, min = 1, max = 1000000000, default = 400, page = MinidoracatWatch, translation = MinidoracatWatch_SlotExtBuyPrice,}
-
-option MinidoracatWatch.SlotExtRent
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_SlotExtRent,}
-
-option MinidoracatWatch.SlotExtRentPrice
-{type = integer, min = 1, max = 1000000000, default = 60, page = MinidoracatWatch, translation = MinidoracatWatch_SlotExtRentPrice,}
-
-option MinidoracatWatch.SlotAdvBuy
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAdvBuy,}
-
-option MinidoracatWatch.SlotAdvBuyPrice
-{type = integer, min = 1, max = 1000000000, default = 1200, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAdvBuyPrice,}
-
-option MinidoracatWatch.SlotAdvRent
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAdvRent,}
-
-option MinidoracatWatch.SlotAdvRentPrice
-{type = integer, min = 1, max = 1000000000, default = 150, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAdvRentPrice,}
-
-option MinidoracatWatch.SlotCoreBuy
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_SlotCoreBuy,}
-
-option MinidoracatWatch.SlotCoreBuyPrice
-{type = integer, min = 1, max = 1000000000, default = 2400, page = MinidoracatWatch, translation = MinidoracatWatch_SlotCoreBuyPrice,}
-
-option MinidoracatWatch.SlotCoreRent
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_SlotCoreRent,}
-
-option MinidoracatWatch.SlotCoreRentPrice
-{type = integer, min = 1, max = 1000000000, default = 300, page = MinidoracatWatch, translation = MinidoracatWatch_SlotCoreRentPrice,}
-
-option MinidoracatWatch.SlotAddonBuy
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAddonBuy,}
-
-option MinidoracatWatch.SlotAddonBuyPrice
-{type = integer, min = 1, max = 1000000000, default = 600, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAddonBuyPrice,}
-
-option MinidoracatWatch.SlotAddonRent
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAddonRent,}
-
-option MinidoracatWatch.SlotAddonRentPrice
-{type = integer, min = 1, max = 1000000000, default = 80, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAddonRentPrice,}
-
-/* 1 倖存幣（survivor）、2 貓幣（cat）：Economy EC.CURRENCY_ORDER */
-option MinidoracatWatch.PayCurrency
-{type = enum, numValues = 2, default = 1, page = MinidoracatWatch, translation = MinidoracatWatch_PayCurrency,}
-
-option MinidoracatWatch.PayRentDays
-{type = integer, min = 1, max = 365, default = 7, page = MinidoracatWatch, translation = MinidoracatWatch_PayRentDays,}
-
-/* Economy 的 graceHours：到期立刻停用，這段時間內每小時重試自動續租（使用者裁定：寬限期視為停用） */
-option MinidoracatWatch.PayRetryHours
-{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatch, translation = MinidoracatWatch_PayRetryHours,}
-
-option MinidoracatWatch.PayReminderHours
-{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatch, translation = MinidoracatWatch_PayReminderHours,}
-
-option MinidoracatWatch.PayAutoRenew
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_PayAutoRenew,}
-
-option MinidoracatWatch.NeedScrewdriver
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_NeedScrewdriver,}
-
-/* 範圍（格）：照設計稿「進階：範圍與距離」 */
+/* 範圍（格）：照設計稿「進階：範圍與距離」。陣營分享距離（Phase 7）：分享者到收件者，取兩人中較大的範圍；中繼核心不限距離。照明半徑＝torch 半徑 */
 option MinidoracatWatch.ScanRadius
-{type = integer, min = 1, max = 1000, default = 60, page = MinidoracatWatch, translation = MinidoracatWatch_ScanRadius,}
+{type = integer, min = 1, max = 1000, default = 60, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_ScanRadius,}
 
 option MinidoracatWatch.DetectRadius
-{type = integer, min = 1, max = 1000, default = 40, page = MinidoracatWatch, translation = MinidoracatWatch_DetectRadius,}
+{type = integer, min = 1, max = 1000, default = 40, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_DetectRadius,}
 
 option MinidoracatWatch.MilDetectRadius
-{type = integer, min = 1, max = 1000, default = 80, page = MinidoracatWatch, translation = MinidoracatWatch_MilDetectRadius,}
+{type = integer, min = 1, max = 1000, default = 80, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_MilDetectRadius,}
 
-/* 陣營分享距離（格，Phase 7）：分享者到收件者，取兩人中較大的範圍；中繼核心不限距離 */
 option MinidoracatWatch.CommRange
-{type = integer, min = 1, max = 50000, default = 2000, page = MinidoracatWatch, translation = MinidoracatWatch_CommRange,}
+{type = integer, min = 1, max = 50000, default = 2000, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_CommRange,}
 
 option MinidoracatWatch.LongCommRange
-{type = integer, min = 1, max = 50000, default = 8000, page = MinidoracatWatch, translation = MinidoracatWatch_LongCommRange,}
-
-/* 內建模組耗電（%，比只開小地圖多耗的電；照設計稿 data.mjs MODULES）。節能核心不耗電、讓整支錶耗電減半 */
-option MinidoracatWatch.DrainCompass
-{type = integer, min = 0, max = 1000, default = 10, page = MinidoracatWatch, translation = MinidoracatWatch_DrainCompass,}
-
-option MinidoracatWatch.DrainLedger
-{type = integer, min = 0, max = 1000, default = 10, page = MinidoracatWatch, translation = MinidoracatWatch_DrainLedger,}
-
-option MinidoracatWatch.DrainGPS
-{type = integer, min = 0, max = 1000, default = 25, page = MinidoracatWatch, translation = MinidoracatWatch_DrainGPS,}
-
-option MinidoracatWatch.DrainComm
-{type = integer, min = 0, max = 1000, default = 25, page = MinidoracatWatch, translation = MinidoracatWatch_DrainComm,}
-
-option MinidoracatWatch.DrainScan
-{type = integer, min = 0, max = 1000, default = 25, page = MinidoracatWatch, translation = MinidoracatWatch_DrainScan,}
-
-option MinidoracatWatch.DrainDetect
-{type = integer, min = 0, max = 1000, default = 50, page = MinidoracatWatch, translation = MinidoracatWatch_DrainDetect,}
-
-option MinidoracatWatch.DrainMilDetect
-{type = integer, min = 0, max = 1000, default = 50, page = MinidoracatWatch, translation = MinidoracatWatch_DrainMilDetect,}
-
-option MinidoracatWatch.DrainLongComm
-{type = integer, min = 0, max = 1000, default = 25, page = MinidoracatWatch, translation = MinidoracatWatch_DrainLongComm,}
-
-option MinidoracatWatch.DrainRelay
-{type = integer, min = 0, max = 1000, default = 25, page = MinidoracatWatch, translation = MinidoracatWatch_DrainRelay,}
-
-/* 取得方式（Phase 5）：每款錶、模組、解鎖卡是否出現在戰利品（改了會重排分佈表，server/MinidoracatWatch_Loot.lua） */
-option MinidoracatWatch.LootValuTech
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_LootValuTech,}
-
-option MinidoracatWatch.LootPaws
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_LootPaws,}
-
-option MinidoracatWatch.LootNexus
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_LootNexus,}
-
-option MinidoracatWatch.LootSpiffo
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_LootSpiffo,}
-
-option MinidoracatWatch.LootRanger
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_LootRanger,}
-
-option MinidoracatWatch.LootLuthex
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_LootLuthex,}
-
-option MinidoracatWatch.LootBB3000
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_LootBB3000,}
-
-option MinidoracatWatch.LootModules
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_LootModules,}
-
-option MinidoracatWatch.LootCards
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_LootCards,}
-
-option MinidoracatWatch.AllowCraft
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_AllowCraft,}
-
-/* 殭屍掉落：總開關與每隻上限；規則清單在伺服器設定檔（server/MinidoracatWatch_Config.lua） */
-option MinidoracatWatch.ZombieDrops
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_ZombieDrops,}
-
-option MinidoracatWatch.ZombieDropCap
-{type = integer, min = 1, max = 5, default = 1, page = MinidoracatWatch, translation = MinidoracatWatch_ZombieDropCap,}
-
-/* 照明模組（Phase 8）：規則 1 需要模組（預設）、2 關閉；開燈半徑（格，torch 半徑）與開燈時耗電（%，關燈不耗電） */
-option MinidoracatWatch.RuleLight
-{type = enum, numValues = 2, default = 1, page = MinidoracatWatch, translation = MinidoracatWatch_RuleLight,}
+{type = integer, min = 1, max = 50000, default = 8000, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_LongCommRange,}
 
 option MinidoracatWatch.LightRadius
-{type = integer, min = 1, max = 20, default = 4, page = MinidoracatWatch, translation = MinidoracatWatch_LightRadius,}
+{type = integer, min = 1, max = 20, default = 4, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_LightRadius,}
 
-option MinidoracatWatch.LightDrain
-{type = integer, min = 0, max = 1000, default = 100, page = MinidoracatWatch, translation = MinidoracatWatch_LightDrain,}
+/* ===== MinidoracatWatchSlots：設定視窗「槽位與價格」頁 ===== */
+
+/* 付費槽位每列：開啟方式（1 免費開放、2 解鎖卡、3 經濟系統、4 不開放；其他 MOD 的槽位預設免費）、買斷、租用（價格照設計稿 data.mjs PRICES，其他 MOD 的槽位共用 SlotAddon*）、經濟系統模式也接受解鎖卡（第三方槽位可在伺服器設定檔逐槽覆寫）。經濟系統（Phase 6，Minidoracat Economy 選用）：開服與改設定後 5 秒內用 setPlan 推給 Economy */
+option MinidoracatWatch.SlotExt
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotExt,}
+
+option MinidoracatWatch.SlotExtBuy
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotExtBuy,}
+
+option MinidoracatWatch.SlotExtBuyPrice
+{type = integer, min = 1, max = 1000000000, default = 400, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotExtBuyPrice,}
+
+option MinidoracatWatch.SlotExtRent
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotExtRent,}
+
+option MinidoracatWatch.SlotExtRentPrice
+{type = integer, min = 1, max = 1000000000, default = 60, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotExtRentPrice,}
+
+option MinidoracatWatch.SlotExtCard
+{type = boolean, default = false, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotExtCard,}
+
+option MinidoracatWatch.SlotAdv
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAdv,}
+
+option MinidoracatWatch.SlotAdvBuy
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAdvBuy,}
+
+option MinidoracatWatch.SlotAdvBuyPrice
+{type = integer, min = 1, max = 1000000000, default = 1200, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAdvBuyPrice,}
+
+option MinidoracatWatch.SlotAdvRent
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAdvRent,}
+
+option MinidoracatWatch.SlotAdvRentPrice
+{type = integer, min = 1, max = 1000000000, default = 150, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAdvRentPrice,}
+
+option MinidoracatWatch.SlotAdvCard
+{type = boolean, default = false, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAdvCard,}
+
+option MinidoracatWatch.SlotCore
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotCore,}
+
+option MinidoracatWatch.SlotCoreBuy
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotCoreBuy,}
+
+option MinidoracatWatch.SlotCoreBuyPrice
+{type = integer, min = 1, max = 1000000000, default = 2400, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotCoreBuyPrice,}
+
+option MinidoracatWatch.SlotCoreRent
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotCoreRent,}
+
+option MinidoracatWatch.SlotCoreRentPrice
+{type = integer, min = 1, max = 1000000000, default = 300, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotCoreRentPrice,}
+
+option MinidoracatWatch.SlotCoreCard
+{type = boolean, default = false, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotCoreCard,}
+
+option MinidoracatWatch.SlotAddon
+{type = enum, numValues = 4, default = 1, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAddon,}
+
+option MinidoracatWatch.SlotAddonBuy
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAddonBuy,}
+
+option MinidoracatWatch.SlotAddonBuyPrice
+{type = integer, min = 1, max = 1000000000, default = 600, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAddonBuyPrice,}
+
+option MinidoracatWatch.SlotAddonRent
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAddonRent,}
+
+option MinidoracatWatch.SlotAddonRentPrice
+{type = integer, min = 1, max = 1000000000, default = 80, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAddonRentPrice,}
+
+option MinidoracatWatch.SlotAddonCard
+{type = boolean, default = false, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAddonCard,}
+
+/* 1 倖存幣（survivor）、2 貓幣（cat）：Economy EC.CURRENCY_ORDER。PayRetryHours＝Economy 的 graceHours：到期立刻停用，這段時間內每小時重試自動續租（使用者裁定：寬限期視為停用） */
+option MinidoracatWatch.PayCurrency
+{type = enum, numValues = 2, default = 1, page = MinidoracatWatchSlots, translation = MinidoracatWatch_PayCurrency,}
+
+option MinidoracatWatch.PayRentDays
+{type = integer, min = 1, max = 365, default = 7, page = MinidoracatWatchSlots, translation = MinidoracatWatch_PayRentDays,}
+
+option MinidoracatWatch.PayRetryHours
+{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatchSlots, translation = MinidoracatWatch_PayRetryHours,}
+
+option MinidoracatWatch.PayReminderHours
+{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatchSlots, translation = MinidoracatWatch_PayReminderHours,}
+
+option MinidoracatWatch.PayAutoRenew
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_PayAutoRenew,}
+
+/* ===== MinidoracatWatchBattery：設定視窗「電池」頁 ===== */
+
+/* 需要電池（關閉＝永遠不會沒電）；沒電時 1 所有功能停用、2 只保留小地圖 */
+option MinidoracatWatch.NeedBattery
+{type = boolean, default = true, page = MinidoracatWatchBattery, translation = MinidoracatWatch_NeedBattery,}
+
+option MinidoracatWatch.DeadMode
+{type = enum, numValues = 2, default = 1, page = MinidoracatWatchBattery, translation = MinidoracatWatch_DeadMode,}
+
+option MinidoracatWatch.FullHours
+{type = integer, min = 1, max = 720, default = 72, page = MinidoracatWatchBattery, translation = MinidoracatWatch_FullHours,}
+
+option MinidoracatWatch.DrainOffline
+{type = boolean, default = false, page = MinidoracatWatchBattery, translation = MinidoracatWatch_DrainOffline,}
+
+option MinidoracatWatch.DrainPaused
+{type = boolean, default = false, page = MinidoracatWatchBattery, translation = MinidoracatWatch_DrainPaused,}
 
 /* 充電（使用者裁定：預設只能換電池）：坐在引擎發動的車上、在有市電或發電機供電的室內慢慢充電；小時數＝現實時間從沒電到充滿 */
 option MinidoracatWatch.ChargeCar
-{type = boolean, default = false, page = MinidoracatWatch, translation = MinidoracatWatch_ChargeCar,}
+{type = boolean, default = false, page = MinidoracatWatchBattery, translation = MinidoracatWatch_ChargeCar,}
 
 option MinidoracatWatch.CarHours
-{type = integer, min = 1, max = 168, default = 6, page = MinidoracatWatch, translation = MinidoracatWatch_CarHours,}
+{type = integer, min = 1, max = 168, default = 6, page = MinidoracatWatchBattery, translation = MinidoracatWatch_CarHours,}
 
 option MinidoracatWatch.ChargeHouse
-{type = boolean, default = false, page = MinidoracatWatch, translation = MinidoracatWatch_ChargeHouse,}
+{type = boolean, default = false, page = MinidoracatWatchBattery, translation = MinidoracatWatch_ChargeHouse,}
 
 option MinidoracatWatch.HouseHours
-{type = integer, min = 1, max = 168, default = 12, page = MinidoracatWatch, translation = MinidoracatWatch_HouseHours,}
+{type = integer, min = 1, max = 168, default = 12, page = MinidoracatWatchBattery, translation = MinidoracatWatch_HouseHours,}
 
-/* 取得方式的數量（Phase 4）：1 很少（×0.25）、2 少（×0.5）、3 一般（建議值）、4 多（×2），乘在每筆分佈的機率上（server/MinidoracatWatch_Loot.lua） */
+/* 內建模組耗電（%，比只開小地圖多耗的電；照設計稿 data.mjs MODULES）。節能核心不耗電、讓整支錶耗電減半；照明只在開燈時耗電 */
+option MinidoracatWatch.DrainCompass
+{type = integer, min = 0, max = 1000, default = 10, page = MinidoracatWatchBattery, translation = MinidoracatWatch_DrainCompass,}
+
+option MinidoracatWatch.DrainLedger
+{type = integer, min = 0, max = 1000, default = 10, page = MinidoracatWatchBattery, translation = MinidoracatWatch_DrainLedger,}
+
+option MinidoracatWatch.DrainGPS
+{type = integer, min = 0, max = 1000, default = 25, page = MinidoracatWatchBattery, translation = MinidoracatWatch_DrainGPS,}
+
+option MinidoracatWatch.DrainComm
+{type = integer, min = 0, max = 1000, default = 25, page = MinidoracatWatchBattery, translation = MinidoracatWatch_DrainComm,}
+
+option MinidoracatWatch.DrainScan
+{type = integer, min = 0, max = 1000, default = 25, page = MinidoracatWatchBattery, translation = MinidoracatWatch_DrainScan,}
+
+option MinidoracatWatch.DrainDetect
+{type = integer, min = 0, max = 1000, default = 50, page = MinidoracatWatchBattery, translation = MinidoracatWatch_DrainDetect,}
+
+option MinidoracatWatch.DrainMilDetect
+{type = integer, min = 0, max = 1000, default = 50, page = MinidoracatWatchBattery, translation = MinidoracatWatch_DrainMilDetect,}
+
+option MinidoracatWatch.DrainLongComm
+{type = integer, min = 0, max = 1000, default = 25, page = MinidoracatWatchBattery, translation = MinidoracatWatch_DrainLongComm,}
+
+option MinidoracatWatch.DrainRelay
+{type = integer, min = 0, max = 1000, default = 25, page = MinidoracatWatchBattery, translation = MinidoracatWatch_DrainRelay,}
+
+option MinidoracatWatch.LightDrain
+{type = integer, min = 0, max = 1000, default = 100, page = MinidoracatWatchBattery, translation = MinidoracatWatch_LightDrain,}
+
+/* ===== MinidoracatWatchAcquire：設定視窗「取得方式」與「殭屍掉落」頁 ===== */
+
+/* 取得方式（Phase 5）：每款錶、模組、解鎖卡是否出現在戰利品；數量（Phase 4）1 很少（×0.25）、2 少（×0.5）、3 一般（建議值）、4 多（×2），乘在每筆分佈的機率上（改了會重排分佈表，server/MinidoracatWatch_Loot.lua） */
+option MinidoracatWatch.LootValuTech
+{type = boolean, default = true, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_LootValuTech,}
+
+option MinidoracatWatch.LootPaws
+{type = boolean, default = true, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_LootPaws,}
+
+option MinidoracatWatch.LootNexus
+{type = boolean, default = true, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_LootNexus,}
+
+option MinidoracatWatch.LootSpiffo
+{type = boolean, default = true, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_LootSpiffo,}
+
+option MinidoracatWatch.LootRanger
+{type = boolean, default = true, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_LootRanger,}
+
+option MinidoracatWatch.LootLuthex
+{type = boolean, default = true, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_LootLuthex,}
+
+option MinidoracatWatch.LootBB3000
+{type = boolean, default = true, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_LootBB3000,}
+
 option MinidoracatWatch.LootWatchAmount
-{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_LootWatchAmount,}
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_LootWatchAmount,}
+
+option MinidoracatWatch.LootModules
+{type = boolean, default = true, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_LootModules,}
 
 option MinidoracatWatch.LootModuleAmount
-{type = enum, numValues = 4, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_LootModuleAmount,}
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_LootModuleAmount,}
+
+option MinidoracatWatch.LootCards
+{type = boolean, default = true, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_LootCards,}
 
 option MinidoracatWatch.LootCardAmount
-{type = enum, numValues = 4, default = 1, page = MinidoracatWatch, translation = MinidoracatWatch_LootCardAmount,}
-
-/* 電池（設計稿電池頁）：需要電池（關閉＝永遠不會沒電）；沒電時 1 所有功能停用、2 只保留小地圖 */
-option MinidoracatWatch.NeedBattery
-{type = boolean, default = true, page = MinidoracatWatch, translation = MinidoracatWatch_NeedBattery,}
-
-option MinidoracatWatch.DeadMode
-{type = enum, numValues = 2, default = 1, page = MinidoracatWatch, translation = MinidoracatWatch_DeadMode,}
-
-/* 經濟系統模式也接受解鎖卡（每級一個；第三方槽位可在伺服器設定檔逐槽覆寫） */
-option MinidoracatWatch.SlotExtCard
-{type = boolean, default = false, page = MinidoracatWatch, translation = MinidoracatWatch_SlotExtCard,}
-
-option MinidoracatWatch.SlotAdvCard
-{type = boolean, default = false, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAdvCard,}
-
-option MinidoracatWatch.SlotCoreCard
-{type = boolean, default = false, page = MinidoracatWatch, translation = MinidoracatWatch_SlotCoreCard,}
-
-option MinidoracatWatch.SlotAddonCard
-{type = boolean, default = false, page = MinidoracatWatch, translation = MinidoracatWatch_SlotAddonCard,}
+{type = enum, numValues = 4, default = 1, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_LootCardAmount,}
 
 /* 製作模組需要的電學等級（0＝不需要；執行期改配方 SkillRequired，shared/MinidoracatWatch_Recipe.lua） */
+option MinidoracatWatch.AllowCraft
+{type = boolean, default = true, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_AllowCraft,}
+
 option MinidoracatWatch.CraftLevel
-{type = integer, min = 0, max = 10, default = 3, page = MinidoracatWatch, translation = MinidoracatWatch_CraftLevel,}
+{type = integer, min = 0, max = 10, default = 3, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_CraftLevel,}
+
+option MinidoracatWatch.NeedScrewdriver
+{type = boolean, default = true, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_NeedScrewdriver,}
+
+/* 殭屍掉落：總開關與每隻上限；規則清單在伺服器設定檔（server/MinidoracatWatch_Config.lua） */
+option MinidoracatWatch.ZombieDrops
+{type = boolean, default = true, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_ZombieDrops,}
+
+option MinidoracatWatch.ZombieDropCap
+{type = integer, min = 1, max = 5, default = 1, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_ZombieDropCap,}

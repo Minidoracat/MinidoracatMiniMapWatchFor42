@@ -23,7 +23,7 @@ Project Zomboid Build 42 MOD，[Minidoracat MiniMap for B42](https://steamcommun
 
 ## 玩家設定
 
-小地圖設定（齒輪）裡的「地圖錶」分類，所有玩家都看得到（和管理員的「地圖錶管理」分開）；同樣的兩項也在原版「選項 → MOD」的「地圖錶」頁。設定存在這台電腦（`Zomboid\Lua\ModOptions.ini`），不跟存檔、換伺服器照樣有效。
+小地圖設定（齒輪）裡的「地圖錶」分類，所有玩家都看得到（和管理員的「地圖錶管理」分開）；同樣的兩項也在原版「選項 → MOD」的「Minidoracat 地圖錶」頁。設定存在這台電腦（`Zomboid\Lua\ModOptions.ini`），不跟存檔、換伺服器照樣有效。
 
 - **地圖錶音效音量**：0–100%（每格 5%，預設 70%），乘在遊戲主音量上；0% 就不播。拖動時就會套用到下一個音效
 - **定時掃描更新時播提示音**（預設關）：小地圖的殭屍點位或載具與動物重新掃描時響一聲，兩種同時更新只響一次（1 秒內合併）。**伺服器把小地圖沙盒的掃描間隔設成定時（大於 0 秒）時才會播**，即時更新（預設）不會播；錶也要能用那項功能（殭屍點位要偵測或軍規偵測模組，載具與動物要掃描模組；功能設成不需要錶時照常播）。小地圖版本太舊時這一項的說明會提示更新、不會播
@@ -41,7 +41,7 @@ Project Zomboid Build 42 MOD，[Minidoracat MiniMap for B42](https://steamcommun
 
 ## 管理員：伺服器設定檔
 
-數值（掉落總開關、每隻最多幾件、各款錶／模組／解鎖卡是否出現在戰利品與數量）在沙盒「地圖錶」分頁；清單放在伺服器設定檔（設定視窗會改寫它，也可以直接編輯）：
+數值（掉落總開關、每隻最多幾件、各款錶／模組／解鎖卡是否出現在戰利品與數量）在沙盒「Minidoracat 地圖錶 - 取得方式」分頁；清單放在伺服器設定檔（設定視窗會改寫它，也可以直接編輯）：
 
 - 位置：`Zomboid/Lua/MinidoracatWatch/<伺服器名>/server-settings.json`（單人遊戲是 `sp_<存檔名>`，非英數字換成底線）。不存在時自動寫一份預設（10 條）。
 - 改檔後 10 秒內生效，不必重開伺服器。檔案不是合法 JSON、或任何一條規則不合法時，整份規則不採用、保留上一份有效的，伺服器 log 會寫出是第幾條、哪裡不對。
@@ -80,7 +80,7 @@ Project Zomboid Build 42 MOD，[Minidoracat MiniMap for B42](https://steamcommun
 
 ## 管理員：經濟系統（付費槽位）
 
-選用整合 [Minidoracat Economy](https://steamcommunity.com/sharedfiles/filedetails/?id=3801482125)（多人專用伺服器）。開啟方式設成「經濟系統」的槽位，玩家在地圖錶面板用 Economy 的錢買斷或租用；價格與租期都在沙盒「地圖錶」分頁，伺服器啟動與改設定後 5 秒內自動交給 Economy（Economy 管理台的「整合方案」頁只讀）。
+選用整合 [Minidoracat Economy](https://steamcommunity.com/sharedfiles/filedetails/?id=3801482125)（多人專用伺服器）。開啟方式設成「經濟系統」的槽位，玩家在地圖錶面板用 Economy 的錢買斷或租用；價格與租期都在沙盒「Minidoracat 地圖錶 - 槽位與價格」分頁，伺服器啟動與改設定後 5 秒內自動交給 Economy（Economy 管理台的「整合方案」頁只讀）。
 
 - **版本**：需要 Economy `42.21.0-0.8.0` 以上（租約清單與方案由使用端管理）。其他 MOD 的槽位在那個 MOD 被移除時「租約凍結、不扣租金、裝回來接著算」需要 Economy 下一版（API revision 4，尚未發布）；舊版 Economy 只能在那個 MOD 不在時停止自動續租扣款，租約照原本的到期時間走。設定視窗的「到經濟中心上架」也需要 Economy 下一版（客戶端 API revision 4）。
 - **沒有 Economy、版本太舊或單人遊戲**：設成「經濟系統」的槽位改用解鎖卡，面板會說明。Economy 本身被移除再裝回時，租約不補償（Economy 不在時租約照樣計時）。

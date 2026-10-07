@@ -463,6 +463,7 @@
     "IGUI_MinidoracatWatch_Toast_Paused": "%1が停止しました",
     "IGUI_MinidoracatWatch_Toast_Paused_msg": "%1が無効になりました。モジュールはウォッチに残っています。取り外して、他の有効なスロットに付け替えられます。",
     "IGUI_MinidoracatWatch_Sound_Section": "マップウォッチ",
+    "IGUI_MinidoracatWatch_Options": "Minidoracat マップウォッチ",
     "IGUI_MinidoracatWatch_Sound_Volume": "マップウォッチの効果音量",
     "IGUI_MinidoracatWatch_Sound_Volume_tooltip": "モジュールの装着・取り外し、ライトの切り替え、電池残量低下、電池切れ、レンタル期限切れ、スキャン通知音の音量です。聞こえるのは自分だけで、0%% にすると鳴りません。",
     "IGUI_MinidoracatWatch_Sound_ScanPing": "定期スキャン更新時に通知音を鳴らす",

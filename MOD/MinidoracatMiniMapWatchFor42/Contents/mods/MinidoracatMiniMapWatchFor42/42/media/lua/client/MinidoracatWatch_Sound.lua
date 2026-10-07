@@ -5,7 +5,7 @@
 -- 播放走玩家 emitter 的本機路徑 playSoundImpl(name, nil)：不送 PlaySound 封包（FMODSoundEmitter.java:484-492、
 -- 對照 playSound :389-402），MP 其他玩家聽不到；逐次音量 emitter:setVolume(ref, v)（:284-298）。照 AutoDrive MDAD_Voice.lua。
 -- 名稱查不到（sound script 沒載）＝回 0（:485-487）。sound script 在 media/scripts/MinidoracatWatch_sounds.txt。
--- 設定存本機 PZAPI.ModOptions（Zomboid/Lua/ModOptions.ini，不跟存檔；ESC 選項的「地圖錶」頁也看得到），
+-- 設定存本機 PZAPI.ModOptions（Zomboid/Lua/ModOptions.ini，不跟存檔；ESC 選項的「Minidoracat 地圖錶」頁也看得到），
 -- 小地圖齒輪設定的「地圖錶」分類讀寫同一份（照 AutoDrive MDAD_HUD.lua：ModOptions 必須在 MainOptions:create
 -- 前於檔案頂層建立，MainOptions.lua:2796 load、:3760-3766 save）。
 require "MinidoracatWatch"
@@ -24,7 +24,7 @@ for _, s in ipairs(W.STYLES) do Snd.INSTALL[s] = "MinidoracatWatch_Install_" .. 
 -- ===== 設定 =====
 local opts = nil
 if PZAPI and PZAPI.ModOptions then
-    opts = PZAPI.ModOptions:create("MinidoracatWatch", "IGUI_MinidoracatWatch_Sound_Section")
+    opts = PZAPI.ModOptions:create("MinidoracatWatch", "IGUI_MinidoracatWatch_Options")
     opts:addSlider("Volume", "IGUI_MinidoracatWatch_Sound_Volume", 0, 100, 5, Snd.VOLUME_DEFAULT,
         "IGUI_MinidoracatWatch_Sound_Volume_tooltip")
     opts:addTickBox("ScanPing", "IGUI_MinidoracatWatch_Sound_ScanPing", false,
@@ -114,8 +114,10 @@ end
 -- ===== 註冊（OnGameStart：所有 MOD 的 client 檔都已載入）=====
 -- 齒輪設定的分類要 settingsApiVersion >= 4（sliders；v3 會丟掉滑桿）：不足就不註冊、log 一次，ESC 選項照樣能改。
 -- 分類所有玩家都看得到（沒有 visible）；owner 和「地圖錶管理」分開（同 owner 再註冊＝覆蓋）。
+-- icon／group／order 是 settingsApiVersion 5 的欄位（設定視窗「擴充功能」群組的圖標與排序），舊版主 MOD 忽略。
 Snd.SECTION = {
     label = "IGUI_MinidoracatWatch_Sound_Section",
+    icon = "watch", group = "addon", order = 12,
     sliders = { { label = "IGUI_MinidoracatWatch_Sound_Volume", tooltip = "IGUI_MinidoracatWatch_Sound_Volume_tooltip",
         min = 0, max = 100, step = 5, default = Snd.VOLUME_DEFAULT, fmt = "%d%%", get = Snd.volume, set = Snd.setVolume } },
     ticks = { { label = "IGUI_MinidoracatWatch_Sound_ScanPing", tooltip = "IGUI_MinidoracatWatch_Sound_ScanPing_tooltip",

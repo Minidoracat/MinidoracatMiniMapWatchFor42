@@ -111,7 +111,7 @@ local options = {}
 do
     local text = io.open(F.MEDIA .. "/../sandbox-options.txt", "rb"):read("a")
     for name, body in text:gmatch("option MinidoracatWatch%.([%w_]+)%s*(%b{})") do
-        local o = { name = name, type = body:match("type%s*=%s*(%a+)") }
+        local o = { name = name, type = body:match("type%s*=%s*(%a+)"), page = body:match("page%s*=%s*([%w_]+)") }
         o.min, o.max = tonumber(body:match("min%s*=%s*([%-%d%.]+)")), tonumber(body:match("max%s*=%s*([%-%d%.]+)"))
         o.numValues = tonumber(body:match("numValues%s*=%s*(%d+)"))
         local d = body:match("default%s*=%s*([%w%.]+)")
@@ -153,6 +153,24 @@ do
         if not M.FIELD[o.name] then bad[#bad + 1] = o.name .. " not in the admin window" end
     end
     check(#bad == 0, "admin field table matches sandbox-options.txt: " .. table.concat(bad, ", "))
+    -- 順序與分頁：M.FIELDS＝檔案順序；四頁照視窗分頁（總覽＋功能／槽位與價格／電池／取得方式＋殭屍掉落），每頁連續
+    local function tabOf(k)
+        if k:find("^Slot") or k:find("^Pay") then return "Slots" end
+        if k:find("^Drain") or k:find("^Charge") or k:find("Hours$") or k == "LightDrain" or k == "NeedBattery"
+            or k == "DeadMode" then return "Battery" end
+        if k:find("^Loot") or k:find("^Zombie") or k:find("Craft") or k == "NeedScrewdriver" then return "Acquire" end
+        return "Features"
+    end
+    local order, pages, seq = {}, {}, {}
+    for i, o in ipairs(options) do
+        if not M.FIELDS[i] or M.FIELDS[i][1] ~= o.name then order[#order + 1] = i .. ":" .. o.name end
+        if o.page ~= "MinidoracatWatch" .. tabOf(o.name) then pages[#pages + 1] = o.name .. "@" .. tostring(o.page) end
+        if seq[#seq] ~= o.page then seq[#seq + 1] = o.page end
+    end
+    check(#order == 0 and #M.FIELDS == #options, "admin field table follows the sandbox file order: " .. table.concat(order, ", "))
+    check(#pages == 0, "every sandbox option sits on the page of its admin tab: " .. table.concat(pages, ", "))
+    check(table.concat(seq, ",") == "MinidoracatWatchFeatures,MinidoracatWatchSlots,MinidoracatWatchBattery,MinidoracatWatchAcquire",
+        "four sandbox pages, each contiguous, in admin tab order: " .. table.concat(seq, ","))
 end
 
 -- ===== 2. 目前設定一覽（設計稿 summaryItems）=====
@@ -438,6 +456,8 @@ do
     AU.register()
     admin.pn, plain.pn = 0, 1
     check(AU.registered and got and got.visible(0) == false, "category hidden from a client without the permission role")
+    check(got.icon == "settings" and got.group == "admin" and got.order == 12,
+        "category spec carries the v5 icon/group/order (admin group, order 12)")
     local sv = admin.role
     F.players = { admin, plain }
     check(got.visible(0) == true and got.visible(1) == false, "category visible to the admin only")

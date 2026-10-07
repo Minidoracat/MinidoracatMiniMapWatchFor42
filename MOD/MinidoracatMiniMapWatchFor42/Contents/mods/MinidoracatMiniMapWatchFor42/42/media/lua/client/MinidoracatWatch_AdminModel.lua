@@ -12,40 +12,43 @@ MinidoracatWatchAdminModel = M -- 內部表（測試與 E2E 用），不是公�
 local function T(key, ...) return getText("IGUI_MinidoracatWatch_Admin_" .. key, ...) end
 M.T = T
 
--- ===== 沙盒欄位（順序＝sandbox-options.txt；test_watch_admin.lua 逐項對照型別、範圍、預設）=====
+-- ===== 沙盒欄位（順序＝sandbox-options.txt：四頁照視窗分頁與畫面順序；test_watch_admin.lua 逐項對照型別、範圍、預設、順序）=====
 local B, I, E = "bool", "int", "enum"
 M.FIELDS = {
-    { "Enabled", B, nil, nil, true }, { "MinimapRule", E, 1, 3, 2 }, { "FullHours", I, 1, 720, 72 },
-    { "DrainOffline", B, nil, nil, false }, { "DrainPaused", B, nil, nil, false },
-    { "RuleArrow", E, 1, 4, 3 }, { "RulePoi", E, 1, 4, 3 }, { "RuleNav", E, 1, 4, 3 }, { "RuleShare", E, 1, 4, 3 },
-    { "RuleScan", E, 1, 4, 3 }, { "RuleZombie", E, 1, 4, 3 },
-    { "SlotExt", E, 1, 4, 3 }, { "SlotAdv", E, 1, 4, 3 }, { "SlotCore", E, 1, 4, 3 }, { "SlotAddon", E, 1, 4, 1 },
-    { "SlotExtBuy", B, nil, nil, true }, { "SlotExtBuyPrice", I, 1, 1000000000, 400 },
+    -- features
+    { "Enabled", B, nil, nil, true }, { "MinimapRule", E, 1, 3, 2 }, { "RuleArrow", E, 1, 4, 3 },
+    { "RulePoi", E, 1, 4, 3 }, { "RuleNav", E, 1, 4, 3 }, { "RuleShare", E, 1, 4, 3 }, { "RuleScan", E, 1, 4, 3 },
+    { "RuleZombie", E, 1, 4, 3 }, { "RuleLight", E, 1, 2, 1 }, { "ScanRadius", I, 1, 1000, 60 },
+    { "DetectRadius", I, 1, 1000, 40 }, { "MilDetectRadius", I, 1, 1000, 80 }, { "CommRange", I, 1, 50000, 2000 },
+    { "LongCommRange", I, 1, 50000, 8000 }, { "LightRadius", I, 1, 20, 4 },
+    -- slots
+    { "SlotExt", E, 1, 4, 3 }, { "SlotExtBuy", B, nil, nil, true }, { "SlotExtBuyPrice", I, 1, 1000000000, 400 },
     { "SlotExtRent", B, nil, nil, true }, { "SlotExtRentPrice", I, 1, 1000000000, 60 },
-    { "SlotAdvBuy", B, nil, nil, true }, { "SlotAdvBuyPrice", I, 1, 1000000000, 1200 },
-    { "SlotAdvRent", B, nil, nil, true }, { "SlotAdvRentPrice", I, 1, 1000000000, 150 },
+    { "SlotExtCard", B, nil, nil, false }, { "SlotAdv", E, 1, 4, 3 }, { "SlotAdvBuy", B, nil, nil, true },
+    { "SlotAdvBuyPrice", I, 1, 1000000000, 1200 }, { "SlotAdvRent", B, nil, nil, true },
+    { "SlotAdvRentPrice", I, 1, 1000000000, 150 }, { "SlotAdvCard", B, nil, nil, false }, { "SlotCore", E, 1, 4, 3 },
     { "SlotCoreBuy", B, nil, nil, true }, { "SlotCoreBuyPrice", I, 1, 1000000000, 2400 },
     { "SlotCoreRent", B, nil, nil, true }, { "SlotCoreRentPrice", I, 1, 1000000000, 300 },
-    { "SlotAddonBuy", B, nil, nil, true }, { "SlotAddonBuyPrice", I, 1, 1000000000, 600 },
-    { "SlotAddonRent", B, nil, nil, true }, { "SlotAddonRentPrice", I, 1, 1000000000, 80 },
+    { "SlotCoreCard", B, nil, nil, false }, { "SlotAddon", E, 1, 4, 1 }, { "SlotAddonBuy", B, nil, nil, true },
+    { "SlotAddonBuyPrice", I, 1, 1000000000, 600 }, { "SlotAddonRent", B, nil, nil, true },
+    { "SlotAddonRentPrice", I, 1, 1000000000, 80 }, { "SlotAddonCard", B, nil, nil, false },
     { "PayCurrency", E, 1, 2, 1 }, { "PayRentDays", I, 1, 365, 7 }, { "PayRetryHours", I, 0, 168, 24 },
-    { "PayReminderHours", I, 0, 168, 24 }, { "PayAutoRenew", B, nil, nil, true }, { "NeedScrewdriver", B, nil, nil, true },
-    { "ScanRadius", I, 1, 1000, 60 }, { "DetectRadius", I, 1, 1000, 40 }, { "MilDetectRadius", I, 1, 1000, 80 },
-    { "CommRange", I, 1, 50000, 2000 }, { "LongCommRange", I, 1, 50000, 8000 },
-    { "DrainCompass", I, 0, 1000, 10 }, { "DrainLedger", I, 0, 1000, 10 }, { "DrainGPS", I, 0, 1000, 25 },
-    { "DrainComm", I, 0, 1000, 25 }, { "DrainScan", I, 0, 1000, 25 }, { "DrainDetect", I, 0, 1000, 50 },
-    { "DrainMilDetect", I, 0, 1000, 50 }, { "DrainLongComm", I, 0, 1000, 25 }, { "DrainRelay", I, 0, 1000, 25 },
+    { "PayReminderHours", I, 0, 168, 24 }, { "PayAutoRenew", B, nil, nil, true },
+    -- battery
+    { "NeedBattery", B, nil, nil, true }, { "DeadMode", E, 1, 2, 1 }, { "FullHours", I, 1, 720, 72 },
+    { "DrainOffline", B, nil, nil, false }, { "DrainPaused", B, nil, nil, false },
+    { "ChargeCar", B, nil, nil, false }, { "CarHours", I, 1, 168, 6 }, { "ChargeHouse", B, nil, nil, false },
+    { "HouseHours", I, 1, 168, 12 }, { "DrainCompass", I, 0, 1000, 10 }, { "DrainLedger", I, 0, 1000, 10 },
+    { "DrainGPS", I, 0, 1000, 25 }, { "DrainComm", I, 0, 1000, 25 }, { "DrainScan", I, 0, 1000, 25 },
+    { "DrainDetect", I, 0, 1000, 50 }, { "DrainMilDetect", I, 0, 1000, 50 }, { "DrainLongComm", I, 0, 1000, 25 },
+    { "DrainRelay", I, 0, 1000, 25 }, { "LightDrain", I, 0, 1000, 100 },
+    -- acquire
     { "LootValuTech", B, nil, nil, true }, { "LootPaws", B, nil, nil, true }, { "LootNexus", B, nil, nil, true },
     { "LootSpiffo", B, nil, nil, true }, { "LootRanger", B, nil, nil, true }, { "LootLuthex", B, nil, nil, true },
-    { "LootBB3000", B, nil, nil, true }, { "LootModules", B, nil, nil, true }, { "LootCards", B, nil, nil, true },
-    { "AllowCraft", B, nil, nil, true }, { "ZombieDrops", B, nil, nil, true }, { "ZombieDropCap", I, 1, 5, 1 },
-    { "RuleLight", E, 1, 2, 1 }, { "LightRadius", I, 1, 20, 4 }, { "LightDrain", I, 0, 1000, 100 },
-    { "LootWatchAmount", E, 1, 4, 3 }, { "LootModuleAmount", E, 1, 4, 3 }, { "LootCardAmount", E, 1, 4, 1 },
-    { "ChargeCar", B, nil, nil, false }, { "CarHours", I, 1, 168, 6 },
-    { "ChargeHouse", B, nil, nil, false }, { "HouseHours", I, 1, 168, 12 },
-    { "NeedBattery", B, nil, nil, true }, { "DeadMode", E, 1, 2, 1 },
-    { "SlotExtCard", B, nil, nil, false }, { "SlotAdvCard", B, nil, nil, false }, { "SlotCoreCard", B, nil, nil, false },
-    { "SlotAddonCard", B, nil, nil, false }, { "CraftLevel", I, 0, 10, 3 },
+    { "LootBB3000", B, nil, nil, true }, { "LootWatchAmount", E, 1, 4, 3 }, { "LootModules", B, nil, nil, true },
+    { "LootModuleAmount", E, 1, 4, 3 }, { "LootCards", B, nil, nil, true }, { "LootCardAmount", E, 1, 4, 1 },
+    { "AllowCraft", B, nil, nil, true }, { "CraftLevel", I, 0, 10, 3 }, { "NeedScrewdriver", B, nil, nil, true },
+    { "ZombieDrops", B, nil, nil, true }, { "ZombieDropCap", I, 1, 5, 1 },
 }
 M.FIELD = {}
 for _, f in ipairs(M.FIELDS) do

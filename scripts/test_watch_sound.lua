@@ -299,6 +299,9 @@ local sl = sec and sec.sliders[1]
 local tk = sec and sec.ticks[1]
 check(Snd.sectionActive and regs[1].owner == Snd.OWNER and Snd.OWNER ~= W.MOD_ID and sec.visible == nil
     and sec.label == "IGUI_MinidoracatWatch_Sound_Section", "v4：註冊所有玩家看得到的「地圖錶」分類，和「地圖錶管理」不同 owner")
+check(sec.icon == "watch" and sec.group == "addon" and sec.order == 12, "分類帶 v5 的圖標／群組／排序（擴充功能群組、order 12）")
+check(MO.Dict.MinidoracatWatch.name == "IGUI_MinidoracatWatch_Options" and sec.label ~= MO.Dict.MinidoracatWatch.name,
+    "ESC 選項頁名用自己的鍵（Minidoracat 地圖錶），齒輪分類名仍是「地圖錶」")
 check(sl and sl.min == 0 and sl.max == 100 and sl.step == 5 and sl.default == 70 and sl.fmt == "%d%%"
     and sl.label == "IGUI_MinidoracatWatch_Sound_Volume", "音量滑桿 0–100%、step 5、預設 70")
 check(tk and tk.default == false and tk.label == "IGUI_MinidoracatWatch_Sound_ScanPing"
