@@ -522,7 +522,8 @@ function F.installUI(rev)
         end },
         Toast = { show = function(o) F.toasts[#F.toasts + 1] = o.message end,
             setAvoid = function(owner, fn) F.avoid[owner] = fn end },
-        Dock = { register = function(spec) F.dockSpec = spec; return true end },
+        Dock = { register = function(spec) F.dockSpec = spec; return true end,
+            refresh = function() F.dockRefreshes = (F.dockRefreshes or 0) + 1 end },
     }
     if UI.API_REVISION >= 15 then UI.Skin.shapeOf = function() return nil end end
     MinidoracatUI = { v1 = UI }

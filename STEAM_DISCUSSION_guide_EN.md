@@ -71,7 +71,7 @@ Rules are set by the server: the four sandbox pages "Minidoracat Map Watch" (Fea
 [list]
 [*] A light on the watch: lights about 4 tiles around you (adjustable); nearby players who can see you see it too, like a vanilla flashlight.
 [*] No drain while off, +100% while on (adjustable). Turns off when the battery dies, you take the watch off, the module is removed, its slot stops working, or admins disable the light.
-[*] Toggle with the panel's "Light on/off" button, the watch's right-click menu, or the hotkey (default [b],[/b] — rebind under Options → Key Bindings → "Minidoracat Map Watch").
+[*] Toggle with the panel's "Light on/off" button, the watch's right-click menu, or the hotkey (default [b]Scroll Lock[/b] — rebind under Options → Key Bindings → "Minidoracat Map Watch"; no Scroll Lock on your keyboard? Use the panel or the right-click menu).
 [/list]
 
 [h3]Paid slots[/h3]
@@ -87,11 +87,12 @@ Rules are set by the server: the four sandbox pages "Minidoracat Map Watch" (Fea
 
 [h2]⚙️ Settings[/h2]
 
-[h3]Player settings (sounds)[/h3]
+[h3]Player settings[/h3]
 [list]
 [*] The "Map Watch" category in the minimap settings (gear) is visible to every player; the same page is in the game's Options → Mods. Settings are saved on your own computer, not in the save.
 [*] [b]Map watch sound volume[/b]: 0–100% (default 70%), on top of the game's master volume; 0% plays nothing.
 [*] [b]Ping on scheduled scan updates[/b] (off by default): a short ping when zombie dots or vehicles and animals are rescanned (once if both update together). [b]Only plays when the server sets the minimap scan interval to scheduled[/b]; live updates (the default) don't ping. Your watch must be able to use that feature.
+[*] [b]Show Map Watch button[/b] (on by default): the Map Watch button in the family toolbar. Untick it to hide it right away (in Options → Mods, press Apply); you can still open the panel by right-clicking the map watch in your inventory and choosing "Open Map Watch".
 [/list]
 
 [h3]Admin settings window[/h3]

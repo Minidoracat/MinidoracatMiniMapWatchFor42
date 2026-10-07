@@ -469,6 +469,8 @@
     "IGUI_MinidoracatWatch_Sound_ScanPing": "定时扫描更新时播放提示音",
     "IGUI_MinidoracatWatch_Sound_ScanPing_tooltip": "小地图的僵尸点位或载具与动物重新扫描、点位更新时响一声（两种同时更新只响一次）。服务器设为定时扫描时才会播放，实时更新（默认）不会播放；表要能用该项功能才会响。",
     "IGUI_MinidoracatWatch_Sound_ScanPing_old": "需要较新版本的 Minidoracat MiniMap：当前版本不会播放这个提示音。",
+    "IGUI_MinidoracatWatch_ShowButton": "显示地图表按钮",
+    "IGUI_MinidoracatWatch_ShowButton_tooltip": "画面上的地图表按钮，点击即可开关地图表面板，放在家族工具栏里。隐藏后，在背包里右键点击地图表、选「打开地图表」就能打开面板。",
     "IGUI_MinidoracatWatch_Admin_Shop": "经济中心商店",
     "IGUI_MinidoracatWatch_Admin_Shop_desc": "把地图表、模块和电池上架到经济中心，玩家就能在商店购买。按下后会打开经济中心的商店页，还没上架的物品各建一笔草稿；价格由你填写，点击应用后才会上架。",
     "IGUI_MinidoracatWatch_Admin_ShopBtn": "到经济中心上架",

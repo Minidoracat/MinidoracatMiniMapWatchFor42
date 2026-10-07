@@ -93,11 +93,14 @@ Events.OnFillInventoryObjectContextMenu.Add(function(pn, context, items)
 end)
 
 -- ===== 快捷鍵（選項 → 按鍵綁定 → [MinidoracatWatch]，可改鍵）=====
--- 預設 ,（COMMA）：原版 keyBinding.lua 與 vanilla Lua 全樹沒有用到 KEY_COMMA；家族已用 / ; '（小地圖）、\（DevProfiler）、
--- [（Economy）、.（UI Dock）。文字輸入期間引擎不派送按鍵事件（GameKeyboard isDoingTextEntry）。
+-- 預設 Scroll Lock（KEY_SCROLL＝70）：原版 keyBinding.lua 未綁；原版 Lua 沒有 KEY_SCROLL 也沒有裸 70；反編譯 Java
+-- 直接讀鍵的呼叫沒有 70（只在 org/lwjglx/input/KeyCodes.java 的 GLFW 281↔70 對照表）；家族未用（小地圖 / ; '、
+-- DevProfiler \、Economy [、UI Dock .）；本機 Workshop 424 個項目 0 次。不用 ,：EquipmentUI（3780682550）與
+-- NeatUI_Equipment（3790656296）拿它開裝備視窗。筆電與小配列常沒有 Scroll Lock：照明另有面板按鈕與錶的右鍵選單，
+-- 也能改鍵。文字輸入期間引擎不派送按鍵事件（GameKeyboard isDoingTextEntry）。
 Events.OnGameBoot.Add(function()
     table.insert(keyBinding, { value = "[MinidoracatWatch]" })
-    table.insert(keyBinding, { value = "MinidoracatWatch_Light", key = Keyboard.KEY_COMMA })
+    table.insert(keyBinding, { value = "MinidoracatWatch_Light", key = Keyboard.KEY_SCROLL })
 end)
 
 Events.OnKeyPressed.Add(function(key)

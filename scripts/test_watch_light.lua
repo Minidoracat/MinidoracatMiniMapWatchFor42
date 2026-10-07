@@ -258,7 +258,7 @@ function getCore()
         getKey = function(_, name) return F.keys[name] end }
 end
 keyBinding = {}
-Keyboard.KEY_COMMA = 51
+Keyboard.KEY_SCROLL, Keyboard.KEY_COMMA = 70, 51 -- LWJGL 鍵碼（org/lwjglx/input/KeyCodes.java）
 function getTextManager()
     return { MeasureStringX = function(_, _, s2) return #s2 * 7 end, getFontHeight = function() return 16 end }
 end
@@ -379,16 +379,16 @@ local bound = nil
 for _, b in ipairs(keyBinding) do
     if b.value == "MinidoracatWatch_Light" then bound = b.key end
 end
-check(keyBinding[1] and keyBinding[1].value == "[MinidoracatWatch]" and bound == 51, "按鍵綁定：分類標題＋預設 ,")
-F.keys.MinidoracatWatch_Light = 51
+check(keyBinding[1] and keyBinding[1].value == "[MinidoracatWatch]" and bound == 70, "按鍵綁定：分類標題＋預設 Scroll Lock")
+F.keys.MinidoracatWatch_Light = bound -- 玩家沒改鍵：Core 回登記的預設
 F.reset()
 F.now = F.now + 2000
-F.fire("OnKeyPressed", 51)
-check(F.clientCmds[1] and F.clientCmds[1].args.on == true, "按下快捷鍵：開燈")
+F.fire("OnKeyPressed", 70)
+check(F.clientCmds[1] and F.clientCmds[1].args.on == true, "按下 Scroll Lock：開燈")
 F.reset()
-F.fire("OnKeyPressed", 52)
+F.fire("OnKeyPressed", 51)
 F.fire("OnKeyPressed", 0)
-check(#F.clientCmds == 0, "其他鍵、未綁定（0）：不動作")
+check(#F.clientCmds == 0, "逗號（裝備視窗 MOD 的預設鍵）、未綁定（0）：不動作")
 
 -- 面板：按鈕只在戴著的錶裝了照明模組時出現；開著時寫「關燈」、底部註明燈開著
 C.openPanel(0, nil)

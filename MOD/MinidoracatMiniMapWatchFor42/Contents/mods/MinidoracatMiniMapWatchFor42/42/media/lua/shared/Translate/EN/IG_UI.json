@@ -469,6 +469,8 @@
     "IGUI_MinidoracatWatch_Sound_ScanPing": "Ping on scheduled scan updates",
     "IGUI_MinidoracatWatch_Sound_ScanPing_tooltip": "Plays a short ping when the minimap rescans zombie dots or vehicles and animals (once if both update together). Only plays when the server uses scheduled scans; live updates (the default) don't ping. Your watch must be able to use that feature.",
     "IGUI_MinidoracatWatch_Sound_ScanPing_old": "Needs a newer Minidoracat MiniMap: this version won't play the ping.",
+    "IGUI_MinidoracatWatch_ShowButton": "Show Map Watch button",
+    "IGUI_MinidoracatWatch_ShowButton_tooltip": "An on-screen button that opens or closes the Map Watch panel on click. It sits in the family toolbar. When hidden, right-click the map watch in your inventory and choose \"Open Map Watch\" to open the panel.",
     "IGUI_MinidoracatWatch_Admin_Shop": "Economy Center shop",
     "IGUI_MinidoracatWatch_Admin_Shop_desc": "Put map watches, modules and batteries up for sale in the Economy Center so players can buy them. This opens the Economy Center shop page with a draft for each item it doesn't sell yet; you set the prices, and nothing goes on sale until you apply.",
     "IGUI_MinidoracatWatch_Admin_ShopBtn": "Sell in Economy Center",

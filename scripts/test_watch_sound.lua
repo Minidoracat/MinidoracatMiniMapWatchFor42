@@ -26,6 +26,7 @@ local function installModOptions()
         return add(self, { type = "tickbox", id = id, name = name, value = value, tooltip = tip })
     end
     function Options:getOption(id) return self.dict[id] end
+    function Options:apply() end -- 原版預設空函式（ModOptions.lua:21-22），MainOptions 按套用時逐頁呼叫
     function MO:create(id, name)
         local o = setmetatable({ modOptionsID = id, name = name, data = {}, dict = {} }, Options)
         self.Data[#self.Data + 1], self.Dict[id] = o, o
@@ -332,11 +333,62 @@ local Snd2 = MinidoracatWatchSound
 check(Snd2.volume() == 70 and Snd2.scanPing() == false, "讀檔前是預設")
 MO2:load()
 check(Snd2.volume() == 45 and Snd2.scanPing() == true, "讀回：音量 45、掃描提示音開")
+
+-- ===== 工具列按鈕顯示（ShowButton，同一頁，預設顯示）=====
+F.installUI(15)
+F.load("client/MinidoracatWatch_Client.lua")
+local spec = F.dockSpec
+local page = MO2.Dict.MinidoracatWatch
+local showOpt = page:getOption("ShowButton")
+check(showOpt and showOpt.type == "tickbox" and showOpt.value == true and spec.isAvailable() == true,
+    "預設：勾選顯示，工具列有地圖錶入口")
+F.dockRefreshes = 0
+showOpt:setValue(false)
+check(spec.isAvailable() == true, "勾掉但還沒按套用：照舊顯示")
+page:apply()
+check(spec.isAvailable() == false and F.dockRefreshes == 1, "按套用：入口立刻消失、通知工具列重算")
+showOpt:setValue(true)
+page:apply()
+check(spec.isAvailable() == true and F.dockRefreshes == 2, "勾回來按套用：立刻恢復")
+SandboxVars.MinidoracatWatch.Enabled = false
+check(spec.isAvailable() == false, "地圖錶停用：勾著也不顯示（原本的條件照舊）")
+SandboxVars.MinidoracatWatch.Enabled = true
+showOpt:setValue("garbage")
+page:apply()
+check(spec.isAvailable() == true, "設定值不是布林（讀壞）：當顯示")
+showOpt:setValue(false)
+PZAPI.ModOptions:save()
+check(table.concat(ini, "\n"):find("tickbox|MinidoracatWatch|ShowButton|false", 1, true) ~= nil, "隱藏寫進 ModOptions.ini")
+local MO4 = installModOptions() -- 下次啟動
+F.load("client/MinidoracatWatch_Sound.lua")
+F.load("client/MinidoracatWatch_Client.lua")
+local spec4 = F.dockSpec
+check(spec4.isAvailable() == true, "讀檔前：預設顯示")
+MO4:load()
+F.fire("OnGameStart")
+check(spec4.isAvailable() == false, "進遊戲（OnGameStart 在原版讀檔之後）：讀回隱藏")
+MO4.Dict.MinidoracatWatch:getOption("ShowButton"):setValue(true)
+MO4.Dict.MinidoracatWatch:apply()
+check(spec4.isAvailable() == true, "再勾回來：恢復")
+-- 齒輪分類的同一個勾選：存檔後走同一個 apply（快取、ini、Dock 入口和 MODS 頁套用一致）
+local gearTick = MinidoracatWatchSound.SECTION.ticks[2]
+local function iniHas(s) return table.concat(ini, "\n"):find(s, 1, true) ~= nil end
+check(gearTick and gearTick.label == "IGUI_MinidoracatWatch_ShowButton" and gearTick.tooltip == "IGUI_MinidoracatWatch_ShowButton_tooltip"
+    and gearTick.default == true and gearTick.get() == true, "齒輪分類也有「顯示地圖錶按鈕」，預設勾、讀同一份設定")
+F.dockRefreshes = 0
+gearTick.set(false)
+check(spec4.isAvailable() == false and gearTick.get() == false and F.dockRefreshes == 1
+    and iniHas("tickbox|MinidoracatWatch|ShowButton|false"), "齒輪取消勾選：入口立刻消失、工具列重算、寫回 ModOptions.ini")
+gearTick.set(true)
+check(spec4.isAvailable() == true and gearTick.get() == true and F.dockRefreshes == 2
+    and iniHas("tickbox|MinidoracatWatch|ShowButton|true"), "齒輪勾回來：立刻恢復、寫回 ModOptions.ini")
 PZAPI = nil
 F.load("client/MinidoracatWatch_Sound.lua")
 local Snd3 = MinidoracatWatchSound
 Snd3.setVolume(10)
 F.reset()
 check(Snd3.volume() == 70 and Snd3.play(alice, Snd3.LIGHT) and last().volume == 0.7, "沒有 ModOptions：用預設、不出錯")
+F.fire("OnGameStart")
+check(spec4.isAvailable() == true, "沒有 ModOptions：工具列按鈕照常顯示")
 
 F.finish("test_watch_sound")

@@ -29,6 +29,9 @@ if PZAPI and PZAPI.ModOptions then
         "IGUI_MinidoracatWatch_Sound_Volume_tooltip")
     opts:addTickBox("ScanPing", "IGUI_MinidoracatWatch_Sound_ScanPing", false,
         "IGUI_MinidoracatWatch_Sound_ScanPing_tooltip")
+    -- 家族工具列的地圖錶按鈕（預設顯示；使用者 2026-10-08 裁定每個入口都要能隱藏）
+    opts:addTickBox("ShowButton", "IGUI_MinidoracatWatch_ShowButton", true,
+        "IGUI_MinidoracatWatch_ShowButton_tooltip")
 end
 
 local function opt(id, default)
@@ -49,6 +52,25 @@ function Snd.volume() return math.max(0, math.min(100, opt("Volume", Snd.VOLUME_
 function Snd.setVolume(v) if type(v) == "number" and v == v then setOpt("Volume", math.max(0, math.min(100, v))) end end
 function Snd.scanPing() return opt("ScanPing", false) end
 function Snd.setScanPing(on) setOpt("ScanPing", on == true) end
+
+-- 工具列按鈕顯示：Dock 的 isAvailable 可能每幀被叫，只讀這個快取（_Client 的 DOCK_SPEC）。
+-- 更新點：OnGameStart（原版 LoadMainScreenPanelIngame 先註冊、先跑 ModOptions:load，MainScreen.lua:2180、
+-- MainOptions.lua:2796）、按套用（MainOptions.lua:3760-3762 每頁 options:apply()）與齒輪分類的 set（存檔後走同一個
+-- apply）；讀不到＝顯示。
+Snd.showButton = true
+function Snd.loadShowButton()
+    Snd.showButton = opt("ShowButton", true)
+    local C = MinidoracatWatchClient
+    local ui = C and C.docked and C.ui()
+    if ui then ui.Dock.refresh() end
+end
+if opts then opts.apply = Snd.loadShowButton end
+Events.OnGameStart.Add(Snd.loadShowButton)
+function Snd.showButtonOpt() return opt("ShowButton", true) end
+function Snd.setShowButton(on)
+    setOpt("ShowButton", on == true)
+    if opts then opts:apply() end
+end
 
 -- ===== 播放 =====
 local warned = {}
@@ -121,7 +143,9 @@ Snd.SECTION = {
     sliders = { { label = "IGUI_MinidoracatWatch_Sound_Volume", tooltip = "IGUI_MinidoracatWatch_Sound_Volume_tooltip",
         min = 0, max = 100, step = 5, default = Snd.VOLUME_DEFAULT, fmt = "%d%%", get = Snd.volume, set = Snd.setVolume } },
     ticks = { { label = "IGUI_MinidoracatWatch_Sound_ScanPing", tooltip = "IGUI_MinidoracatWatch_Sound_ScanPing_tooltip",
-        default = false, get = Snd.scanPing, set = Snd.setScanPing } },
+        default = false, get = Snd.scanPing, set = Snd.setScanPing },
+        { label = "IGUI_MinidoracatWatch_ShowButton", tooltip = "IGUI_MinidoracatWatch_ShowButton_tooltip",
+        default = true, get = Snd.showButtonOpt, set = Snd.setShowButton } },
 }
 Snd.OWNER = W.MOD_ID .. ":player"
 

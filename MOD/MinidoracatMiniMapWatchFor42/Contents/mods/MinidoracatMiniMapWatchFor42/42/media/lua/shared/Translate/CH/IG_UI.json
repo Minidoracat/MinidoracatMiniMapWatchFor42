@@ -469,6 +469,8 @@
     "IGUI_MinidoracatWatch_Sound_ScanPing": "定時掃描更新時播提示音",
     "IGUI_MinidoracatWatch_Sound_ScanPing_tooltip": "小地圖的殭屍點位或載具與動物重新掃描、點位更新時響一聲（兩種同時更新只響一次）。伺服器設成定時掃描時才會播，即時更新（預設）不會播；錶要能用那項功能才會響。",
     "IGUI_MinidoracatWatch_Sound_ScanPing_old": "需要較新版本的 Minidoracat MiniMap：目前的版本不會播這個提示音。",
+    "IGUI_MinidoracatWatch_ShowButton": "顯示地圖錶按鈕",
+    "IGUI_MinidoracatWatch_ShowButton_tooltip": "畫面上的地圖錶按鈕，點擊即可開關地圖錶面板，放在家族工具列裡。隱藏後，在背包裡對地圖錶按右鍵、選「開啟地圖錶」就能打開面板。",
     "IGUI_MinidoracatWatch_Admin_Shop": "經濟中心商店",
     "IGUI_MinidoracatWatch_Admin_Shop_desc": "把地圖錶、模組和電池上架到經濟中心，玩家就能在商店購買。按下後會開啟經濟中心的商店頁，還沒上架的物品各建一筆草稿；價格由你填，按套用後才會上架。",
     "IGUI_MinidoracatWatch_Admin_ShopBtn": "到經濟中心上架",
