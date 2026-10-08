@@ -11,6 +11,8 @@ Without this mod installed, the minimap stays fully available as before. Works i
 [*] [b]Required:[/b] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3763913359]Minidoracat MiniMap for B42[/url]
 [*] [b]Required:[/b] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3789836701]Minidoracat UI for B42[/url]
 [*] [b]Optional:[/b] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3801482125]Minidoracat Economy[/url] (buy or rent paid slots with in-game currency on multiplayer servers)
+[*] [b]Add/remove mid-save:[/b] safe to add, but watches only appear in containers and corpses not searched yet; removing it deletes watches and modules
+[*] [b]Languages:[/b] 繁體中文, 简体中文, English, 日本語
 [/list]
 
 [h2]🚀 Quick start[/h2]
