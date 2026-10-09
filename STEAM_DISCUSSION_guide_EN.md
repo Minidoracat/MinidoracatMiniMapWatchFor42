@@ -2,7 +2,7 @@
 <!-- 討論串網址：尚未建立（首發後建） -->
 <!-- 標題：📖 Map Watch Guide: Getting Watches, Modules, Battery & Server Settings -->
 
-[b]繁體中文版：[/b]地圖錶 Map Watch 完整說明 (link added after release) | [b]日本語版：[/b]マップウォッチ 完全ガイド (link added after release)
+[b]繁體中文版：[/b]地圖手錶 Map Watch 完整說明 (link added after release) | [b]日本語版：[/b]マップウォッチ 完全ガイド (link added after release)
 
 [h2]🚀 Quick start[/h2]
 [olist]

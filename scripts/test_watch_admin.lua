@@ -192,7 +192,7 @@ do
     check(has(s, "擴充槽：目前沒有經濟系統，暫時改用解鎖卡"), "summary: economy tier without Economy falls back to cards")
     check(has(s, "電池：滿電約 72 小時（現實時間），離線時不耗電，暫停時不耗電"), "summary: battery line")
     check(has(s, "模組耗電：建議值，開燈時 +100%"), "summary: drains at defaults")
-    check(has(s, "戰利品：7 款地圖錶都會出現"), "summary: all seven styles in loot")
+    check(has(s, "戰利品：7 款地圖手錶都會出現"), "summary: all seven styles in loot")
     check(has(s, "殭屍掉落：10 條規則，每隻最多 1 件"), "summary: drops")
     check(has(s, "充電：只能換電池"), "summary: charge defaults to battery swaps only")
     s = M.summary(base, true)
@@ -205,7 +205,7 @@ do
     s = M.summary(d, true)
     check(has(s, "進階槽：經濟系統，但買斷和租用都沒有開放"), "summary: economy with nothing on sale")
     check(has(s, "模組耗電：已調整 1 項，開燈時 +100%"), "summary: tuned drains counted")
-    check(has(s, "殭屍掉落：關閉") and has(s, "戰利品：6 款地圖錶會出現"), "summary: drops off, six styles")
+    check(has(s, "殭屍掉落：關閉") and has(s, "戰利品：6 款地圖手錶會出現"), "summary: drops off, six styles")
     check(has(s, "充電：車上約 6 小時充滿"), "summary: charge line names the car hours")
     check(has(s, "沒電時：所有功能停用"), "summary: dead mode line")
     d.sb.SlotExtCard = true
@@ -213,11 +213,11 @@ do
         "summary: economy tier that also takes unlock cards")
     d.sb.NeedBattery = false
     s = M.summary(d, true)
-    check(has(s, "電池：不需要電池，地圖錶不會沒電") and not find(s, "充電：") and not find(s, "沒電時："),
+    check(has(s, "電池：不需要電池，地圖手錶不會沒電") and not find(s, "充電：") and not find(s, "沒電時："),
         "summary: no battery needed replaces the battery, drain and charge lines")
     d.sb.Enabled = false
     s = M.summary(d, true)
-    check(#s == 1 and s[1] == "地圖錶：已停用，所有功能都和現在一樣，不需要錶", "summary: disabled is a single line")
+    check(#s == 1 and s[1] == "地圖手錶：已停用，所有功能都和現在一樣，不需要錶", "summary: disabled is a single line")
 end
 
 -- ===== 3. 這次會改變什麼（原本 → 改成）=====
@@ -232,11 +232,11 @@ do
     table.remove(d.drops, 1)
     d.drops[#d.drops + 1] = { group = "custom", outfits = { "HazardSuit", "Bandit" }, item = "card:core", chance = 0.5 }
     lines, warn, n = M.diff(base, d)
-    check(has(lines, "滿電可用時間（小時）：從 72 改成 48（所有地圖錶的剩餘時間照比例改變）"), "diff: full hours with note")
+    check(has(lines, "滿電可用時間（小時）：從 72 改成 48（所有地圖手錶的剩餘時間照比例改變）"), "diff: full hours with note")
     check(has(lines, "殭屍點位：從 需要偵測模組 改成 關閉這個功能（所有人都用不到）"), "diff: rule names both sides")
     check(has(lines, "戰利品：模組的數量：從 一般 改成 很少"), "diff: enum uses the sandbox option names")
     check(find(lines, "核心槽：每期租金：從 300 改成 500") ~= nil, "diff: price")
-    check(has(lines, "刪除掉落規則：所有殭屍每隻有 0.2% 機率掉落ValuTech 地圖錶")
+    check(has(lines, "刪除掉落規則：所有殭屍每隻有 0.2% 機率掉落ValuTech 地圖手錶")
         or find(lines, "刪除掉落規則：所有殭屍每隻有 0.2% 機率掉落") ~= nil, "diff: removed drop rule as a sentence")
     check(find(lines, "新增掉落規則：穿 HazardSuit, Bandit 的殭屍每隻有 0.5% 機率掉落") ~= nil, "diff: added custom rule")
     check(warn and lines[#lines]:find("重新同意", 1, true) ~= nil and n == #lines - 1,

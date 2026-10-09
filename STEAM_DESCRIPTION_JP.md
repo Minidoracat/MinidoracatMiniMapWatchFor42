@@ -12,7 +12,7 @@
 [*] [b]必須：[/b][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3789836701]Minidoracat UI for B42[/url]
 [*] [b]任意：[/b][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3801482125]Minidoracat Economy[/url]（マルチプレイサーバーでゲーム内通貨を使い、有料スロットを買い切り・レンタル）
 [*] [b]途中追加・削除：[/b]追加は可能ですが、マップウォッチはまだ探していないコンテナと死体にしか出ません。削除するとウォッチとモジュールは消えます
-[*] [b]対応言語：[/b]繁體中文、简体中文、English、日本語
+[*] [b]対応言語：[/b]繁體中文、简体中文、English、日本語、한국어、Русский、Español、Português、Türkçe、Français、Polski、Deutsch（翻訳の問題はお知らせください）
 [/list]
 
 [h2]🚀 クイックスタート[/h2]
@@ -42,6 +42,10 @@
 [list]
 [*] [url=https://discord.gg/Gur2V67]Discord[/url]
 [/list]
+
+[h2]☕ 作者を応援[/h2]
+常に無料、ソースはGitHubで公開。ご支援はサーバーとMOD開発に使います。
+[url=https://ko-fi.com/minidoracat][img]https://raw.githubusercontent.com/Minidoracat/workshop-resources/refs/heads/main/badges/badge_kofi.png[/img][/url] [url=https://github.com/Minidoracat/MinidoracatMiniMapWatchFor42][img]https://raw.githubusercontent.com/Minidoracat/workshop-resources/refs/heads/main/badges/badge_github.png[/img][/url]
 
 [b]#Minidoracat[/b]
 

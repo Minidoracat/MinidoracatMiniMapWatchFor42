@@ -1,6 +1,6 @@
 name=Minidoracat MiniMap - Map Watch for B42
 id=MinidoracatMiniMapWatchFor42
-description=[B42]戴上地圖錶才能用小地圖；裝模組解鎖導航、資源點、殭屍偵測與隊友分享，電池以現實時間計算，管理員可調整規則與付費槽位。By Minidoracat
+description=[B42]戴上地圖手錶才能用小地圖；裝模組解鎖導航、資源點、殭屍偵測與隊友分享，電池以現實時間計算，管理員可調整規則與付費槽位。By Minidoracat
 poster=poster.png
 require=MinidoracatUIFor42,MinidoracatMiniMapFor42
 modversion=42.21.0-0.1.0

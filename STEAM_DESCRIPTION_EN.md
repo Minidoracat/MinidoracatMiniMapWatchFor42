@@ -12,7 +12,7 @@ Without this mod installed, the minimap stays fully available as before. Works i
 [*] [b]Required:[/b] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3789836701]Minidoracat UI for B42[/url]
 [*] [b]Optional:[/b] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3801482125]Minidoracat Economy[/url] (buy or rent paid slots with in-game currency on multiplayer servers)
 [*] [b]Add/remove mid-save:[/b] safe to add, but watches only appear in containers and corpses not searched yet; removing it deletes watches and modules
-[*] [b]Languages:[/b] 繁體中文, 简体中文, English, 日本語
+[*] [b]Languages:[/b] 繁體中文, 简体中文, English, 日本語, 한국어, Русский, Español, Português, Türkçe, Français, Polski, Deutsch (please report any translation issues)
 [/list]
 
 [h2]🚀 Quick start[/h2]
@@ -42,6 +42,11 @@ All my mods are in the [url=https://steamcommunity.com/sharedfiles/filedetails/?
 [list]
 [*] [url=https://discord.gg/Gur2V67]Discord[/url]
 [/list]
+
+[h2]☕ Support the author[/h2]
+If this helped, a 👍 on this page and a ⭐ on GitHub help other players find it.
+Always free; source on GitHub. Tips fund servers and mod development.
+[url=https://ko-fi.com/minidoracat][img]https://raw.githubusercontent.com/Minidoracat/workshop-resources/refs/heads/main/badges/badge_kofi.png[/img][/url] [url=https://github.com/Minidoracat/MinidoracatMiniMapWatchFor42][img]https://raw.githubusercontent.com/Minidoracat/workshop-resources/refs/heads/main/badges/badge_github.png[/img][/url]
 
 [b]#Minidoracat[/b]
 

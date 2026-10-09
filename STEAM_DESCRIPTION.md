@@ -1,9 +1,9 @@
-[h1]⌚ Minidoracat 小地圖 - 地圖錶 Map Watch[/h1]
+[h1]⌚ Minidoracat 小地圖 - 地圖手錶 Map Watch[/h1]
 [h3]By Minidoracat[/h3]
 
 [hr][/hr]
 
-戴上地圖錶才能用小地圖，裝上模組解鎖導航、殭屍偵測等功能。
+戴上地圖手錶才能用小地圖，裝上模組解鎖導航、殭屍偵測等功能。
 沒有安裝本 MOD 時，小地圖照舊全部開放。單人與多人都能用。
 
 [h2]📦 需要安裝[/h2]
@@ -11,14 +11,14 @@
 [*] [b]必裝：[/b][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3763913359]Minidoracat MiniMap for B42[/url]
 [*] [b]必裝：[/b][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3789836701]Minidoracat UI for B42[/url]
 [*] [b]選裝：[/b][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3801482125]Minidoracat Economy[/url]（多人伺服器用遊戲幣買斷或租用付費槽位）
-[*] [b]中途加入／移除：[/b]可加入，但地圖錶只出現在還沒搜過的容器與屍體；移除後錶與模組會消失
-[*] [b]介面語言：[/b]繁體中文、简体中文、English、日本語
+[*] [b]中途加入／移除：[/b]可加入，但地圖手錶只出現在還沒搜過的容器與屍體；移除後錶與模組會消失
+[*] [b]介面語言：[/b]繁體中文、简体中文、English、日本語、한국어、Русский、Español、Português、Türkçe、Français、Polski、Deutsch（翻譯有問題請回報）
 [/list]
 
 [h2]🚀 快速上手[/h2]
 [olist]
-[*] 搜刮或從殭屍身上取得地圖錶，戴上就能用小地圖
-[*] 點家族工具列的「地圖錶」按鈕打開面板，也可以在錶上按右鍵「開啟地圖錶」
+[*] 搜刮或從殭屍身上取得地圖手錶，戴上就能用小地圖
+[*] 點家族工具列的「地圖手錶」按鈕打開面板，也可以在錶上按右鍵「開啟地圖手錶」
 [*] 把模組拖到面板的槽位上安裝，解鎖更多功能
 [*] 沒電時在面板按「裝入電池」或「更換電池」
 [/olist]
@@ -42,6 +42,11 @@
 [list]
 [*] [url=https://discord.gg/Gur2V67]Discord[/url]
 [/list]
+
+[h2]☕ 支持作者[/h2]
+覺得有幫助的話，請在這頁按個 👍 讚、到 GitHub 給個 ⭐ 星星，讓更多玩家找得到它。
+MOD 永遠免費，原始碼公開在 GitHub。贊助用於伺服器與 MOD 開發。
+[url=https://ko-fi.com/minidoracat][img]https://raw.githubusercontent.com/Minidoracat/workshop-resources/refs/heads/main/badges/badge_kofi.png[/img][/url] [url=https://github.com/Minidoracat/MinidoracatMiniMapWatchFor42][img]https://raw.githubusercontent.com/Minidoracat/workshop-resources/refs/heads/main/badges/badge_github.png[/img][/url]
 
 [b]#Minidoracat[/b]
 
