@@ -24,6 +24,7 @@
     "IGUI_MinidoracatWatch_TimeDaysHours": "%1 j %2 h",
     "IGUI_MinidoracatWatch_Status_ChargeUnderHour": "Pile %1%%, moins d'1 heure restante",
     "IGUI_MinidoracatWatch_Reason_FeatureOff": "Le serveur a désactivé cette fonction",
+    "IGUI_MinidoracatWatch_Reason_ServerOff": "Non activé sur le serveur (réglages de la mini-carte)",
     "IGUI_MinidoracatWatch_Reason_NeedWatch": "Portez une montre-carte pour utiliser ceci",
     "IGUI_MinidoracatWatch_Reason_Paused": "L'emplacement du module n'est pas ouvert",
     "IGUI_MinidoracatWatch_Reason_Need_ledger": "Nécessite le Module répertoire",

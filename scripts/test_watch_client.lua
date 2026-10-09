@@ -592,6 +592,28 @@ check(F.draws >= 40, "面板畫出錶面、槽位、檢視區、功能清單與�
 local iconSet = {}
 for _, k in ipairs(F.icons) do iconSet[k] = true end
 check(iconSet.lock and iconSet.check and iconSet.battery, "鎖、功能勾、電池都用 UI.Icons，不自己畫")
+-- 主 MOD 回報伺服器把這項功能整個關了（featureApiVersion 2 的 featureServerOff）：功能清單寫「伺服器未開放」、打叉
+local function featOf(id)
+    for _, f in ipairs(panel:buildFeatures()) do
+        if f.label == "IGUI_MinidoracatWatch_Feature_" .. id then return f end
+    end
+end
+local OFF = "IGUI_MinidoracatWatch_Reason_ServerOff"
+local mainApi = MinidoracatMiniMapAPI
+local off = { zombie = true }
+MinidoracatMiniMapAPI = { featureApiVersion = 2, featureServerOff = function(f) return off[f] == true end }
+local z = featOf("zombie")
+check(z.ok == false and z.icon == "close" and z.note == OFF, "伺服器關了殭屍點位：功能清單寫伺服器未開放、打叉")
+check(featOf("scan").note ~= OFF, "伺服器沒關的功能照舊")
+MinidoracatMiniMapAPI = { featureApiVersion = 1, featureServerOff = function() return true end }
+check(featOf("zombie").note ~= OFF, "主 MOD 舊於 v2：不問 featureServerOff")
+F.reset()
+MinidoracatMiniMapAPI = { featureApiVersion = 2, featureServerOff = function() error("boom") end }
+check(featOf("zombie").note ~= OFF and featOf("scan").note ~= OFF, "featureServerOff 拋錯：當作沒關")
+local offLogs = 0
+for _, l in ipairs(F.logs) do if l:find("featureServerOff", 1, true) then offLogs = offLogs + 1 end end
+check(offLogs == 1, "拋錯只 log 一次")
+MinidoracatMiniMapAPI = mainApi
 F.reset()
 act("remove"):forceClick()
 check(F.queues[p][1] and F.queues[p][1].kind == "module" and F.queues[p][1].install == false

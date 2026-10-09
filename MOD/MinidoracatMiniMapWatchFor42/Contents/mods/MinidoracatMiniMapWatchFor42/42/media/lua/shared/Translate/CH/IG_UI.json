@@ -24,6 +24,7 @@
     "IGUI_MinidoracatWatch_TimeDaysHours": "%1 天 %2 小時",
     "IGUI_MinidoracatWatch_Status_ChargeUnderHour": "電量 %1%%，剩不到 1 小時",
     "IGUI_MinidoracatWatch_Reason_FeatureOff": "伺服器關閉了這個功能",
+    "IGUI_MinidoracatWatch_Reason_ServerOff": "伺服器未開放（小地圖設定）",
     "IGUI_MinidoracatWatch_Reason_NeedWatch": "要戴上地圖手錶才能用",
     "IGUI_MinidoracatWatch_Reason_Paused": "模組所在的槽位沒有開啟",
     "IGUI_MinidoracatWatch_Reason_Need_ledger": "需要名錄模組",

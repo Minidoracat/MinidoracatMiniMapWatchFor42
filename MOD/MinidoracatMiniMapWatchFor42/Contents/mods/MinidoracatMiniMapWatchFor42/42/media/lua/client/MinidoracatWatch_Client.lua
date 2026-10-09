@@ -19,6 +19,26 @@ end
 Events.OnClothingUpdated.Add(function() W.invalidate() end)
 
 -- ===== 功能閘門 =====
+-- 伺服器的小地圖設定把這項功能整個關了（主 MOD featureApiVersion 2 的 featureServerOff；目前只有 zombie、scan 會回 true）：
+-- 偵測、掃描模組裝了也沒有作用，面板改寫「伺服器未開放」。主 MOD 較舊、沒有這個函式或拋錯＝當作沒關（拋錯只 log 一次）。
+local serverOffErrLogged = false
+function C.serverOff(feature)
+    local api = MinidoracatMiniMapAPI
+    if type(api) ~= "table" or type(api.featureApiVersion) ~= "number" or api.featureApiVersion < 2
+            or type(api.featureServerOff) ~= "function" then
+        return false
+    end
+    local ok, off = pcall(api.featureServerOff, feature)
+    if not ok then
+        if not serverOffErrLogged then
+            serverOffErrLogged = true
+            W.log("MinidoracatMiniMapAPI.featureServerOff failed: " .. tostring(off))
+        end
+        return false
+    end
+    return off == true
+end
+
 -- 自駕 GPS「任一即可」：AutoDrive 的 hasNavDevice（隨身充電 GPS 或所在車輛有電的 GPS）也放行 nav；
 -- 規則是「關閉」時一律擋。守衛：表存在、版本 >= 1、函式存在，pcall（拋錯當沒有、只 log 一次）。
 local navErrLogged = false

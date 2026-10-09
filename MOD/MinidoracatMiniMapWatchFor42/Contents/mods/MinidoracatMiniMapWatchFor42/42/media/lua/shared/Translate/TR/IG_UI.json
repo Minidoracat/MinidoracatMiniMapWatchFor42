@@ -24,6 +24,7 @@
     "IGUI_MinidoracatWatch_TimeDaysHours": "%1 g %2 sa",
     "IGUI_MinidoracatWatch_Status_ChargeUnderHour": "Pil %%%1, 1 saatten az kaldı",
     "IGUI_MinidoracatWatch_Reason_FeatureOff": "Sunucu bu özelliği devre dışı bıraktı",
+    "IGUI_MinidoracatWatch_Reason_ServerOff": "Sunucuda kapalı (mini harita ayarları)",
     "IGUI_MinidoracatWatch_Reason_NeedWatch": "Bunu kullanmak için bir harita saati takın",
     "IGUI_MinidoracatWatch_Reason_Paused": "Modülün yuvası açık değil",
     "IGUI_MinidoracatWatch_Reason_Need_ledger": "Rehber Modülü gerekli",

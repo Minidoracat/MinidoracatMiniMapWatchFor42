@@ -24,6 +24,7 @@
     "IGUI_MinidoracatWatch_TimeDaysHours": "%1일 %2시간",
     "IGUI_MinidoracatWatch_Status_ChargeUnderHour": "배터리 %1%%, 1시간 미만 남음",
     "IGUI_MinidoracatWatch_Reason_FeatureOff": "서버에서 이 기능을 비활성화했습니다",
+    "IGUI_MinidoracatWatch_Reason_ServerOff": "서버에서 허용하지 않음(미니맵 설정)",
     "IGUI_MinidoracatWatch_Reason_NeedWatch": "사용하려면 지도 시계를 착용하세요",
     "IGUI_MinidoracatWatch_Reason_Paused": "모듈이 장착된 슬롯이 열려 있지 않습니다",
     "IGUI_MinidoracatWatch_Reason_Need_ledger": "디렉터리 모듈이 필요합니다",

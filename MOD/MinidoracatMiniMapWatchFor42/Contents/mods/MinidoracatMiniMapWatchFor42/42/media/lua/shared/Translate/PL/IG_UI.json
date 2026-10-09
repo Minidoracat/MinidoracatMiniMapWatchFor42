@@ -24,6 +24,7 @@
     "IGUI_MinidoracatWatch_TimeDaysHours": "%1 d %2 h",
     "IGUI_MinidoracatWatch_Status_ChargeUnderHour": "Bateria %1%%, zostało poniżej 1 h",
     "IGUI_MinidoracatWatch_Reason_FeatureOff": "Serwer wyłączył tę funkcję",
+    "IGUI_MinidoracatWatch_Reason_ServerOff": "Wyłączone na serwerze (ustawienia minimapy)",
     "IGUI_MinidoracatWatch_Reason_NeedWatch": "Załóż zegarek z mapą, aby tego używać",
     "IGUI_MinidoracatWatch_Reason_Paused": "Gniazdo modułu nie jest otwarte",
     "IGUI_MinidoracatWatch_Reason_Need_ledger": "Wymaga Modułu katalogu",

@@ -24,6 +24,7 @@
     "IGUI_MinidoracatWatch_TimeDaysHours": "%1 дн. %2 ч",
     "IGUI_MinidoracatWatch_Status_ChargeUnderHour": "Заряд %1%%, осталось меньше 1 ч",
     "IGUI_MinidoracatWatch_Reason_FeatureOff": "Сервер отключил эту функцию",
+    "IGUI_MinidoracatWatch_Reason_ServerOff": "Отключено на сервере (настройки мини-карты)",
     "IGUI_MinidoracatWatch_Reason_NeedWatch": "Для этого наденьте часы с картой",
     "IGUI_MinidoracatWatch_Reason_Paused": "Ячейка этого модуля не открыта",
     "IGUI_MinidoracatWatch_Reason_Need_ledger": "Нужен Модуль каталога",

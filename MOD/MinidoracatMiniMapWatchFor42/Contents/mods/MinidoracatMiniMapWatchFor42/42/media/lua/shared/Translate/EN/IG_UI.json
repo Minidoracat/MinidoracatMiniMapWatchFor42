@@ -24,6 +24,7 @@
     "IGUI_MinidoracatWatch_TimeDaysHours": "%1 d %2 h",
     "IGUI_MinidoracatWatch_Status_ChargeUnderHour": "Battery %1%%, under 1 hour left",
     "IGUI_MinidoracatWatch_Reason_FeatureOff": "The server has disabled this feature",
+    "IGUI_MinidoracatWatch_Reason_ServerOff": "Not enabled on this server (minimap settings)",
     "IGUI_MinidoracatWatch_Reason_NeedWatch": "Wear a map watch to use this",
     "IGUI_MinidoracatWatch_Reason_Paused": "The module's slot isn't open",
     "IGUI_MinidoracatWatch_Reason_Need_ledger": "Requires the Directory Module",

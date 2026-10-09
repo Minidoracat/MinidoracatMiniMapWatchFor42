@@ -645,10 +645,12 @@ function M:buildActions(player, watch, slot)
 end
 
 -- 功能清單：{ 標籤, 說明, 圖示 }（可用＝勾、停用＝暫停、缺模組／沒開放＝叉）
+-- 伺服器的小地圖設定把這項功能整個關了（C.serverOff）時一律寫「伺服器未開放」：裝了模組也沒有作用，讓玩家與管理員知道要去開
 function M:buildFeatures()
     local out = {}
     for _, f in ipairs(FEATURES) do
         local ok, reason = C.gate(self.playerNum, f, "mini")
+        if C.serverOff(f) then ok, reason = false, "IGUI_MinidoracatWatch_Reason_ServerOff" end
         local icon = ok and "check" or (PAUSE_REASONS[reason] and "pause" or "close")
         local label, note = getText("IGUI_MinidoracatWatch_Feature_" .. f), (not ok and reason) and getText(reason) or nil
         local w = 10 + 16 + 5 + measure(label) + (note and 6 + measure(note) or 0) + 10

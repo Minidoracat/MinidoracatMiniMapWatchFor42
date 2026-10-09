@@ -24,6 +24,7 @@
     "IGUI_MinidoracatWatch_TimeDaysHours": "%1 日 %2 時間",
     "IGUI_MinidoracatWatch_Status_ChargeUnderHour": "電池残量 %1%%、残り 1 時間未満",
     "IGUI_MinidoracatWatch_Reason_FeatureOff": "サーバーがこの機能を無効にしています",
+    "IGUI_MinidoracatWatch_Reason_ServerOff": "サーバーで無効（ミニマップ設定）",
     "IGUI_MinidoracatWatch_Reason_NeedWatch": "使うにはマップウォッチを着けてください",
     "IGUI_MinidoracatWatch_Reason_Paused": "モジュールのスロットが開放されていません",
     "IGUI_MinidoracatWatch_Reason_Need_ledger": "ディレクトリモジュールが必要です",

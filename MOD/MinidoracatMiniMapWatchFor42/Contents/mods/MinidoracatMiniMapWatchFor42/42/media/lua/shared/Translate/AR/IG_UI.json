@@ -24,6 +24,7 @@
     "IGUI_MinidoracatWatch_TimeDaysHours": "%1 d %2 h",
     "IGUI_MinidoracatWatch_Status_ChargeUnderHour": "Pila al %1%%, queda menos de 1 hora",
     "IGUI_MinidoracatWatch_Reason_FeatureOff": "El servidor desactivó esta función",
+    "IGUI_MinidoracatWatch_Reason_ServerOff": "No habilitado en el servidor (ajustes del minimapa)",
     "IGUI_MinidoracatWatch_Reason_NeedWatch": "Ponte un reloj de mapa para usar esto",
     "IGUI_MinidoracatWatch_Reason_Paused": "El espacio del módulo no está abierto",
     "IGUI_MinidoracatWatch_Reason_Need_ledger": "Requiere el Módulo de directorio",
