@@ -139,7 +139,7 @@ check(H.titleStatus(0) == "IGUI_MinidoracatWatch_TitleLapsedOnly", "不需要電
 SB.NeedBattery = nil
 
 -- ===== 物品停留說明：文字 =====
-put(wa, "std1", "compass", "Compass")
+put(wa, "std1", "detect", "Detect")
 W.clientPay.alice = { ext = true }
 econ(rental("r1", F.now + 3 * 86400000))
 SB.SlotCore, SB.SlotAdv = 2, 1 -- 核心槽＝解鎖卡、沒開；進階槽免費
@@ -149,7 +149,7 @@ local function texts(ls) local o = {} for i, l in ipairs(ls) do o[i] = l[1] end 
 local s = texts(lines)
 check(lines[1][1] == "IGUI_MinidoracatWatch_Status_Charge|60|" .. C.timeText(0.6, C.fullRuntime(alice, wa))
     and lines[1][2] == false, "地圖錶：電量與大約還能用多久")
-check(s:find("Tip_Modules|IGUI_MinidoracatWatch_Module_compassIGUI_MinidoracatWatch_ListSepIGUI_MinidoracatWatch_Tip_ModuleRent|IGUI_MinidoracatWatch_Module_scan", 1, true)
+check(s:find("Tip_Modules|IGUI_MinidoracatWatch_Module_detectIGUI_MinidoracatWatch_ListSepIGUI_MinidoracatWatch_Tip_ModuleRent|IGUI_MinidoracatWatch_Module_scan", 1, true)
     ~= nil, "已裝模組：租用中的標註")
 check(s:find("Tip_PaidSlot|IGUI_MinidoracatWatch_Slot_ext|IGUI_MinidoracatWatch_St_rent", 1, true)
     and s:find("Tip_PaidSlot|IGUI_MinidoracatWatch_Slot_core|IGUI_MinidoracatWatch_St_locked", 1, true)
@@ -189,21 +189,21 @@ lines = H.tipLines(alice, wa)
 check(lines[1][1] == "IGUI_MinidoracatWatch_Status_NoBatteryNeeded" and lines[1][2] == false, "不需要電池")
 SB.NeedBattery = nil
 -- 模組物品
-local compass = alice.inv:AddItem(MOD("Compass"))
-s = texts(H.tipLines(alice, compass))
+local ledger = alice.inv:AddItem(MOD("Ledger"))
+s = texts(H.tipLines(alice, ledger))
 check(s == "IGUI_MinidoracatWatch_KV_Class|IGUI_MinidoracatWatch_Class_standard\nIGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainPlus|10\n"
-    .. "IGUI_MinidoracatWatch_Tip_Feature|IGUI_MinidoracatWatch_Feature_arrow", "模組：類別、耗電、功能")
+    .. "IGUI_MinidoracatWatch_Tip_Feature|IGUI_MinidoracatWatch_Feature_poi", "模組：類別、耗電、功能")
 check(#H.tipLines(alice, alice.inv:AddItem(MOD("Eco"))) == 2, "節能核心：沒有對應功能，不寫功能列")
 check(H.tipLines(alice, alice.inv:AddItem("Base.Apple")) == nil, "其他物品：不加")
 check(H.tipLines(alice, { getEnergy = function() end }) == nil, "不是物品（ISEnergyBar 的電力資源）：不碰")
 SB.Enabled = false
 step(300)
-check(H.tipLines(alice, compass) == nil, "系統關閉：不加")
+check(H.tipLines(alice, ledger) == nil, "系統關閉：不加")
 SB.Enabled = nil
 
 -- ===== 物品停留說明：疊法 =====
 F.fire("OnGameStart")
-local tipObj = setmetatable({ width = 120, y = 300, item = compass, backgroundColor = { r = 0, g = 0, b = 0, a = 0.5 },
+local tipObj = setmetatable({ width = 120, y = 300, item = ledger, backgroundColor = { r = 0, g = 0, b = 0, a = 0.5 },
     borderColor = { r = 1, g = 1, b = 1, a = 1 },
     tooltip = { getFont = function() return "S" end, getCharacter = function() return alice end } }, ISToolTipInv)
 drawn = {}
@@ -225,7 +225,7 @@ tipObj.item = alice.inv:AddItem("Base.Apple")
 drawn = {}
 tipObj:render()
 check(#drawn == 3, "不是地圖錶或模組：只有下游")
-tipObj.item = compass
+tipObj.item = ledger
 otherBoom = true
 local ok, err = pcall(tipObj.render, tipObj)
 check(not ok and tostring(err):find("other mod failed", 1, true) and rawget(tipObj, "drawRect") == nil,
@@ -444,15 +444,15 @@ check(AU.shopApi() == CL, "rev 4＋shopAdd：可以上架")
 local items = AU.shopItems()
 local want = { [W.BATTERY_TYPE] = true }
 for _, st in ipairs(W.STYLES) do want[W.watchType(st)] = true end
-for _, b in ipairs({ "Compass", "Ledger", "GPS", "Comm", "Scan", "Detect", "MilDetect", "LongComm", "Relay", "Eco", "Light" }) do
+for _, b in ipairs({ "Ledger", "GPS", "Comm", "Scan", "Detect", "MilDetect", "LongComm", "Relay", "Eco", "Light" }) do
     want[MOD(b)] = true
 end
-local all = #items == 19
+local all = #items == 18
 for _, t in ipairs(items) do all = all and want[t] == true and not t:find("UnlockCard", 1, true) and not t:find("_Right", 1, true) end
-check(all, "上架清單：七款地圖錶（左手款）、十一個模組（含照明）、電池；沒有解鎖卡")
+check(all, "上架清單：七款地圖錶（左手款）、十個模組（含照明）、電池；沒有解鎖卡")
 F.reset()
 AU.openShop({ player = alice })
-check(#shopCalls == 1 and shopCalls[1].src == W.MOD_ID and #shopCalls[1].items == 19 and #F.halos == 0, "按下：交給 Economy、成功不提示")
+check(#shopCalls == 1 and shopCalls[1].src == W.MOD_ID and #shopCalls[1].items == 18 and #F.halos == 0, "按下：交給 Economy、成功不提示")
 shopReply = { false, "forbidden" }
 AU.openShop({ player = alice })
 check(F.halos[1] and F.halos[1].text == "IGUI_MinidoracatWatch_Admin_ShopForbidden", "沒有經濟中心的管理權限：提示")

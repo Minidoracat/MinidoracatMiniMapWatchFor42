@@ -18,8 +18,7 @@ function MinidoracatWatch_Recipe.canCraft() -- verify 第 18 項依這個寫法�
     return W.enabled() and W.sandbox("AllowCraft", true) ~= false
 end
 
-R.RECIPES = { "CraftMinidoracatWatchCompass", "CraftMinidoracatWatchLedger", "CraftMinidoracatWatchComm",
-    "CraftMinidoracatWatchLight" }
+R.RECIPES = { "CraftMinidoracatWatchLedger", "CraftMinidoracatWatchComm", "CraftMinidoracatWatchLight" }
 R.POLL_MS = 2000
 
 function R.level()

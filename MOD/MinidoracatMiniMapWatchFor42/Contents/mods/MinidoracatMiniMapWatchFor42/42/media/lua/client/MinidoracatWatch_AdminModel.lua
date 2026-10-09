@@ -16,7 +16,7 @@ M.T = T
 local B, I, E = "bool", "int", "enum"
 M.FIELDS = {
     -- features
-    { "Enabled", B, nil, nil, true }, { "MinimapRule", E, 1, 3, 2 }, { "RuleArrow", E, 1, 4, 3 },
+    { "Enabled", B, nil, nil, true }, { "MinimapRule", E, 1, 3, 2 },
     { "RulePoi", E, 1, 4, 3 }, { "RuleNav", E, 1, 4, 3 }, { "RuleShare", E, 1, 4, 3 }, { "RuleScan", E, 1, 4, 3 },
     { "RuleZombie", E, 1, 4, 3 }, { "RuleLight", E, 1, 2, 1 }, { "ScanRadius", I, 1, 1000, 60 },
     { "DetectRadius", I, 1, 1000, 40 }, { "MilDetectRadius", I, 1, 1000, 80 }, { "CommRange", I, 1, 50000, 2000 },
@@ -38,7 +38,7 @@ M.FIELDS = {
     { "NeedBattery", B, nil, nil, true }, { "DeadMode", E, 1, 2, 1 }, { "FullHours", I, 1, 720, 72 },
     { "DrainOffline", B, nil, nil, false }, { "DrainPaused", B, nil, nil, false },
     { "ChargeCar", B, nil, nil, false }, { "CarHours", I, 1, 168, 6 }, { "ChargeHouse", B, nil, nil, false },
-    { "HouseHours", I, 1, 168, 12 }, { "DrainCompass", I, 0, 1000, 10 }, { "DrainLedger", I, 0, 1000, 10 },
+    { "HouseHours", I, 1, 168, 12 }, { "DrainLedger", I, 0, 1000, 10 },
     { "DrainGPS", I, 0, 1000, 25 }, { "DrainComm", I, 0, 1000, 25 }, { "DrainScan", I, 0, 1000, 25 },
     { "DrainDetect", I, 0, 1000, 50 }, { "DrainMilDetect", I, 0, 1000, 50 }, { "DrainLongComm", I, 0, 1000, 25 },
     { "DrainRelay", I, 0, 1000, 25 }, { "LightDrain", I, 0, 1000, 100 },
@@ -58,7 +58,7 @@ end
 -- 功能規則（設計稿 FEATURE_RULES）：沙盒值 → free／watch／module／off
 M.FEATURES = {
     { id = "minimap", key = "MinimapRule", values = { "free", "watch", "off" } },
-    { id = "arrow", key = "RuleArrow" }, { id = "poi", key = "RulePoi" }, { id = "nav", key = "RuleNav" },
+    { id = "poi", key = "RulePoi" }, { id = "nav", key = "RuleNav" },
     { id = "share", key = "RuleShare" }, { id = "scan", key = "RuleScan" }, { id = "zombie", key = "RuleZombie" },
     { id = "light", key = "RuleLight", values = { "module", "off" } },
 }
@@ -69,7 +69,7 @@ for _, f in ipairs(M.FEATURES) do f.values = f.values or RULE4 end
 M.TIERS = { { id = "ext", key = "SlotExt" }, { id = "adv", key = "SlotAdv" }, { id = "core", key = "SlotCore" } }
 M.MODES = { "free", "card", "econ", "off" } -- 沙盒值 1..4
 -- 內建模組的耗電鍵（面板順序）；照明另外是 LightDrain（開燈時）
-M.DRAINS = { { "compass", "DrainCompass" }, { "ledger", "DrainLedger" }, { "gps", "DrainGPS" }, { "comm", "DrainComm" },
+M.DRAINS = { { "ledger", "DrainLedger" }, { "gps", "DrainGPS" }, { "comm", "DrainComm" },
     { "scan", "DrainScan" }, { "detect", "DrainDetect" }, { "mildetect", "DrainMilDetect" },
     { "longcomm", "DrainLongComm" }, { "relay", "DrainRelay" } }
 M.LOOT_STYLES = { "ValuTech", "Paws", "Nexus", "Spiffo", "Ranger", "Luthex", "BB3000" } -- 沙盒 Loot<款>
@@ -256,8 +256,8 @@ function M.itemOptions()
 end
 
 -- 續航試算（設計稿 runtimeHours／fmtH）：滿電小時 ÷（1＋Σ耗電%÷100，開燈再加照明%），節能核心 ×2
-M.SAMPLE_THREE = { "compass", "gps", "scan" }
-M.SAMPLE_FULL = { "compass", "gps", "light", "scan", "mildetect", "relay" }
+M.SAMPLE_THREE = { "ledger", "gps", "scan" }
+M.SAMPLE_FULL = { "ledger", "gps", "light", "scan", "mildetect", "relay" }
 function M.drainOf(s, id)
     for _, d in ipairs(M.DRAINS) do
         if d[1] == id then return s.sb[d[2]] or 0 end

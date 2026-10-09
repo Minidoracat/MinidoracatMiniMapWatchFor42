@@ -253,10 +253,12 @@ check(W.applyLight(s, false) == true and emitters(s) == 0 and s:getAttachedItem(
 F.mode = "client"
 F.players = {}
 F.keys = {}
+F.keyIs = {} -- KeybindId → 綁的鍵（getCore():isKey）
 function getCore()
     return { getScreenWidth = function() return 1920 end, getScreenHeight = function() return 1080 end,
-        getKey = function(_, name) return F.keys[name] end }
+        getKey = function(_, name) return F.keys[name] end, isKey = function(_, id, k) return F.keyIs[id] == k end }
 end
+KeybindId = { LIGHT_SOURCE = "LIGHT_SOURCE", TOGGLE_VEHICLE_HEADLIGHTS = "TOGGLE_VEHICLE_HEADLIGHTS" }
 keyBinding = {}
 Keyboard.KEY_SCROLL, Keyboard.KEY_COMMA = 70, 51 -- LWJGL 鍵碼（org/lwjglx/input/KeyCodes.java）
 function getTextManager()
@@ -389,6 +391,50 @@ F.reset()
 F.fire("OnKeyPressed", 51)
 F.fire("OnKeyPressed", 0)
 check(#F.clientCmds == 0, "逗號（裝備視窗 MOD 的預設鍵）、未綁定（0）：不動作")
+
+-- 原版「裝備或開／關光源」鍵（F）：手上沒拿燈時開關錶燈；駕駛時的車頭燈、手上的燈、錶燈開不了、我們的判斷拋錯時照原版
+local vanilla = {}
+ItemBindingHandler = { toggleLight = function(key) vanilla[#vanilla + 1] = key end }
+C.hookLightKey()
+local function pressF()
+    F.reset()
+    vanilla = {}
+    F.now = F.now + 2000
+    ItemBindingHandler.toggleLight(33)
+end
+pressF()
+check(F.clientCmds[1] and F.clientCmds[1].args.on == true and #vanilla == 0, "F：手上沒拿燈、錶燈關著＝開錶燈，不交給原版")
+local lamp = give(c, LIGHT)
+lamp:setActivated(true)
+pressF()
+check(F.clientCmds[1] and F.clientCmds[1].args.on == false and #vanilla == 0, "F：錶燈開著＝關錶燈")
+c.inv:DoRemoveItem(lamp)
+c.secondary = { canEmitLight = function() return true end, getType = function() return "HandTorch" end }
+pressF()
+check(#F.clientCmds == 0 and #vanilla == 1, "F：手上拿著手電筒＝照原版切手電筒")
+c.secondary = { canEmitLight = function() return true end, getType = function() return "CandleLit" end }
+pressF()
+check(F.clientCmds[1] and F.clientCmds[1].args.on == true and #vanilla == 0, "F：手上的點燃蠟燭原版不切（照抄原版）＝開錶燈")
+c.secondary = nil
+c.vehicle = { isDriver = function(_, pl) return pl == c end }
+F.keyIs.TOGGLE_VEHICLE_HEADLIGHTS = 33
+pressF()
+check(#F.clientCmds == 0 and #vanilla == 1, "F：駕駛中且 F 也是車頭燈鍵＝照原版切車頭燈")
+c.vehicle = { isDriver = function() return false end }
+pressF()
+check(F.clientCmds[1] and F.clientCmds[1].args.on == true and #vanilla == 0, "F：坐在乘客座＝開錶燈")
+c.vehicle, F.keyIs.TOGGLE_VEHICLE_HEADLIGHTS = nil, nil
+W.setCharge(cw, 0)
+pressF()
+check(#F.clientCmds == 0 and #vanilla == 1 and #F.halos == 0, "F：錶燈開不了（沒電）＝照原版（裝備背包裡的燈），不提示")
+W.setCharge(cw, 1)
+local realAllowed = W.lightAllowed
+W.lightAllowed = function() error("boom") end
+pressF()
+W.lightAllowed = realAllowed
+local keyLog = false
+for _, l in ipairs(F.logs) do keyLog = keyLog or l:find("light key failed", 1, true) ~= nil end
+check(#vanilla == 1 and keyLog, "F：我們的判斷拋錯＝照原版並記一次 log")
 
 -- 面板：按鈕只在戴著的錶裝了照明模組時出現；開著時寫「關燈」、底部註明燈開著
 C.openPanel(0, nil)

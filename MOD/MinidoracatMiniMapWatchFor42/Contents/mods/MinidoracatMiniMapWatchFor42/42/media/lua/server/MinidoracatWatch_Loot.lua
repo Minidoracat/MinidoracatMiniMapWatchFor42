@@ -46,8 +46,7 @@ L.ENTRIES = {
     -- 嗶嗶腕機（稀有）：軍事據點、緊急避難所（地堡）、生存狂的藏身處
     { "LootBB3000", W.watchType("BB3000"), { "ArmyStorageElectronics", 0.3, "ArmyBunkerStorage", 0.3,
         "ArmyBunkerLockers", 0.3, "SurvivalGear", 0.5 } },
-    -- 模組：常見（羅盤、名錄、照明）、少見（定位、通訊）、一般（掃描、偵測）、稀有（軍規偵測、長距通訊）、很稀有（中繼、節能）
-    { "LootModules", mod("Compass"), { "ElectronicStoreMisc", 1, "CrateElectronics", 1, "SurvivalGear", 1 } },
+    -- 模組：常見（名錄、照明）、少見（定位、通訊）、一般（掃描、偵測）、稀有（軍規偵測、長距通訊）、很稀有（中繼、節能）
     { "LootModules", mod("Ledger"), { "ElectronicStoreMisc", 1, "CrateElectronics", 1 } },
     { "LootModules", mod("Light"), { "ElectronicStoreMisc", 1, "CrateElectronics", 1, "SurvivalGear", 1 } },
     { "LootModules", mod("GPS"), { "ElectronicStoreMisc", 0.5, "ArmyStorageElectronics", 1 } },

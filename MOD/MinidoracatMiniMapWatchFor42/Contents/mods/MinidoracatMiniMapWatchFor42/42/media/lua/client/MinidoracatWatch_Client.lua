@@ -40,6 +40,7 @@ function C.navDevice(pn)
 end
 
 function C.gate(pn, feature, surface)
+    if feature == "arrow" then feature = "nav" end -- 畫面外的目標箭頭跟著導航（沒有自己的模組，2026-10-09 使用者裁定）
     local player = getSpecificPlayer(pn)
     if feature == "minimap" then
         local enabled, rule = W.enabled(), W.minimapRule()

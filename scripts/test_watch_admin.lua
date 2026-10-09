@@ -187,7 +187,7 @@ do
     check(base.sb.FullHours == 72 and base.sb.ChargeCar == false, "base reads the sandbox, charge fields included")
     local s = M.summary(base, false)
     check(has(s, "小地圖：戴錶就能用"), "summary: minimap rule")
-    check(has(s, "方向箭頭：需要羅盤模組"), "summary: module rule names the module")
+    check(has(s, "導航：需要定位模組") and not has(s, "方向箭頭"), "summary: module rule names the module; the arrow has no rule of its own")
     check(has(s, "照明：需要照明模組"), "summary: light rule")
     check(has(s, "擴充槽：目前沒有經濟系統，暫時改用解鎖卡"), "summary: economy tier without Economy falls back to cards")
     check(has(s, "電池：滿電約 72 小時（現實時間），離線時不耗電，暫停時不耗電"), "summary: battery line")
@@ -200,7 +200,7 @@ do
     check(has(s, "核心槽：租用每 7 天 300 倖存幣，或買斷 2,400 倖存幣"), "summary: thousands separator")
     local d = M.copy(base)
     d.sb.SlotAdvBuy, d.sb.SlotAdvRent = false, false
-    d.sb.DrainCompass, d.sb.ZombieDrops, d.sb.LootPaws = 30, false, false
+    d.sb.DrainLedger, d.sb.ZombieDrops, d.sb.LootPaws = 30, false, false
     d.sb.ChargeCar, d.sb.CarHours, d.sb.ChargeHouse, d.sb.HouseHours = true, 6, false, 12
     s = M.summary(d, true)
     check(has(s, "進階槽：經濟系統，但買斷和租用都沒有開放"), "summary: economy with nothing on sale")
@@ -329,7 +329,7 @@ do
     r = A.apply(admin, req({ zombieDrops = { { group = "all", item = "battery", chance = 150 } } }))
     check(r.code == "invalid" and FS[cfgPath] == fileBefore and Cfg.revision == revBefore,
         "invalid: chance 150 refused, file and revision unchanged")
-    r = A.apply(admin, req({ moduleDrains = { compass = 5 } }))
+    r = A.apply(admin, req({ moduleDrains = { ledger = 5 } }))
     check(r.code == "invalid" and r.problems[1]:find("built in", 1, true), "invalid: built-in module drain belongs to the sandbox")
     r = A.apply(admin, req({ moduleDrains = { weather = 2.5 } }))
     check(r.code == "invalid", "invalid: drain must be a whole number")
@@ -478,7 +478,7 @@ do
         for i = 1, #items, 2 do if items[i] == item then return items[i + 1] end end
         return nil
     end
-    check(weight("ElectronicStoreMisc", "MinidoracatWatch.Module_Compass") == 1, "normal amount keeps the base weight")
+    check(weight("ElectronicStoreMisc", "MinidoracatWatch.Module_Ledger") == 1, "normal amount keeps the base weight")
     check(math.abs(weight("ElectronicStoreMisc", W.CARD_TYPES.ext) - 0.025) < 1e-12, "cards default to very few: x0.25")
     NATIVE["MinidoracatWatch.LootModuleAmount"] = 1
     NATIVE["MinidoracatWatch.LootCardAmount"] = 4
@@ -486,12 +486,12 @@ do
     sig = L.signature()
     L.apply(list, sig)
     check(sig == "1111111111|214", "signature follows the native options")
-    check(weight("ElectronicStoreMisc", "MinidoracatWatch.Module_Compass") == 0.25, "very few modules: x0.25")
+    check(weight("ElectronicStoreMisc", "MinidoracatWatch.Module_Ledger") == 0.25, "very few modules: x0.25")
     check(weight("ElectronicStoreMisc", W.CARD_TYPES.ext) == 0.2, "many cards: x2")
     check(weight("StoreDisplayWatches", W.watchType("ValuTech")) == 2, "few watches: x0.5")
     check(weight("ElectronicStoreMisc", "Base.Spoon") == 5, "vanilla entries untouched")
     local n = 0
-    for _, it in ipairs(list.ElectronicStoreMisc.items) do if it == "MinidoracatWatch.Module_Compass" then n = n + 1 end end
+    for _, it in ipairs(list.ElectronicStoreMisc.items) do if it == "MinidoracatWatch.Module_Ledger" then n = n + 1 end end
     check(n == 1, "re-applying does not duplicate entries")
     -- 輪詢：數量變了就重排並 Parse
     ProceduralDistributions = { list = list }

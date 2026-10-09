@@ -2,7 +2,7 @@ module Base
 {
     /*
         地圖錶模組的製作（B42 craftRecipe）。只有設計稿 data.mjs MODULES 寫「可製作」的一般模組：
-        羅盤（指南針＋電子零件）、名錄（電話簿＋電子零件）、通訊（拆對講機的收發零件）、照明（手電筒＋電子零件）。
+        名錄（電話簿＋電子零件）、通訊（拆對講機的收發零件）、照明（手電筒＋電子零件）。
         - 版型照原版 recipes_electrical.txt:101-126 MakeImprovisedFlashlight 與 AutoDrive recipes_autodrive.txt。
         - 放 module Base：短名配方引用只查 Base bucket（ScriptBucketCollection.getScript 不含 '.' 時寫死 Base，
           家族 pitfalls.md「CraftRecipe 學習管線」）。物品留在 module MinidoracatWatch，這裡寫 full type。
@@ -11,27 +11,6 @@ module Base
           引擎對每個候選輸入物品呼叫一次（CraftRecipe.OnTestItem），全回 false＝沒有可用材料。
         - 配方名翻譯在 Translate/<語言>/Recipes.json（Translator.getRecipeName 以配方名為鍵，Translator.java:691-699）。
     */
-    craftRecipe CraftMinidoracatWatchCompass
-    {
-        timedAction = MakingElectrical,
-        time = 100,
-        SkillRequired = Electricity:3,
-        OnTest = MinidoracatWatch_Recipe.canCraft,
-        Tags = AnySurfaceCraft,
-        category = Electrical,
-        xpAward = Electricity:5,
-        inputs
-        {
-            item 1 tags[base:screwdriver] mode:keep flags[Prop1],
-            item 1 [Base.CompassDirectional] flags[NoBrokenItems],
-            item 2 [Base.ElectronicsScrap],
-        }
-        outputs
-        {
-            item 1 MinidoracatWatch.Module_Compass,
-        }
-    }
-
     craftRecipe CraftMinidoracatWatchLedger
     {
         timedAction = MakingElectrical,

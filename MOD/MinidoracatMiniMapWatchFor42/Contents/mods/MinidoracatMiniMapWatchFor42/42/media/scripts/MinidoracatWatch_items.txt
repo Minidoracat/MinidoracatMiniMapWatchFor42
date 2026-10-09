@@ -304,17 +304,6 @@ module MinidoracatWatch
         （UIElement.DrawItemIcon 取 item.getR()，UIElement.java:548-551）。地上的模型暫借原版電子零件。
         取得方式：戰利品（server/MinidoracatWatch_Loot.lua）、製作（MinidoracatWatch_recipes.txt）、殭屍掉落。
     */
-    item Module_Compass
-    {
-        DisplayCategory = Electronics,
-        ItemType = base:normal,
-        Weight = 0.1,
-        Icon = MinidoracatWatch_Module_Compass,
-        MetalValue = 3.0,
-        WorldStaticModel = Receiver,
-        Tags = base:hasmetal,
-    }
-
     item Module_Ledger
     {
         DisplayCategory = Electronics,

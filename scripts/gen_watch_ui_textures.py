@@ -2,8 +2,8 @@
 """地圖錶面板的槽位外形貼圖（白色＋alpha，遊戲裡以頂點色染色）。
 
 座標照設計稿 panel.mjs 的 SHAPES（56×56 viewBox）：sel＝選取外框（描邊）、ring＝等級色環、fill＝槽底、
-deco＝貼紙底（Spiffo）。另有貓耳三角形（貓爪款面板頂端的裝飾）。4 倍超取樣後縮成 2 倍尺寸（112×112），
-遊戲裡縮到 56／40px 畫。產物位元級可重現：重跑後 md5 不變。
+deco＝貼紙底（Spiffo）。4 倍超取樣後縮成 2 倍尺寸（112×112），遊戲裡縮到 56／40px 畫。
+產物位元級可重現：重跑後 md5 不變。
 用法（repo 根目錄）：python scripts/gen_watch_ui_textures.py
 """
 import math
@@ -114,5 +114,4 @@ if __name__ == "__main__":
     for shape, parts in SHAPES.items():
         for part, img in parts.items():
             save(f"sock_{shape}_{part}", img)
-    save("ear", filled([(15, 0), (30, 22), (0, 22)], 30, 22))
-    print("ok", sum(len(p) for p in SHAPES.values()) + 1, "textures ->", os.path.normpath(OUT))
+    print("ok", sum(len(p) for p in SHAPES.values()), "textures ->", os.path.normpath(OUT))

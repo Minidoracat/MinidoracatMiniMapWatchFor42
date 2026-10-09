@@ -270,7 +270,6 @@ export function spriteDefs(ids) {
 
 // ---------- 模組與狀態圖示（24×24，currentColor） ----------
 const ICON_PATHS = {
-  compass: `<circle cx="12" cy="12" r="9"/><path d="M12 5.5 14.6 12H9.4z" fill="currentColor"/><path d="M9.4 12h5.2L12 18.5z"/>`,
   ledger: `<path d="M5 4h10.5A2.5 2.5 0 0 1 18 6.5V20H7.5A2.5 2.5 0 0 1 5 17.5z"/><path d="M8.5 8.5h6M8.5 11.5h6M8.5 14.5h4"/>`,
   gps: `<path d="M12 21s-6.5-6.4-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 14.6 12 21 12 21z"/><circle cx="12" cy="9.8" r="2.3"/>`,
   comm: `<path d="M12 21V11.5"/><circle cx="12" cy="9.5" r="1.6" fill="currentColor"/><path d="M8.6 6.2a4.8 4.8 0 0 0 0 6.6M15.4 6.2a4.8 4.8 0 0 1 0 6.6"/>`,

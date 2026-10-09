@@ -58,7 +58,7 @@ check(W.shareRange(r) == W.RANGE_UNLIMITED, "中繼核心：不限距離")
 check(allowed(a, r) == true and allowed(r, a) == true, "中繼核心在收件者或分享者身上：50 萬格也收得到")
 
 -- ===== 收件者沒有通訊類模組 =====
-local none = person("none", 0, { std1 = "compass" }, 10000, 10000)
+local none = person("none", 0, { std1 = "ledger" }, 10000, 10000)
 check(W.shareRange(none) == nil and allowed(a, none) == false and allowed(r, none) == false,
     "收件者沒有通訊類模組：同一格、對方有中繼核心也收不到")
 local bare = F.player("bare", 0)

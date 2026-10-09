@@ -42,10 +42,10 @@ W.REASON_NEED_WATCH = "IGUI_MinidoracatWatch_Reason_NeedWatch"
 W.REASON_PAUSED = "IGUI_MinidoracatWatch_Reason_Paused"
 
 -- ===== 沙盒 =====
--- 功能規則：1 不需要錶、2 戴錶就能用、3 需要模組（預設，照設計稿 FEATURE_RULES）、4 關閉
+-- 功能規則：1 不需要錶、2 戴錶就能用、3 需要模組（預設，照設計稿 FEATURE_RULES）、4 關閉。
+-- 方向箭頭沒有自己的規則與模組，跟著導航（C.gate 把 arrow 當 nav 判；2026-10-09 使用者裁定）
 local RULE_BY_VALUE = { W.RULE_FREE, W.RULE_WATCH, W.RULE_MODULE, W.RULE_OFF }
-W.FEATURE_RULE_KEY = { arrow = "RuleArrow", poi = "RulePoi", nav = "RuleNav", share = "RuleShare",
-    scan = "RuleScan", zombie = "RuleZombie" }
+W.FEATURE_RULE_KEY = { poi = "RulePoi", nav = "RuleNav", share = "RuleShare", scan = "RuleScan", zombie = "RuleZombie" }
 function W.featureRule(feature)
     -- 照明只有「需要模組」與「關閉」兩種（設計稿 FEATURE_RULES light 的 opts）：RuleLight 1 需要模組、2 關閉
     if feature == "light" then return W.sandbox("RuleLight", 1) == 2 and W.RULE_OFF or W.RULE_MODULE end
@@ -207,7 +207,6 @@ addSlot("core", "IGUI_MinidoracatWatch_Slot_core", "core", { "standard", "advanc
 -- feature＝這個模組開放的功能（沒有＝不對應功能，例如節能核心）；drainKey＝耗電的沙盒選項
 W.BUILTIN = {}
 local BUILTIN = {
-    { "compass", "Compass", "standard", 10, "arrow" },
     { "ledger", "Ledger", "standard", 10, "poi" },
     { "gps", "GPS", "standard", 25, "nav" },
     { "comm", "Comm", "standard", 25, "share" },
@@ -226,7 +225,7 @@ for _, b in ipairs(BUILTIN) do
     W.BUILTIN[b[1]] = { feature = b[5], drainKey = "Drain" .. b[2] }
 end
 -- 每個功能由哪些模組提供（順序＝缺模組時提示哪一個）
-W.PROVIDERS = { arrow = { "compass" }, poi = { "ledger" }, nav = { "gps" }, share = { "comm", "longcomm", "relay" },
+W.PROVIDERS = { poi = { "ledger" }, nav = { "gps" }, share = { "comm", "longcomm", "relay" },
     scan = { "scan" }, zombie = { "detect", "mildetect" }, light = { "light" } }
 
 W.CARD_TYPES = { ext = "MinidoracatWatch.UnlockCard_Ext", adv = "MinidoracatWatch.UnlockCard_Adv",

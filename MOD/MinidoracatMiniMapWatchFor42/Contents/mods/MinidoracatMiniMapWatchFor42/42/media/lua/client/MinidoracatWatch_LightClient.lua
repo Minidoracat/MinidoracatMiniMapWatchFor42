@@ -108,3 +108,37 @@ Events.OnKeyPressed.Add(function(key)
     local p = getSpecificPlayer(0)
     if p and not p:isDead() and W.enabled() then C.toggleLight(p) end
 end)
+
+-- ===== 原版「裝備或開／關光源」鍵（預設 F，KeybindId.LIGHT_SOURCE）=====
+-- 使用者 2026-10-09 裁定：手上沒拿燈時，短按開關錶燈。駕駛時的車頭燈（預設也是 F）、手上的燈照原版先處理；
+-- 身上掛的燈、背包裡的手電筒排在錶燈後面；錶燈開不了（沒模組、沒電、規則關閉）時照原版。長按的光源輪盤不動。
+-- 原版短按：ISLightSourceRadialMenu.onKeyReleased → ItemBindingHandler.toggleLight（ISLightSourceRadialMenu.lua:335-353、
+-- ItemBindingHandler.lua:21-68，前兩段判斷照抄）。我們的判斷拋錯就照原版。
+local function handLight(item)
+    return item ~= nil and item:canEmitLight() and item:getType() ~= "CandleLit" and item:getType() ~= "Lantern_HurricaneLit"
+end
+local function lightKey(key)
+    local p = getSpecificPlayer(0)
+    if not (p and W.enabled()) then return false end
+    local v = p:getVehicle()
+    if v and v:isDriver(p) and not p:isAiming() and getCore():isKey(KeybindId.TOGGLE_VEHICLE_HEADLIGHTS, key) then return false end
+    if handLight(p:getSecondaryHandItem()) or handLight(p:getPrimaryHandItem()) then return false end
+    if not (W.lightOn(p) or W.lightAllowed(p)) then return false end
+    C.toggleLight(p)
+    return true
+end
+local keyFailed = false
+function C.hookLightKey()
+    local orig = ItemBindingHandler and ItemBindingHandler.toggleLight
+    if type(orig) ~= "function" then return W.log("vanilla light key handler missing: F does not toggle the watch light") end
+    ItemBindingHandler.toggleLight = function(key, ...)
+        local ok, done = pcall(lightKey, key)
+        if ok and done then return end
+        if not ok and not keyFailed then
+            keyFailed = true
+            W.log("light key failed, using the vanilla handler: " .. tostring(done))
+        end
+        return orig(key, ...)
+    end
+end
+Events.OnGameStart.Add(C.hookLightKey)

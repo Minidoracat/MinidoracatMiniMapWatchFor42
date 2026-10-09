@@ -176,7 +176,7 @@ W.setCharge(watch, 0.5)
 -- 每個功能 × 規則（1 免／2 錶／3 模組／4 關）× 錶的狀態 × 模組（沒有／有效槽位／失效槽位）× surface
 give("Base.Screwdriver")
 local FEATS = {
-    arrow = { key = "RuleArrow", mods = { "Compass" }, need = "compass" },
+    arrow = { key = "RuleNav", mods = { "GPS" }, need = "gps" }, -- 方向箭頭跟著導航：同一條規則、同一個模組
     poi = { key = "RulePoi", mods = { "Ledger" }, need = "ledger" },
     nav = { key = "RuleNav", mods = { "GPS" }, need = "gps" },
     share = { key = "RuleShare", mods = { "Comm", "LongComm", "Relay" }, need = "comm" },
@@ -407,44 +407,44 @@ check(#F.clientCmds == 0, "錶離開身上：動作取消、不送指令")
 p.inv:AddItem(watch)
 
 -- ===== 裝卸模組：計時動作（約 3 秒），螺絲起子 =====
-local compass = give(MOD("Compass"))
+local ledger = give(MOD("Ledger"))
 F.reset()
-C.requestModule(p, watch, "std2", compass)
+C.requestModule(p, watch, "std2", ledger)
 local act = F.queues[p][1]
 check(act and act.kind == "module" and act.maxTime == 150 and act.install == true, "安裝排進計時動作（約 3 秒）")
 F.runActions(p)
 cmd = F.clientCmds[1]
 check(cmd and cmd.command == W.CMD_MODULE and cmd.args.watchId == watch.id and cmd.args.slotId == "std2"
-    and cmd.args.install == true and cmd.args.itemId == compass.id and scalars(cmd.args), "完成時送純量安裝指令")
+    and cmd.args.install == true and cmd.args.itemId == ledger.id and scalars(cmd.args), "完成時送純量安裝指令")
 F.reset()
-C.requestModule(p, watch, "std2", compass)
-p.inv:DoRemoveItem(compass)
+C.requestModule(p, watch, "std2", ledger)
+p.inv:DoRemoveItem(ledger)
 F.runActions(p)
 check(#F.clientCmds == 0, "模組在動作途中離開背包：取消")
-p.inv:AddItem(compass)
+p.inv:AddItem(ledger)
 local sd = p.inv:getAllTypeRecurse("Base.Screwdriver"):get(0)
 p.inv:DoRemoveItem(sd)
 F.reset()
-C.requestModule(p, watch, "std2", compass)
+C.requestModule(p, watch, "std2", ledger)
 check(not (F.queues[p] and F.queues[p][1]) and F.halos[1] and F.halos[1].text == W.FAIL_SCREWDRIVER,
     "沒有螺絲起子：不排動作、提示")
 SB.NeedScrewdriver = false
-C.requestModule(p, watch, "std2", compass)
+C.requestModule(p, watch, "std2", ledger)
 check(F.queues[p][1] ~= nil, "沙盒關掉螺絲起子：可以排")
 F.queues[p] = {}
 SB.NeedScrewdriver = true
 p.inv:AddItem(sd)
 -- 單機：完成時直接套用 shared 突變點
 F.mode = "sp"
-local compassBefore = p.inv:getAllTypeRecurse(MOD("Compass")):size() - 1
-C.requestModule(p, watch, "std2", compass)
+local ledgerBefore = p.inv:getAllTypeRecurse(MOD("Ledger")):size() - 1
+C.requestModule(p, watch, "std2", ledger)
 F.runActions(p)
-check(W.slotRecord(watch, "std2") and W.slotRecord(watch, "std2").id == "compass" and compass.container == nil,
+check(W.slotRecord(watch, "std2") and W.slotRecord(watch, "std2").id == "ledger" and ledger.container == nil,
     "單機：動作完成就裝好")
 C.requestModule(p, watch, "std2", nil)
 F.runActions(p)
-check(W.slotRecord(watch, "std2") == nil and compass.container == nil and p.inv:getAllTypeRecurse(MOD("Compass")):size() == compassBefore + 1, "單機：拆下")
-compass = p.inv:getAllTypeRecurse(MOD("Compass")):get(compassBefore)
+check(W.slotRecord(watch, "std2") == nil and ledger.container == nil and p.inv:getAllTypeRecurse(MOD("Ledger")):size() == ledgerBefore + 1, "單機：拆下")
+ledger = p.inv:getAllTypeRecurse(MOD("Ledger")):get(ledgerBefore)
 F.mode = "client"
 
 -- ===== 解鎖卡請求與伺服器送來的解鎖狀態 =====
@@ -505,7 +505,7 @@ seen = {}
 -- ===== 面板（UI 框架元件）=====
 SB.SlotExt, SB.SlotAdv, SB.SlotCore = 2, 4, 1
 W.clientUnlocks.alice = {}
-sp(W.applyModuleChange, p, watch:getID(), "std1", true, compass:getID())
+sp(W.applyModuleChange, p, watch:getID(), "std1", true, ledger:getID())
 C.openPanel(0, nil)
 local panel = F.lastPanel
 local UIv = MinidoracatUI.v1
@@ -586,6 +586,98 @@ ui.API_REVISION, ui.CAPABILITIES.focusLabel = 15, nil
 sk.cur = slotIndex("std3")
 sk:forceClick()
 check(panel.sel == slotIndex("std3"), "forceClick（手把 A）：選取")
+-- 模組等級：核心槽收三種等級。按鈕依核心→進階→一般排、左緣畫等級色條、滑過說明等級；篩選列在按鈕上方
+selectSlot("core")
+local RANK = { core = 3, advanced = 2, standard = 1 }
+local function modBtns()
+    local out = {}
+    for _, b in ipairs(panel.actBtns) do if b.visible and b.internal == "module" then out[#out + 1] = b end end
+    return out
+end
+local function sortedByTier(list)
+    for i = 2, #list do if RANK[list[i].def.class] > RANK[list[i - 1].def.class] then return false end end
+    return true
+end
+local function filters()
+    local s = {}
+    for _, b in ipairs(panel.filterBtns) do
+        if b.visible then s[#s + 1] = b.internal .. (b.active and "*" or "") .. (b.enable and "" or "-") end
+    end
+    return table.concat(s, ",")
+end
+local coreMods = modBtns()
+local tiers = {}
+for _, b in ipairs(coreMods) do tiers[b.def.class] = true end
+check(#coreMods >= 3 and tiers.core and tiers.advanced and tiers.standard and sortedByTier(coreMods)
+    and coreMods[1].def.class == "core", "核心槽：三種等級都列出，依核心→進階→一般排")
+-- 滑過說明：類別、耗電，內建模組再加說明。說明用 wrap 斷成不超過 300px 的行（替身量字寬 #s*7）、以 <LINE> 接起來；
+-- 不能含 \n（原版 ISButton 看到 \n 就不換行）
+local function tipOk(b, class)
+    local t = b.tooltip or ""
+    local cls, drain, desc = t:match("^(.-) <LINE> (.-) <LINE> (.+)$")
+    if not desc or t:find("\n", 1, true) then return false, 0 end
+    local narrow, lines = true, 0
+    for line in (desc .. " <LINE> "):gmatch("(.-) <LINE> ") do lines, narrow = lines + 1, narrow and #line * 7 <= 300 end
+    return cls == "IGUI_MinidoracatWatch_KV_Class|IGUI_MinidoracatWatch_Class_" .. class
+        and drain == "IGUI_MinidoracatWatch_KV_Drain|" .. C.drainText(b.def)
+        and desc:gsub(" <LINE> ", "") == C.moduleDesc(b.def.id) and narrow, lines
+end
+local topOk, topLines = tipOk(coreMods[1], "core")
+check(topOk and topLines > 1 and tipOk(coreMods[#coreMods], "standard"),
+    "模組按鈕的滑過說明：等級、耗電與模組說明（長說明斷成多行）")
+local wItem = give("MyWeather.WeatherModule")
+tick()
+panel:update()
+local wBtn
+for _, b in ipairs(modBtns()) do if b.def.id == "weather" then wBtn = b end end
+check(wBtn and wBtn.tooltip == "IGUI_MinidoracatWatch_KV_Class|IGUI_MinidoracatWatch_Class_standard <LINE> "
+    .. "IGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainPlus|15", "其他 MOD 的模組：只有等級與耗電（API 沒有說明欄位）")
+p.inv:DoRemoveItem(wItem)
+tick()
+panel:update()
+local bars = {}
+for i, b in ipairs({ coreMods[1], coreMods[#coreMods] }) do
+    b.drawRect = function(_, x, y, w, h, a, r, g, bl) bars[i] = { x = x, w = w, r = r, g = g, b = bl } end
+    b:render()
+    b.drawRect = nil
+end
+local cCore, cStd = panel.inspTheme.colors.tierCore, panel.inspTheme.colors.tierStd
+check(bars[1] and bars[1].x < 10 and bars[1].r == cCore.r and bars[1].g == cCore.g and bars[1].b == cCore.b
+    and bars[2] and bars[2].r == cStd.r and bars[2].b == cStd.b, "左緣色條＝槽位外框的等級色（核心紫、一般灰），畫在圖示左邊")
+check(filters() == "all*,standard,advanced,core", "篩選列：全部（選中）＋這個槽位收的三種等級")
+local targets2 = panel:keyboardTargets()
+local function at(c) for i, t in ipairs(targets2) do if t == c then return i end end end
+check(panel.filterBtns[1].y < coreMods[1].y and at(panel.filterBtns[1]) < at(coreMods[1]),
+    "篩選列在模組按鈕上方，Tab 先到篩選列")
+panel.filterBtns[3]:forceClick() -- 進階
+tick()
+panel:update()
+local advOnly = modBtns()
+check(#advOnly >= 1 and filters() == "all,standard,advanced*,core", "按「進階」：選中進階")
+local onlyAdv = true
+for _, b in ipairs(advOnly) do if b.def.class ~= "advanced" then onlyAdv = false end end
+check(onlyAdv, "按「進階」：只列進階模組")
+panel.filterBtns[4]:forceClick() -- 核心
+tick()
+panel:update()
+local relays = p.inv:getAllTypeRecurse(MOD("Relay"))
+local relayItem = relays:get(0)
+p.inv:DoRemoveItem(relayItem)
+tick()
+panel:update()
+check(panel.modFilter == nil and filters() == "all*,standard,advanced,core-" and sortedByTier(modBtns()),
+    "選中的等級沒有模組了：回到全部，那個等級停用")
+p.inv:AddItem(relayItem)
+panel.filterBtns[3]:forceClick()
+selectSlot("std3")
+check(panel.modFilter == nil and filters() == "", "換到只收一般模組的標準槽：篩選重設、沒有篩選列")
+-- 檢視區的文字（上一幀量到的底緣）壓到按鈕：檢視區長高，按鈕整塊移到文字下方
+selectSlot("core")
+local tb = panel.actTop + 40
+panel.textBottom = tb
+panel:update()
+check(panel.actTop >= tb + 6 and panel.filterBtns[1].y >= tb + 6, "文字壓到按鈕時檢視區長高，篩選列與按鈕移到文字下方")
+selectSlot("std3")
 selectSlot("ext")
 local cardBtn = act("card")
 check(cardBtn and cardBtn.enable and cardBtn.style == "primary" and cardBtn.icon == "card"

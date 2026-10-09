@@ -12,6 +12,7 @@ require "ISUI/ISLayoutManager"
 require "MinidoracatWatch_Client"
 require "MinidoracatWatch_PayClient"
 require "MinidoracatWatch_Skins"
+require "MinidoracatWatch_Sound"
 local W, C = MinidoracatWatchCore, MinidoracatWatchClient
 local S = C.Skins
 
@@ -25,11 +26,17 @@ local INSP_MIN_H = 300
 local SOCK, ADDON, ADDON_GAP = 56, 40, 8
 local DIAL = 64
 local SCAN_MS = 250
-local MAX_ACTIONS = 12
+local MAX_ACTIONS = 16 -- 付費按鈕（最多 3 顆）＋全部內建模組（10 種），其他 MOD 的模組還有餘裕
 local BUSY_TYPE = "ISMinidoracatWatchAction"
-local FEATURES = { "minimap", "arrow", "poi", "nav", "share", "scan", "zombie", "light" }
+local FEATURES = { "minimap", "poi", "nav", "share", "scan", "zombie", "light" } -- 方向箭頭跟著導航，不另列
+local function volText(v) return string.format("%d%%", v) end
 local TIER_TOKEN = { std = "tierStd", ext = "tierExt", adv = "tierAdv", core = "tierCore", addon = "tierAddon",
     orphan = "tierOrphan" }
+-- 模組按鈕由高等級排到低等級（槽位自己的等級在前），左緣色條用和槽位外框同色的等級色
+local CLASS_ORDER = { "core", "advanced", "standard" }
+local CLASS_TOKEN = { standard = "tierStd", advanced = "tierAdv", core = "tierCore" }
+-- 篩選列：全部＋由低到高的等級；只列出選取的槽位收的等級
+local FILTERS = { "all", "standard", "advanced", "core" }
 -- 付費按鈕的圖示（C.Pay.ui 的 id → UI.Icons key）
 local PAY_ICON = { rent = "clock", renew = "clock", buy = "infinity", pay = "check", agree = "check", autoOn = "clock",
     autoOff = "pause", check = "reload", remove = "screwdriver", card = "card" }
@@ -95,6 +102,17 @@ local function drainText(def)
     return getText("IGUI_MinidoracatWatch_DrainPlus", tostring(d))
 end
 C.className, C.drainText = className, drainText -- 物品停留說明（MinidoracatWatch_Hud.lua）同一份文字
+
+-- 模組按鈕的滑過說明：類別、耗電，內建模組再加說明（和檢視區同一份文字；第三方模組的 API 沒有說明欄位）。
+-- 原版按鈕提示是 ISRichTextPanel，只在空格斷行，所以說明先用 wrap 斷好再以 <LINE> 接起來；
+-- 不能用 \n：ISButton 看到 \n 就把行寬放到 1000、不再換行（ISButton.lua:326-330）
+local TIP_W = 300 -- ISButton 給提示的行寬（ISButton.lua:329）
+local function moduleTip(def)
+    local s = getText("IGUI_MinidoracatWatch_KV_Class", className(def.class)) .. " <LINE> "
+        .. getText("IGUI_MinidoracatWatch_KV_Drain", drainText(def))
+    if not W.BUILTIN[def.id] then return s end
+    return s .. " <LINE> " .. table.concat(wrap(C.moduleDesc(def.id), TIP_W), " <LINE> ")
+end
 
 -- 槽位狀態：empty／locked（未開啟）／lapsed（經濟系統的租約到期、槽位空著）／off（不開放）／active／paused（槽位失效）／
 -- dead（錶沒電或沒電池）
@@ -447,6 +465,7 @@ function M:selectedSlot()
 end
 
 function M:select(i)
+    if i ~= self.sel then self.modFilter = nil end -- 換槽位就回到「全部」
     self.sel = i
     self.sockets.cur = i
     self.scanAt = nil
@@ -473,6 +492,14 @@ function M:busyAction(player, watch, slot)
     return nil
 end
 
+-- 模組按鈕左緣的等級色條（灰＝一般、藍＝進階、紫＝核心）：框架先畫完按鈕，再補色條（圖示從 x=10 開始，不重疊）
+local function tierRender(b)
+    b._baseRender(b)
+    local tok = b.internal == "module" and b.def and CLASS_TOKEN[b.def.class]
+    local c = tok and b.theme and b.theme.colors[tok]
+    if c then b:drawRect(4, 6, 3, b.height - 12, 1, c.r, c.g, c.b) end
+end
+
 function M:build()
     local UI = C.ui()
     local function button(title, icon, style, fn, insp)
@@ -488,9 +515,21 @@ function M:build()
     self.sockets:initialise()
     self:addChild(self.sockets)
     self.btnBanner = button("", "battery", "normal", M.onInsert)
+    -- 模組篩選列（收兩種以上等級的槽位才出現）：chip 的 active＝目前的篩選
+    self.filterBtns = {}
+    for i, f in ipairs(FILTERS) do
+        local b = button(f == "all" and getText("IGUI_MinidoracatWatch_Filter_All") or className(f), nil, "chip", M.onFilter, true)
+        b.internal = f
+        self.filterBtns[i] = b
+    end
+    self.filterRow = {} -- placeActions 每幀重填這一格要顯示的篩選鈕，不另配置
     -- 檢視區的動作按鈕池：模組清單、解鎖卡、拆下模組、付費按鈕（標題、圖示、樣式由 scan 的 actions 決定）
     self.actBtns = {}
-    for i = 1, MAX_ACTIONS do self.actBtns[i] = button("", nil, "normal", M.onAction, true) end
+    for i = 1, MAX_ACTIONS do
+        local b = button("", nil, "normal", M.onAction, true)
+        b._baseRender, b.render = b.render, tierRender
+        self.actBtns[i] = b
+    end
     self.btnInsert = button(getText("IGUI_MinidoracatWatch_InsertBattery"), "battery", "normal", M.onInsert)
     self.btnRemove = button(getText("IGUI_MinidoracatWatch_RemoveBattery"), "eject", "normal", M.onRemove)
     self.btnScreen = button(getText("IGUI_MinidoracatWatch_ScreenAmber"), nil, "normal", M.onScreen)
@@ -512,8 +551,20 @@ function M:applySkin(key)
         fill = shapeTex("sock_" .. spec.shape .. "_fill"), deco = spec.shape == "circle" and shapeTex("sock_circle_deco") or nil }
     self.sockets.layout = spec.layout
     for _, b in ipairs(self.actBtns) do b.theme = self.inspTheme end
+    for _, b in ipairs(self.filterBtns) do b.theme = self.inspTheme end
     for _, b in ipairs(self.footBtns) do b.theme = self.footTheme end
     self.btnBanner.theme = self.theme
+    -- 音效音量列（使用者 2026-10-09 裁定：面板底部也能調，和齒輪「地圖錶」分類、ESC 選項存同一份 ModOptions）。
+    -- 框架 rev 17 才有 SliderRow（CAPABILITIES.sliderRow），不足就不放；滑桿的填色與圓鈕在建構時取色，換皮膚就重建。
+    -- 用主 theme：放在面板本體（surface），不放電量列（ValuTech 銀色電量列上 text 是淺字）
+    if self.volRow then self:removeChild(self.volRow) end
+    self.volRow = nil
+    if UI.CAPABILITIES.sliderRow and UI.SliderRow then
+        self.volRow = UI.SliderRow.new({ x = PAD, y = 0, width = self.width - 2 * PAD, min = 0, max = 100, step = 5,
+            label = getText("IGUI_MinidoracatWatch_Sound_Volume"), tooltip = getText("IGUI_MinidoracatWatch_Sound_Volume_tooltip"),
+            value = MinidoracatWatchSound.volume(), format = volText, theme = self.theme, target = self, onChange = M.onVolume })
+        self:addChild(self.volRow)
+    end
 end
 
 -- 背包與錶的掃描（解鎖卡、電池、孤立槽位、付費檢視、動作按鈕、功能清單）每 250ms 一次，不在每幀翻背包
@@ -542,20 +593,38 @@ end
 -- 檢視區的動作：{ id, 標題, 可按, 樣式, 圖示, def＝要裝的模組 }
 function M:buildActions(player, watch, slot)
     local out = {}
-    self.noModule = false
+    self.noModule, self.filterCounts = false, nil
     if not watch or self:busyAction(player, watch, slot) then return out end
-    local function add(id, title, enabled, style, icon, def)
-        out[#out + 1] = { id = id, title = title, enabled = enabled, style = style or "normal", icon = icon, def = def }
+    local function add(id, title, enabled, style, icon, def, tip)
+        out[#out + 1] = { id = id, title = title, enabled = enabled, style = style or "normal", icon = icon, def = def,
+            tip = tip }
     end
     local function modules()
         local inv = player:getInventory()
-        for _, def in ipairs(W.moduleList) do
-            if slot.accepts[def.class] and inv:getAllTypeRecurse(def.item):size() > 0 then
-                local m = moduleIcon(def.item)
-                add("module", C.moduleName(def.id), true, "normal", m and m.tex, def)
+        -- 依等級分組：這個槽位收的等級裡、背包有的模組。選中的篩選這次沒有模組就回到「全部」
+        local byClass, total, kinds = {}, 0, 0
+        for _, c in ipairs(CLASS_ORDER) do
+            if slot.accepts[c] then
+                local list = {}
+                for _, def in ipairs(W.moduleList) do
+                    if def.class == c and inv:getAllTypeRecurse(def.item):size() > 0 then list[#list + 1] = def end
+                end
+                byClass[c], total, kinds = list, total + #list, kinds + 1
             end
         end
-        self.noModule = #out == 0
+        local f = self.modFilter
+        if f and not (byClass[f] and #byClass[f] > 0) then f, self.modFilter = nil, nil end
+        for _, c in ipairs(CLASS_ORDER) do
+            if byClass[c] and (f == nil or f == c) then
+                for _, def in ipairs(byClass[c]) do
+                    local m = moduleIcon(def.item)
+                    add("module", C.moduleName(def.id), true, "normal", m and m.tex, def, moduleTip(def))
+                end
+            end
+        end
+        self.noModule = total == 0
+        -- 收兩種以上等級、背包裡也有模組：顯示篩選列（placeActions 依每個等級有沒有模組決定能不能按）
+        self.filterCounts = (kinds > 1 and total > 0) and byClass or nil
     end
     local st = C.slotStatus(player, watch, slot)
     local ui = self.payUi
@@ -657,6 +726,24 @@ local function flow(btns, n, left, right, bottom, gap)
     return top
 end
 
+-- 動作按鈕貼檢視區底緣；有篩選列時排在按鈕上方。self.actTop＝整塊的頂（檢視區文字要在它之上）
+function M:placeActions(n, counts, y, width)
+    self.actTop = flow(self.actBtns, n, INSP_X, width - PAD, y + self.bodyH, 8)
+    local row, k = self.filterRow, 0
+    for _, b in ipairs(self.filterBtns) do
+        local f = b.internal
+        if counts and (f == "all" or counts[f]) then
+            k = k + 1
+            row[k] = b
+            b:setEnabled(f == "all" or #counts[f] > 0)
+            b:setActive((self.modFilter or "all") == f)
+        else
+            b:setVisible(false)
+        end
+    end
+    if k > 0 then self.actTop = flow(row, k, INSP_X, width - PAD, self.actTop - 8, 6) end
+end
+
 function M:update()
     C.ui().Window.update(self)
     local player, w = self:target()
@@ -717,10 +804,18 @@ function M:arrange(player, w)
         b:setStyle(a.style)
         b:setEnabled(a.enabled)
         b.internal, b.def = a.id, a.def
+        if b._tip ~= a.tip and b.setTooltip then b._tip = a.tip; b:setTooltip(a.tip) end
         if b.width > inspW then b:setWidth(inspW) end
     end
     for i = n + 1, MAX_ACTIONS do self.actBtns[i]:setVisible(false) end
-    self.actTop = flow(self.actBtns, n, INSP_X, width - PAD, y + self.bodyH, 8)
+    local counts = n > 0 and self.filterCounts or nil
+    self:placeActions(n, counts, y, width)
+    -- 檢視區的文字（上一幀量到的底緣）壓到按鈕時，檢視區往下長、按鈕跟著往下
+    local over = (self.textBottom or 0) + 6 - self.actTop
+    if over > 0 then
+        self.bodyH = self.bodyH + over
+        self:placeActions(n, counts, y, width)
+    end
     y = y + self.bodyH + GAP
     -- 功能清單（膠囊，放不下換行）
     self.featY = y
@@ -731,6 +826,13 @@ function M:arrange(player, w)
         x = x + f.w + 6
     end
     y = y + rows * (fh + 12) + GAP
+    -- 音效音量列：電量列上方；每幀對齊目前設定（齒輪、ESC 改的也跟上；值沒變時 setValue 不動作）
+    local vol = self.volRow
+    if vol then
+        vol:setValue(MinidoracatWatchSound.volume(), true)
+        vol:setY(y)
+        y = y + vol.height + GAP
+    end
     -- 底部電量列：右側按鈕（由右而左），左側文字換行
     local c = w and W.charge(w)
     self.btnInsert:setTitle(getText(c ~= nil and "IGUI_MinidoracatWatch_ReplaceBattery" or "IGUI_MinidoracatWatch_InsertBattery"))
@@ -849,6 +951,7 @@ function M:drawInspector(UI, player, watch, slot)
     local theme = self.inspTheme
     local colors = theme.colors
     local x, y, width = INSP_X, self.bodyY, self.width - INSP_X - PAD
+    self.textBottom = nil -- 有按鈕的分支畫完時記下文字底緣，arrange 下一幀據此讓檢視區長高
     if self.skin == "valutech" then
         -- 液晶檢視區（styles.mjs:325）：綠灰底＋2px 內框
         theme:fill(self, x - 10, y - 6, width + 20, self.bodyH + 12, "surface", shapeOf(UI, theme, "control"))
@@ -897,13 +1000,15 @@ function M:drawInspector(UI, player, watch, slot)
             local note = self.cardCount > 0 and getText("IGUI_MinidoracatWatch_CardCount", tostring(self.cardCount))
                 or getText("IGUI_MinidoracatWatch_CardNone", C.cardName(slot))
             y = para(self, note, x, y, width, colors.textMuted) + 4
-            if ui then payLines(y) end
+            if ui then y = payLines(y) end
+            self.textBottom = y
             return
         else
             y = para(self, getText("IGUI_MinidoracatWatch_Desc_Empty"), x, y, width, colors.textMuted) + 4
             if ui then y = payLines(y) end
         end
-        if self.noModule then para(self, getText("IGUI_MinidoracatWatch_NoModuleToInstall"), x, y, width, colors.textMuted) end
+        if self.noModule then y = para(self, getText("IGUI_MinidoracatWatch_NoModuleToInstall"), x, y, width, colors.textMuted) end
+        self.textBottom = y
         return
     end
     local def = W.modules[rec.id]
@@ -932,7 +1037,8 @@ function M:drawInspector(UI, player, watch, slot)
         y = box(self, theme, x, y, width, getText("IGUI_MinidoracatWatch_Desc_Paused", name), "pause", "paused")
     end
     if ui then y = payLines(y) end
-    if cardNote then box(self, theme, x, y, width, getText("IGUI_MinidoracatWatch_Desc_CardOpened"), "card") end
+    if cardNote then y = box(self, theme, x, y, width, getText("IGUI_MinidoracatWatch_Desc_CardOpened"), "card") end
+    self.textBottom = y
 end
 
 function M:drawFeatures(colors)
@@ -965,11 +1071,6 @@ function M:prerender()
     local UI = C.ui()
     local colors = self.theme.colors
     local player, w = self:target()
-    if self.skin == "paws" then
-        local ear = shapeTex("ear")
-        tint(self, ear, 24, -15, 30, 22, colors.deco)
-        tint(self, ear, 66, -15, 30, 22, colors.deco)
-    end
     self:drawFooter(UI, colors)
     self:drawHeader(UI, colors, w)
     if not (player and w) then
@@ -1027,6 +1128,14 @@ function M:onAction(b)
     end
     self.scanAt = nil -- 下一幀重算檢視區
 end
+
+function M:onFilter(b)
+    self.modFilter = b.internal ~= "all" and b.internal or nil
+    self.scanAt = nil -- 下一幀依新的篩選重排模組按鈕
+end
+
+-- 音效音量列的 onChange（拖曳、點擊、滾輪、方向鍵）：寫進 ModOptions、存檔並排試聽（MinidoracatWatch_Sound.lua）
+function M:onVolume(value) MinidoracatWatchSound.setVolume(value) end
 
 function M:onInsert()
     local player, w = self:target()

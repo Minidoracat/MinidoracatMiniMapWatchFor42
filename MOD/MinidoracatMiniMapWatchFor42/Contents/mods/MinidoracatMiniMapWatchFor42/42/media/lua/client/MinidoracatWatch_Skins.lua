@@ -20,7 +20,7 @@ S.COMMON = {
 -- 框架 token：surface＝--wp-surface、surfaceTitle＝--wp-head、well＝--wp-raised、border、text、textMuted＝--wp-muted、
 -- accent＝--wp-primary（主要按鈕）、onAccent＝--wp-on-primary、titleText／titleMuted＝--wp-head-text／-muted。
 -- 自有 token：ring＝選取外框（--wp-accent）、socket／socketLocked、glyph＝槽位裡的圖示色、headLine＝標題列下緣線，
--- 以及各款裝飾色（sticker、deco、rivet、gold）。
+-- 以及各款裝飾色（sticker、rivet、gold）。
 S.SKINS = {
     nexus = { layout = "hex", shape = "hex", radius = 3, controlRadius = 3, colors = {
         surface = "#0D1116", surfaceTitle = "#131920", well = "#19212A", border = "#2A3540", text = "#E6F1F5",
@@ -31,7 +31,7 @@ S.SKINS = {
         surface = "#FFF7F0", surfaceTitle = "#FFE4EE", well = "#FFEDF3", border = "#E6A9BE", text = "#3A2630",
         textMuted = "#74505D", accent = "#B03A6A", onAccent = "#FFFFFF", titleText = "#3A2630", titleMuted = "#74505D",
         ring = "#B03A6A", socket = "#FFFFFF", socketLocked = "#F2E2E8", glyph = "#3A2630", headLine = "#E6A9BE",
-        deco = "#F59BBE", warnSurface = "#FFF0C7", warnText = "#5E3B00", warnLine = "#D9B04D", warnStrong = "#8F5500",
+        warnSurface = "#FFF0C7", warnText = "#5E3B00", warnLine = "#D9B04D", warnStrong = "#8F5500",
         errorSurface = "#FFE1E1", errorText = "#82191C", errorLine = "#E3A0A0" } },
     spiffo = { layout = "ring", shape = "circle", radius = 10, controlRadius = 6, colors = {
         surface = "#2A2C31", surfaceTitle = "#B8342C", well = "#363940", border = "#4B4F58", text = "#F2F2F2",

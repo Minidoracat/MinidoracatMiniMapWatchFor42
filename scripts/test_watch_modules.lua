@@ -15,7 +15,7 @@ local MOD = function(name) return "MinidoracatWatch.Module_" .. name end
 check(type(API) == "table" and API.watchApiVersion == 1, "MinidoracatWatchAPI.watchApiVersion = 1")
 check(type(API.registerWatchModule) == "function" and type(API.registerWatchSlot) == "function"
     and type(API.getWatchModuleState) == "function", "三個 API 函式")
-check(#W.moduleList == 11 and W.modules.compass and W.modules.eco and W.modules.light, "內建 11 個模組（含照明）")
+check(#W.moduleList == 10 and W.modules.ledger and W.modules.eco and W.modules.light, "內建 10 個模組（含照明）")
 check(W.modules.mildetect.class == "advanced" and W.modules.relay.class == "core" and W.modules.gps.drain == 25,
     "內建模組的類別與耗電照設計稿")
 check(#W.slotList == 6 and W.slotById.adv.accepts.advanced and not W.slotById.ext.accepts.advanced
@@ -37,7 +37,7 @@ rejects(API.registerWatchModule, nil, "def 不是 table")
 rejects(API.registerWatchModule, with("id", ""), "空 id")
 rejects(API.registerWatchModule, with("id", "bad id"), "id 有空白")
 rejects(API.registerWatchModule, with("id", 5), "id 不是字串")
-rejects(API.registerWatchModule, with("id", "compass"), "id 和內建重複")
+rejects(API.registerWatchModule, with("id", "gps"), "id 和內建重複")
 rejects(API.registerWatchModule, with("name", ""), "空 name")
 rejects(API.registerWatchModule, with("class", "legendary"), "未知 class")
 rejects(API.registerWatchModule, with("drain", 0 / 0), "drain 是 NaN")
@@ -47,7 +47,7 @@ rejects(API.registerWatchModule, with("drain", "15"), "drain 是字串")
 rejects(API.registerWatchModule, with("item", "NoModule"), "item 沒有 module 前綴")
 rejects(API.registerWatchModule, with("item", MOD("GPS")), "item 已被其他模組使用")
 rejects(API.registerWatchModule, with("onStateChanged", "yes"), "onStateChanged 不是函式")
-check(W.modules.weather == nil and #W.moduleList == 11, "拒收的 def 沒有留下任何登記")
+check(W.modules.weather == nil and #W.moduleList == 10, "拒收的 def 沒有留下任何登記")
 local calls = {}
 local def = with("onStateChanged", function(p, s, old) calls[#calls + 1] = { s = s, old = old } end)
 check(API.registerWatchModule(def) == true, "合法的第三方模組登記成功")
@@ -89,23 +89,23 @@ local function install(p, w, slotId, item) return W.applyModuleChange(p, w:getID
 local function remove(p, w, slotId) return W.applyModuleChange(p, w:getID(), slotId, false) end
 
 -- ===== 安裝／拆下：happy path、modData 往返 =====
-local compass = give(alice, MOD("Compass"))
-compass:getModData().serial = "C-1"
-compass:getModData().nested = { a = 1, b = { "x" } }
+local ledger = give(alice, MOD("Ledger"))
+ledger:getModData().serial = "C-1"
+ledger:getModData().nested = { a = 1, b = { "x" } }
 F.reset()
-check(install(alice, watch, "std1", compass) == true, "安裝羅盤到標準槽 1")
-check(compass.container == nil and F.removed[1] == compass, "模組物品離開背包並送移除封包")
+check(install(alice, watch, "std1", ledger) == true, "安裝名錄到標準槽 1")
+check(ledger.container == nil and F.removed[1] == ledger, "模組物品離開背包並送移除封包")
 local rec = W.slotRecord(watch, "std1")
-check(rec and rec.id == "compass" and rec.item == MOD("Compass") and rec.md.serial == "C-1" and rec.md.nested.b[1] == "x",
+check(rec and rec.id == "ledger" and rec.item == MOD("Ledger") and rec.md.serial == "C-1" and rec.md.nested.b[1] == "x",
     "紀錄進錶的 modData（含模組物品 modData 的複本）")
 check(#F.synced == 1 and F.synced[1].item == watch, "同步錶的 modData")
 F.reset()
 check(remove(alice, watch, "std1") == true, "拆下")
-local back = alice.inv:getAllTypeRecurse(MOD("Compass"))
-check(back:size() == 1 and back:get(0) ~= compass and back:get(0):getModData().serial == "C-1"
+local back = alice.inv:getAllTypeRecurse(MOD("Ledger"))
+check(back:size() == 1 and back:get(0) ~= ledger and back:get(0):getModData().serial == "C-1"
     and back:get(0):getModData().nested.a == 1, "拆下：以同類型建回物品，modData 還原")
 check(W.slotRecord(watch, "std1") == nil and F.added[1] == back:get(0) and #F.synced == 1, "槽位清空、送新增封包、同步錶")
-compass = back:get(0)
+ledger = back:get(0)
 
 -- ===== 反例：每一條都不得動到任何東西，總數守恆 =====
 local bob = F.player("bob", 1)
@@ -153,37 +153,37 @@ local function untouched(label, expectReason, ...)
         and #F.removed == 0 and (expectReason == nil or reason == expectReason), label .. "（reason=" .. tostring(reason) .. "）")
 end
 local wid = watch:getID()
-untouched("別人的錶", W.FAIL_MODULE, alice, bobWatch:getID(), "std3", true, compass:getID())
+untouched("別人的錶", W.FAIL_MODULE, alice, bobWatch:getID(), "std3", true, ledger:getID())
 untouched("別人的模組", W.FAIL_MODULE, alice, wid, "std3", true, bobModule:getID())
 untouched("地上的模組（不在任何人背包）", W.FAIL_MODULE, alice, wid, "std3", true, F.item(MOD("Scan")):getID())
 untouched("拿電池當模組", W.FAIL_MODULE, alice, wid, "std3", true, battery:getID())
 untouched("拿錶當模組", W.FAIL_MODULE, alice, wid, "std3", true, wid)
-untouched("watchId 指向模組", W.FAIL_MODULE, alice, compass:getID(), "std3", true, compass:getID())
-untouched("未知槽位", W.FAIL_MODULE, alice, wid, "std9", true, compass:getID())
-untouched("槽位 id 不是字串", W.FAIL_MODULE, alice, wid, 1, true, compass:getID())
-untouched("非整數 watchId", W.FAIL_MODULE, alice, wid + 0.5, "std3", true, compass:getID())
-untouched("非整數 itemId", W.FAIL_MODULE, alice, wid, "std3", true, compass:getID() + 0.25)
-untouched("NaN id", W.FAIL_MODULE, alice, 0 / 0, "std3", true, compass:getID())
+untouched("watchId 指向模組", W.FAIL_MODULE, alice, ledger:getID(), "std3", true, ledger:getID())
+untouched("未知槽位", W.FAIL_MODULE, alice, wid, "std9", true, ledger:getID())
+untouched("槽位 id 不是字串", W.FAIL_MODULE, alice, wid, 1, true, ledger:getID())
+untouched("非整數 watchId", W.FAIL_MODULE, alice, wid + 0.5, "std3", true, ledger:getID())
+untouched("非整數 itemId", W.FAIL_MODULE, alice, wid, "std3", true, ledger:getID() + 0.25)
+untouched("NaN id", W.FAIL_MODULE, alice, 0 / 0, "std3", true, ledger:getID())
 untouched("無限大 id", W.FAIL_MODULE, alice, wid, "std3", true, 1 / 0)
-untouched("字串 id", W.FAIL_MODULE, alice, tostring(wid), "std3", true, compass:getID())
-untouched("install 不是布林", W.FAIL_MODULE, alice, wid, "std3", "yes", compass:getID())
-untouched("槽位已滿", W.FAIL_SLOT_FULL, alice, wid, "std2", true, compass:getID())
+untouched("字串 id", W.FAIL_MODULE, alice, tostring(wid), "std3", true, ledger:getID())
+untouched("install 不是布林", W.FAIL_MODULE, alice, wid, "std3", "yes", ledger:getID())
+untouched("槽位已滿", W.FAIL_SLOT_FULL, alice, wid, "std2", true, ledger:getID())
 untouched("進階模組裝標準槽", W.FAIL_CLASS, alice, wid, "std3", true, mil:getID())
 untouched("核心模組裝標準槽", W.FAIL_CLASS, alice, wid, "std3", true, relay:getID())
 untouched("拆空槽", W.FAIL_SLOT_EMPTY, alice, wid, "std3", false)
 SB.SlotExt = 2
-untouched("解鎖卡模式、沒用卡：擴充槽無效", W.FAIL_SLOT_INVALID, alice, wid, "ext", true, compass:getID())
+untouched("解鎖卡模式、沒用卡：擴充槽無效", W.FAIL_SLOT_INVALID, alice, wid, "ext", true, ledger:getID())
 SB.SlotExt = 4
-untouched("不開放的擴充槽", W.FAIL_SLOT_INVALID, alice, wid, "ext", true, compass:getID())
+untouched("不開放的擴充槽", W.FAIL_SLOT_INVALID, alice, wid, "ext", true, ledger:getID())
 SB.SlotExt = 3
-untouched("經濟系統（Phase 6 前當解鎖卡）、沒用卡", W.FAIL_SLOT_INVALID, alice, wid, "ext", true, compass:getID())
+untouched("經濟系統（Phase 6 前當解鎖卡）、沒用卡", W.FAIL_SLOT_INVALID, alice, wid, "ext", true, ledger:getID())
 SB.SlotCore = 1
 alice.inv:DoRemoveItem(screwdriver)
-untouched("沒有螺絲起子", W.FAIL_SCREWDRIVER, alice, wid, "std3", true, compass:getID())
+untouched("沒有螺絲起子", W.FAIL_SCREWDRIVER, alice, wid, "std3", true, ledger:getID())
 untouched("沒有螺絲起子也不能拆", W.FAIL_SCREWDRIVER, alice, wid, "std2", false)
 local broken = give(alice, "Base.Screwdriver")
 broken.broken = true
-untouched("壞掉的螺絲起子不算", W.FAIL_SCREWDRIVER, alice, wid, "std3", true, compass:getID())
+untouched("壞掉的螺絲起子不算", W.FAIL_SCREWDRIVER, alice, wid, "std3", true, ledger:getID())
 alice.inv:DoRemoveItem(broken)
 local bag = F.bag(alice.inv)
 bag:AddItem(screwdriver)
@@ -193,20 +193,20 @@ relay = alice.inv:getAllTypeRecurse(MOD("Relay")):get(0)
 SB.SlotCore = 3
 SB.NeedScrewdriver = false
 bag:DoRemoveItem(screwdriver)
-check(install(alice, watch, "std3", compass) == true, "沙盒關掉螺絲起子：不需要工具")
+check(install(alice, watch, "std3", ledger) == true, "沙盒關掉螺絲起子：不需要工具")
 check(remove(alice, watch, "std3") == true, "沙盒關掉螺絲起子：拆下也不需要")
-compass = alice.inv:getAllTypeRecurse(MOD("Compass")):get(0)
+ledger = alice.inv:getAllTypeRecurse(MOD("Ledger")):get(0)
 SB.NeedScrewdriver = true
 alice.inv:AddItem(screwdriver)
 alice.dead = true
-untouched("死掉的玩家", W.FAIL_MODULE, alice, wid, "std3", true, compass:getID())
+untouched("死掉的玩家", W.FAIL_MODULE, alice, wid, "std3", true, ledger:getID())
 alice.dead = nil
-untouched("沒有玩家", W.FAIL_MODULE, nil, wid, "std3", true, compass:getID())
+untouched("沒有玩家", W.FAIL_MODULE, nil, wid, "std3", true, ledger:getID())
 F.mode = "client"
-untouched("MP 客戶端不能直接改", W.FAIL_MODULE, alice, wid, "std3", true, compass:getID())
+untouched("MP 客戶端不能直接改", W.FAIL_MODULE, alice, wid, "std3", true, ledger:getID())
 F.mode = "server"
 -- 錶上的紀錄被改成別的物品類型：拆不出那個物品（只建回已登記的模組類型）
-watch:getModData()[W.SLOTS_KEY].std3 = { id = "compass", item = "Base.Katana" }
+watch:getModData()[W.SLOTS_KEY].std3 = { id = "ledger", item = "Base.Katana" }
 total = moduleCount()
 untouched("紀錄被改成其他物品：拆不出來", W.FAIL_MODULE, alice, wid, "std3", false)
 check(alice.inv:getAllTypeRecurse("Base.Katana"):size() == 0, "沒有憑空變出物品")
@@ -220,12 +220,12 @@ F.missingTypes[MOD("GPS")] = nil
 
 -- 隨機序列：合法與不合法的指令混著跑，模組總數永遠守恆
 math.randomseed(42)
-local items = { compass, mil, relay }
+local items = { ledger, mil, relay }
 local slots = { "std1", "std2", "std3", "ext", "adv", "core", "forecast", "bogus" }
 local conserved, applied = true, 0
 for _ = 1, 400 do
     local inst = math.random() < 0.5
-    local it = alice.inv:getAllTypeRecurse(MOD(({ "Compass", "MilDetect", "Relay", "GPS" })[math.random(4)])):get(0)
+    local it = alice.inv:getAllTypeRecurse(MOD(({ "Ledger", "MilDetect", "Relay", "GPS" })[math.random(4)])):get(0)
         or items[math.random(#items)]
     SB.SlotAdv = math.random(4)
     if W.applyModuleChange(alice, wid, slots[math.random(#slots)], inst, it:getID()) then applied = applied + 1 end
@@ -310,10 +310,10 @@ check(W.account(alice1) == W.seenKey(alice1), "單機：帳號＝帳號|本機�
 F.mode = "server"
 -- 換戴別支錶也能用
 local watch2 = give(alice, F.LEFT)
-compass = give(alice, MOD("Compass"))
-check(install(alice, watch2, "ext", compass) == true, "換一支錶：擴充槽一樣有效（綁帳號，不綁錶）")
+ledger = give(alice, MOD("Ledger"))
+check(install(alice, watch2, "ext", ledger) == true, "換一支錶：擴充槽一樣有效（綁帳號，不綁錶）")
 remove(alice, watch2, "ext")
-compass = alice.inv:getAllTypeRecurse(MOD("Compass")):get(0)
+ledger = alice.inv:getAllTypeRecurse(MOD("Ledger")):get(0)
 -- 客戶端不能偽造：玩家 modData 被整表覆蓋不影響；MP 客戶端不能直接改；客戶端送的 unlocks 指令伺服器不認
 alice.md = { MinidoracatWatchUnlocks = { adv = true } }
 check(W.slotValid(alice, W.slotById.adv) == false, "玩家 modData 寫什麼都不算")
@@ -353,9 +353,9 @@ W.payValid, W.addonSlotCfg = savedPay, savedCfg
 -- ===== 耗電倍率 =====
 local w3 = give(alice, F.RIGHT)
 check(W.drainFactor(alice, w3) == 1, "沒有模組＝1")
-install(alice, w3, "std1", compass)
+install(alice, w3, "std1", ledger)
 install(alice, w3, "std2", alice.inv:getAllTypeRecurse(MOD("GPS")):get(0) or give(alice, MOD("GPS")))
-check(near(W.drainFactor(alice, w3), 1.35), "羅盤 10% ＋ 定位 25%＝1.35")
+check(near(W.drainFactor(alice, w3), 1.35), "名錄 10% ＋ 定位 25%＝1.35")
 SB.DrainGPS = 40
 check(near(W.drainFactor(alice, w3), 1.5), "沙盒調整內建模組耗電")
 SB.DrainGPS = nil
@@ -452,11 +452,11 @@ check(API.getWatchModuleState(alice, "radar") == "active", "兩個 MOD 都裝回
 SB.SlotAddon = 1
 
 -- ===== getWatchModuleState 優先序真值表 =====
--- 欄位：Enabled、RuleArrow（1 免／2 錶／3 模組／4 關）、戴錶、電量（nil＝沒電池）、羅盤在擴充槽、擴充槽有效 → 預期
+-- 欄位：Enabled、RulePoi（1 免／2 錶／3 模組／4 關）、戴錶、電量（nil＝沒電池）、名錄在擴充槽、擴充槽有效 → 預期
 local st = F.player("tess", 5)
 local tw = give(st, F.RIGHT)
 give(st, "Base.Screwdriver")
-local tc = give(st, MOD("Compass"))
+local tc = give(st, MOD("Ledger"))
 SB.SlotExt = 1
 W.applyModuleChange(st, tw:getID(), "ext", true, tc:getID())
 local rows = {
@@ -482,7 +482,7 @@ local rows = {
 local allRows = true
 local stash = nil -- 「沒裝」列：紀錄先拿出錶外（放進錶上任何別的鍵都會變成孤立槽位）
 for i, r in ipairs(rows) do
-    SB.Enabled, SB.RuleArrow = r[1], r[2]
+    SB.Enabled, SB.RulePoi = r[1], r[2]
     st.worn = {}
     if r[3] then F.wear(st, tw) end
     W.setCharge(tw, r[4] == nil and W.NO_BATTERY or r[4])
@@ -491,7 +491,7 @@ for i, r in ipairs(rows) do
     else stash = slotsT.ext or stash; slotsT.ext = nil end
     SB.SlotExt = r[6] and 1 or 4
     W.invalidate()
-    local got = API.getWatchModuleState(st, "compass")
+    local got = API.getWatchModuleState(st, "ledger")
     if got ~= r[7] then
         allRows = false
         check(false, "真值表第 " .. i .. " 列：預期 " .. r[7] .. "，得到 " .. tostring(got))
@@ -499,24 +499,24 @@ for i, r in ipairs(rows) do
 end
 check(allRows, "getWatchModuleState 真值表 " .. #rows .. " 列")
 -- 需要電池關閉：沒電、沒電池都不算 unpowered（W.power＝1）
-SB.NeedBattery, SB.RuleArrow, SB.SlotExt = false, 3, 1
+SB.NeedBattery, SB.RulePoi, SB.SlotExt = false, 3, 1
 st.worn = {}
 F.wear(st, tw)
 local slotsT = tw:getModData()[W.SLOTS_KEY]
 slotsT.ext = slotsT.ext or stash
 W.setCharge(tw, W.NO_BATTERY)
 W.invalidate()
-check(API.getWatchModuleState(st, "compass") == "active", "不需要電池：沒裝電池的錶模組照樣 active")
+check(API.getWatchModuleState(st, "ledger") == "active", "不需要電池：沒裝電池的錶模組照樣 active")
 W.setCharge(tw, 0)
 W.invalidate()
-check(select(1, W.featureDecision(st, "arrow")) == true, "不需要電池：沒電也放行功能")
+check(select(1, W.featureDecision(st, "poi")) == true, "不需要電池：沒電也放行功能")
 SB.NeedBattery = nil
 W.invalidate()
-check(API.getWatchModuleState(st, "compass") == "unpowered", "需要電池（預設）：沒電＝unpowered")
+check(API.getWatchModuleState(st, "ledger") == "unpowered", "需要電池（預設）：沒電＝unpowered")
 st.worn = {}
 W.invalidate()
-SB.Enabled, SB.RuleArrow, SB.SlotExt = true, nil, 1
-check(API.getWatchModuleState(st, "nope") == "missing" and API.getWatchModuleState(nil, "compass") == "missing",
+SB.Enabled, SB.RulePoi, SB.SlotExt = true, nil, 1
+check(API.getWatchModuleState(st, "nope") == "missing" and API.getWatchModuleState(nil, "ledger") == "missing",
     "未登記的 id、沒有玩家＝missing")
 check(API.getWatchModuleState(st, "radar") == "missing", "第三方模組沒裝＝missing")
 SB.Enabled = false
@@ -528,14 +528,14 @@ st.worn = {}
 F.wear(st, tw)
 W.setCharge(tw, 0.5)
 W.invalidate()
-API.getWatchModuleState(st, "compass")
+API.getWatchModuleState(st, "ledger")
 local scans = 0
 local realWorn = st.getWornItems
 st.getWornItems = function(self) scans = scans + 1; return realWorn(self) end
 collectgarbage("collect")
 collectgarbage("stop")
 local kb = collectgarbage("count")
-for _ = 1, 20000 do API.getWatchModuleState(st, "compass") end
+for _ = 1, 20000 do API.getWatchModuleState(st, "ledger") end
 local grew = collectgarbage("count") - kb
 collectgarbage("restart")
 check(scans == 0 and grew < 1, "getWatchModuleState 20000 次：不翻穿戴清單、不配置（" .. string.format("%.2f", grew) .. " KB）")

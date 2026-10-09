@@ -43,7 +43,7 @@ STRAP_CROP = {"Paws": 42, "BB3000": 46}
 
 # 模組：設計稿 data.mjs MODULES 的類別（一般／進階／核心）→ TIERS 顏色；圖示顏色沿用目前物品腳本的 ColorRed/Green/Blue。
 MODULES = [
-    ("Compass", "compass", "std", "#E6C85A"), ("Ledger", "ledger", "std", "#D7823C"), ("GPS", "gps", "std", "#5AC86E"),
+    ("Ledger", "ledger", "std", "#D7823C"), ("GPS", "gps", "std", "#5AC86E"),
     ("Comm", "comm", "std", "#508CE6"), ("Scan", "scan", "std", "#3CC8C8"), ("Detect", "detect", "std", "#E15050"),
     ("Light", "light", "std", "#FFD36E"), ("MilDetect", "mildetect", "adv", "#96AA50"), ("LongComm", "longcomm", "adv", "#508CE6"),
     ("Relay", "relay", "core", "#AA6EF0"), ("Eco", "eco", "core", "#6EDC8C"),

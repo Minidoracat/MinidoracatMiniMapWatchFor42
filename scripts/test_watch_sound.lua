@@ -1,6 +1,7 @@
 -- 地圖錶音效（client/MinidoracatWatch_Sound.lua）：sound script 與 WAV 對得上、播放（本機 emitter、不送封包、音量乘數、
--- 音量 0 不播、沒登記只 log 一次、分割畫面各自玩家）、裝卸模組（單機、MP 伺服器確認、依戴著的錶款、失敗不響）、
--- 開關燈（狀態真的變了才響、基準不響、單機立即）、定時掃描提示音（預設關、對應功能判斷、1 秒合併、分割畫面）、
+-- 音量 0 不播、沒登記只 log 一次、分割畫面各自玩家）、調音量試聽（停下來才播一次、值沒變不試聽、先停掉上一個、音量 0）、
+-- 裝卸模組（單機、MP 伺服器確認、依戴著的錶款、失敗不響）、開關燈（狀態真的變了才響、基準不響、單機立即）、
+-- 定時掃描提示音（預設關、對應功能判斷、1 秒合併、分割畫面）、
 -- 設定（ModOptions 保存與讀回、齒輪分類 settingsApiVersion 4 的滑桿、v3 與缺 API 不註冊不出錯、scanApiVersion 守衛）。
 -- 用法（repo 根目錄）：lua scripts/test_watch_sound.lua
 local F = dofile("scripts/lib_watch_fakes.lua")
@@ -117,6 +118,40 @@ F.reset()
 check(Snd.play(alice, "MinidoracatWatch_Nope") == nil and Snd.play(alice, "MinidoracatWatch_Nope") == nil
     and #F.logs == 1 and F.logs[1]:find("sound not registered", 1, true) ~= nil, "名稱沒登記：不播、log 一次")
 
+-- ===== 調音量試聽（照公告板：拖動中不播，停下來 PREVIEW_MS 才播一次；下一次先停掉上一個）=====
+local function settle(ms)
+    F.now = F.now + ms
+    F.fire("OnTickEvenPaused")
+end
+F.reset()
+Snd.setVolume(50)
+settle(Snd.PREVIEW_MS - 1)
+Snd.setVolume(55)
+settle(Snd.PREVIEW_MS - 1)
+check(#F.sounds == 0, "試聽：拖動中（每次變動都往後排）不播")
+settle(1)
+settle(1000)
+check(#F.sounds == 1 and last().player == alice and last().name == Snd.INSTALL.ValuTech and last().volume == 0.55,
+    "試聽：停下來才用新音量播一次，沒戴錶播 ValuTech")
+local saves = MO.saves
+Snd.setVolume(55)
+settle(1000)
+check(MO.saves == saves and #F.sounds == 1, "值沒變（面板每幀同步滑桿）：不存檔、不試聽")
+local pw = wear(alice, "MinidoracatWatch.MapWatch_Paws_Left")
+Snd.setVolume(60)
+settle(Snd.PREVIEW_MS)
+check(#F.sounds == 2 and F.sounds[1].stopped and not last().stopped and last().name == "MinidoracatWatch_Install_Paws"
+    and last().volume == 0.6, "再試聽：先停掉上一個，播戴著那款的裝好音效")
+Snd.setVolume(0)
+settle(Snd.PREVIEW_MS)
+check(#F.sounds == 2 and last().stopped, "調到 0：停掉上一個、不播")
+F.unwear(alice, pw)
+alice.inv:DoRemoveItem(pw)
+W.invalidate()
+Snd.setVolume(70)
+settle(Snd.PREVIEW_MS)
+F.reset()
+
 -- ===== 錶款對應 =====
 for _, s in ipairs(W.STYLES) do
     for _, hand in ipairs({ "_Left", "_Right" }) do
@@ -141,7 +176,7 @@ alice.inv:AddItem("Base.Screwdriver")
 local spiffo = alice.inv:AddItem("MinidoracatWatch.MapWatch_Spiffo_Left")
 spiffo:getModData()[W.KEY] = 1
 F.reset()
-local m = alice.inv:AddItem(MOD("Compass"))
+local m = alice.inv:AddItem(MOD("GPS"))
 sp(C.requestModule, alice, paws, "std1", m)
 sp(F.runActions, alice)
 check(#F.sounds == 1 and last().name == "MinidoracatWatch_Install_Paws" and last().player == alice, "單機裝好：戴著貓爪")
@@ -158,7 +193,7 @@ sp(F.runActions, alice)
 check(#F.sounds == 3 and last().name == Snd.REMOVE, "單機拆下")
 F.mode = "client"
 F.reset()
-local m4 = alice.inv:AddItem(MOD("Compass"))
+local m4 = alice.inv:AddItem(MOD("GPS"))
 C.requestModule(alice, paws, "std1", m4)
 F.runActions(alice)
 check(#F.sounds == 0 and #F.clientCmds == 1, "MP：送出指令時不響（等伺服器確認）")
@@ -169,7 +204,7 @@ F.load("server/MinidoracatWatch_Server.lua")
 local carol = F.player("carol", 2)
 local cw = wear(carol, "MinidoracatWatch.MapWatch_Nexus_Left")
 carol.inv:AddItem("Base.Screwdriver")
-local cm = carol.inv:AddItem(MOD("Compass"))
+local cm = carol.inv:AddItem(MOD("GPS"))
 F.reset()
 F.now = F.now + 1000
 F.fire("OnClientCommand", W.MODULE, W.CMD_MODULE, carol, { watchId = cw:getID(), slotId = "std1", install = true, itemId = cm:getID() })
@@ -382,6 +417,48 @@ check(spec4.isAvailable() == false and gearTick.get() == false and F.dockRefresh
 gearTick.set(true)
 check(spec4.isAvailable() == true and gearTick.get() == true and F.dockRefreshes == 2
     and iniHas("tickbox|MinidoracatWatch|ShowButton|true"), "齒輪勾回來：立刻恢復、寫回 ModOptions.ini")
+
+-- ===== 面板的音效音量列（框架 rev 17 SliderRow；和齒輪分類、ESC 頁同一份 ModOptions）=====
+function getCore() return { getScreenWidth = function() return 1920 end, getScreenHeight = function() return 1080 end } end
+function getTextManager() return { MeasureStringX = function(_, _, s) return #s * 7 end, getFontHeight = function() return 16 end } end
+function getScriptManager() return { FindItem = function() return nil end } end
+ISMouseDrag, ISInventoryPane = {}, { getActualItems = function(items) return items end }
+F.installUI(17)
+F.load("client/MinidoracatWatch_Panel.lua")
+local PC = MinidoracatWatchClient -- 上面為了工具列按鈕重新載入過 _Client：面板掛在新的那張表上
+PC.openPanel(0, nil)
+local pv = PC.panel()
+pv:update()
+local row = pv.volRow
+local gearVol = MinidoracatWatchSound.SECTION.sliders[1]
+check(row and row.label == "IGUI_MinidoracatWatch_Sound_Volume" and row:getValue() == MinidoracatWatchSound.volume()
+    and row.format(35) == "35%" and row.y + row.height <= pv.footY, "框架 rev 17：電量列上方有音效音量列，顯示目前設定")
+row:setValue(35)
+check(MinidoracatWatchSound.volume() == 35 and gearVol.get() == 35 and iniHas("slider|MinidoracatWatch|Volume|35"),
+    "拖面板的滑桿：齒輪分類讀到同一個值、寫回 ModOptions.ini")
+gearVol.set(60)
+pv:update()
+check(row:getValue() == 60, "齒輪改了音量：面板的滑桿跟著變")
+-- 換戴另一款錶：滑桿的填色與圓鈕在建構時取色，換皮膚要用新皮膚重建（只留一列）
+F.unwear(alice, paws)
+F.wear(alice, spiffo)
+F.fire("OnClothingUpdated", alice)
+F.now = F.now + 1500
+pv:update()
+local rows = 0
+for _, ch in ipairs(pv.children) do if ch.label == "IGUI_MinidoracatWatch_Sound_Volume" then rows = rows + 1 end end
+check(pv.skinKey == "spiffo" and pv.volRow ~= row and pv.volRow.theme == pv.theme and rows == 1 and pv.volRow:getValue() == 60,
+    "換成 Spiffo 的皮膚：音量列用新皮膚重建、只有一列、值不變")
+F.unwear(alice, spiffo)
+F.wear(alice, paws)
+F.fire("OnClothingUpdated", alice)
+PC.closePanel()
+F.installUI(16)
+PC.openPanel(0, nil)
+local p16 = PC.panel()
+p16:update()
+check(p16.volRow == nil and p16.footY ~= nil, "框架 rev 16（沒有 SliderRow）：沒有音量列，面板照常")
+PC.closePanel()
 PZAPI = nil
 F.load("client/MinidoracatWatch_Sound.lua")
 local Snd3 = MinidoracatWatchSound

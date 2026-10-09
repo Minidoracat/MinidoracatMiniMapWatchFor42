@@ -49,7 +49,14 @@ local function setOpt(id, v)
 end
 
 function Snd.volume() return math.max(0, math.min(100, opt("Volume", Snd.VOLUME_DEFAULT))) end
-function Snd.setVolume(v) if type(v) == "number" and v == v then setOpt("Volume", math.max(0, math.min(100, v))) end end
+-- 值真的變了才寫回，並排一次試聽（面板音量列、齒輪分類都走這裡）
+function Snd.setVolume(v)
+    if type(v) ~= "number" or v ~= v then return end
+    v = math.max(0, math.min(100, v))
+    if v == Snd.volume() then return end
+    setOpt("Volume", v)
+    Snd.preview()
+end
 function Snd.scanPing() return opt("ScanPing", false) end
 function Snd.setScanPing(on) setOpt("ScanPing", on == true) end
 
@@ -101,6 +108,25 @@ function Snd.moduleDone(player, install, watch)
     local name = Snd.INSTALL[Snd.styleOf(W.status(player).watch)] or Snd.INSTALL[Snd.styleOf(watch)]
     return Snd.play(player, name or Snd.INSTALL.ValuTech)
 end
+
+-- ===== 調音量時試聽（使用者 2026-10-09 裁定，照公告板 NBPanel：拖動中不播，停下來才播一次）=====
+-- setVolume 每次變動都把試聽往後排 PREVIEW_MS；停下來才播戴著那款的裝好音效（沒戴錶＝ValuTech），播之前先停掉
+-- 上一個試聽（stopSoundLocal 只停這個 ref、不送封包，CharacterSoundEmitter.java:286-290）。音量 0 不播。
+-- ESC 選項頁的滑桿照公告板不試聽：SP 開 ESC 會暫停，玩家 emitter 的聲音排在 toStart，要等角色 update 的
+-- tick 才開始播（FMODSoundEmitter.java:564-578、IsoGameCharacter.java:1552-1555），會在回到遊戲時才響。
+Snd.PREVIEW_MS = 300
+local preview = {}
+function Snd.preview() preview.at = getTimestampMs() + Snd.PREVIEW_MS end
+function Snd.previewTick()
+    if not preview.at or getTimestampMs() < preview.at then return end
+    preview.at = nil
+    local p = getSpecificPlayer(0)
+    if not p then return end
+    if preview.ref then pcall(preview.emitter.stopSoundLocal, preview.emitter, preview.ref) end
+    preview.ref = Snd.play(p, Snd.INSTALL[Snd.styleOf(W.status(p).watch)] or Snd.INSTALL.ValuTech)
+    preview.emitter = preview.ref and p:getEmitter()
+end
+Events.OnTickEvenPaused.Add(Snd.previewTick)
 
 -- 開關燈：每位本機玩家記上一次看到的狀態，真的變了才響；換了角色（重生）只記基準
 local lit = {}

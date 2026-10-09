@@ -3,7 +3,7 @@
 import { watchGroup, icon } from "./watch_svg.mjs";
 
 const watches = ["valutech", "paws", "nexus", "spiffo", "ranger", "luthex", "crt", "crt-amber"];
-const icons = ["compass", "ledger", "gps", "comm", "scan", "detect", "mildetect", "longcomm", "relay", "eco", "light", "card"];
+const icons = ["ledger", "gps", "comm", "scan", "detect", "mildetect", "longcomm", "relay", "eco", "light", "card"];
 process.stdout.write(JSON.stringify({
   watches: Object.fromEntries(watches.map((id) => [id, watchGroup(id)])),
   icons: Object.fromEntries(icons.map((id) => [id, icon(id, { size: 24 })])),

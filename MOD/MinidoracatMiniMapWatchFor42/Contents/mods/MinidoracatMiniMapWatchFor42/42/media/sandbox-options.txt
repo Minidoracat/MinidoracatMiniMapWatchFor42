@@ -12,10 +12,8 @@ option MinidoracatWatch.Enabled
 option MinidoracatWatch.MinimapRule
 {type = enum, numValues = 3, default = 2, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_MinimapRule,}
 
-/* 功能規則（Phase 3）：1 不需要錶、2 戴錶就能用、3 需要模組（預設）、4 關閉；照明（Phase 8）只有 1 需要模組（預設）、2 關閉 */
-option MinidoracatWatch.RuleArrow
-{type = enum, numValues = 4, default = 3, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_RuleArrow,}
-
+/* 功能規則（Phase 3）：1 不需要錶、2 戴錶就能用、3 需要模組（預設）、4 關閉；照明（Phase 8）只有 1 需要模組（預設）、2 關閉。
+   方向箭頭沒有自己的規則與模組，跟著導航（2026-10-09 使用者裁定） */
 option MinidoracatWatch.RulePoi
 {type = enum, numValues = 4, default = 3, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_RulePoi,}
 
@@ -176,9 +174,6 @@ option MinidoracatWatch.HouseHours
 {type = integer, min = 1, max = 168, default = 12, page = MinidoracatWatchBattery, translation = MinidoracatWatch_HouseHours,}
 
 /* 內建模組耗電（%，比只開小地圖多耗的電；照設計稿 data.mjs MODULES）。節能核心不耗電、讓整支錶耗電減半；照明只在開燈時耗電 */
-option MinidoracatWatch.DrainCompass
-{type = integer, min = 0, max = 1000, default = 10, page = MinidoracatWatchBattery, translation = MinidoracatWatch_DrainCompass,}
-
 option MinidoracatWatch.DrainLedger
 {type = integer, min = 0, max = 1000, default = 10, page = MinidoracatWatchBattery, translation = MinidoracatWatch_DrainLedger,}
 

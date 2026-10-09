@@ -148,7 +148,7 @@ for m in pairs(mods) do
     local def = W.moduleByItem[m]
     if not def or def.class ~= "standard" then okM = false end
 end
-check(nS == 7 and nM == 7 and okM and mods["MinidoracatWatch.Module_Light"], "watch:any 七款都出現、mod:any 出七種一般模組（含照明）")
+check(nS == 7 and nM == 6 and okM and mods["MinidoracatWatch.Module_Light"], "watch:any 七款都出現、mod:any 出六種一般模組（含照明）")
 check(D.resolve("watch:crt", rnd) == "MinidoracatWatch.MapWatch_BB3000_Left" and D.resolve("card:core", rnd) == W.CARD_TYPES.core,
     "crt＝嗶嗶腕機左手款；card:core＝核心卡")
 
@@ -326,7 +326,7 @@ F.now = F.now + Lt.POLL_MS
 F.reset()
 Lt.tick()
 check(parses == 1 and count("ArmyBunkerStorage", W.watchType("BB3000")) == 0 and count("SurvivalGear", W.watchType("BB3000")) == 0
-    and count("SurvivalGear", "MinidoracatWatch.Module_Compass") == 1 and logged("after a sandbox change"),
+    and count("SurvivalGear", "MinidoracatWatch.Module_Light") == 1 and logged("after a sandbox change"),
     "關掉嗶嗶腕機：從所有表移除、其他照舊、Parse 一次")
 F.now = F.now + Lt.POLL_MS
 Lt.tick()
@@ -377,7 +377,7 @@ do
     poll()
     local all3 = true
     for _, r in pairs(recipes) do all3 = all3 and #r.skills == 1 and r.skills[1][2] == 3 end
-    check(#R.RECIPES == 4 and all3 and R.applied == 3, "預設電學 3：四條配方都套上")
+    check(#R.RECIPES == 3 and all3 and R.applied == 3, "預設電學 3：三條配方都套上")
     SB.CraftLevel = 7
     poll()
     local c = recipes.CraftMinidoracatWatchLight

@@ -11,13 +11,13 @@
 [*] Drag modules onto the panel's slots (screwdriver, about 3 seconds) to unlock navigation, resource points and more
 [*] When it's dead, use "Insert Battery" or "Replace Battery" in the panel or the watch's right-click menu
 [/olist]
-Rules are set by the server: the four sandbox pages "Minidoracat Map Watch" (Features, Slots & Prices, Battery, Obtaining — the same split as the settings window), or "Map Watch Admin" in MiniMap settings (gear), visible to admins only.
+Rules are set by the server: the four sandbox pages "Minidoracat Map Watch" (Features, Slots & Prices, Battery, Obtaining — the same split as the settings window), or "Map Watch Admin" in Map Display Settings (the gear on the mini-map), visible to admins only.
 
 [h2]🧰 Features in detail[/h2]
 
 [h3]Wear it to use the minimap[/h3]
 [list]
-[*] By default the minimap needs a worn, charged map watch, and features like the direction arrow, resource points and navigation also need their module (admins can change every rule).
+[*] By default the minimap needs a worn, charged map watch, and features like resource points and navigation also need their module (admins can change every rule).
 [*] [b]Never restricted[/b]: the world map, search and your own coordinates; category search for resource points needs no module.
 [*] Without this mod, or with "Enable map watch" off, the minimap stays fully open and watches don't drain.
 [/list]
@@ -33,7 +33,7 @@ Rules are set by the server: the four sandbox pages "Minidoracat Map Watch" (Fea
 [list]
 [*] [b]Loot[/b]: ValuTech (common) electronics stores, homes, gas station counters; Cat Paw (uncommon) toy stores, gift shops, kids' rooms; Aurora (uncommon) electronics store watch cases, department stores; Spiffo (uncommon) Spiffo's, kids' rooms; Ranger (rare) military sites, police armories; BB-3000 (rare) military sites, bunkers, survival gear lockers; Luthex (very rare) jewelry stores, upscale bedrooms.
 [*] [b]Modules[/b]: electronics stores and crates, military and police sites, survival gear lockers; General modules are more common, Advanced and Core are rare. [b]Unlock cards[/b] are rare: Expansion in electronics stores, Advanced at military/police sites, Core in military bunkers.
-[*] [b]Crafting[/b] (no recipe to learn; screwdriver, a surface, Electrical 3 by default): Compass Module = Compass + 2 Scrap Electronics; Directory = Phonebook + 2 Scrap Electronics; Comms = Radio Transmitter + Radio Receiver + Scrap Electronics; Light = Flashlight (used up) + 2 Scrap Electronics. Other modules are loot or zombie drops only.
+[*] [b]Crafting[/b] (no recipe to learn; screwdriver, a surface, Electrical 3 by default): Directory Module = Phonebook + 2 Scrap Electronics; Comms = Radio Transmitter + Radio Receiver + Scrap Electronics; Light = Flashlight (used up) + 2 Scrap Electronics. Other modules are loot or zombie drops only.
 [*] [b]Zombies[/b]: the first time a corpse is searched, items roll by outfit, max 1 per zombie by default. Default rules: any zombie 0.2% ValuTech; army 2% Ranger, 1% Military Detector; police/guards 2% Comms; survivalists 3% BB-3000; Spiffo staff 5% Spiffo; rich 1% Luthex; students 1% Cat Paw; office workers 1% Aurora; mechanics/workers 2% random General module.
 [/list]
 
@@ -49,11 +49,11 @@ Rules are set by the server: the four sandbox pages "Minidoracat Map Watch" (Fea
 [h3]Modules and slots[/h3]
 [list]
 [*] [b]Slots[/b]: 3 free Standard Slots (General modules); the Expansion (General), Advanced (General, Advanced) and Core (all classes) Slots are paid slots. Other mods can add up to 6 slots, shown in the "Other mods" row.
-[*] [b]General[/b]: Compass (off-screen target arrow and distance), Directory (resource points like gun stores and pharmacies, with a legend), Positioning (road navigation, multi-stop trips, route home; an AutoDrive GPS on you or in your vehicle also counts), Comms (share targets with your faction, see teammates), Scanner (nearby vehicles and animals on both maps), Detector (zombie positions and heat on the minimap), Light (below).
+[*] [b]General[/b]: Directory (resource points like gun stores and pharmacies, with a legend), Positioning (road navigation, multi-stop trips, route home, and the arrow and distance to an off-screen target; an AutoDrive GPS on you or in your vehicle also counts), Comms (share targets with your faction, see teammates), Scanner (nearby vehicles and animals on both maps), Detector (zombie positions and heat on the minimap), Light (below).
 [*] [b]Advanced[/b]: Military Detector (double radius, also on the world map), Long-Range Comms (longer range, replaces Comms).
 [*] [b]Core[/b] (Core Slot only): Relay Core (faction sharing with no distance limit), Power-Saver Core (halves the whole watch's drain).
 [*] [b]Faction sharing[/b]: sharer and recipient both need a comms module; range is the larger of the two; no limit if either has a Relay Core.
-[*] [b]Installing[/b]: drag a module onto a slot, use the module buttons in the panel, or right-click the module → "Install to Map Watch". About 3 seconds, screwdriver by default; walking cancels it. Watch and module must be on you; modules stay on the watch and only work while it's worn.
+[*] [b]Installing[/b]: drag a module onto a slot, use the module buttons in the panel, or right-click the module → "Install to Map Watch". Module buttons are sorted Core, Advanced, General, with a stripe in the slot's tier color; hover one to see what the module does and its drain. Slots that take several tiers get a tier filter. About 3 seconds, screwdriver by default; walking cancels it. Watch and module must be on you; modules stay on the watch and only work while it's worn.
 [*] [b]Invalid slot[/b] (not opened, disabled, rental ended): its module stops and uses no power; remove it anytime and use another slot.
 [*] [b]Slot from a removed mod[/b]: the module stops, uses no power and can be removed; the slot and unlocks are kept and return with the mod. If the module's own mod is gone too, it stays stuck on the watch until that mod returns.
 [/list]
@@ -71,7 +71,7 @@ Rules are set by the server: the four sandbox pages "Minidoracat Map Watch" (Fea
 [list]
 [*] A light on the watch: lights about 4 tiles around you (adjustable); nearby players who can see you see it too, like a vanilla flashlight.
 [*] No drain while off, +100% while on (adjustable). Turns off when the battery dies, you take the watch off, the module is removed, its slot stops working, or admins disable the light.
-[*] Toggle with the panel's "Light on/off" button, the watch's right-click menu, or the hotkey (default [b]Scroll Lock[/b] — rebind under Options → Key Bindings → "Minidoracat Map Watch"; no Scroll Lock on your keyboard? Use the panel or the right-click menu).
+[*] Toggle with the panel's "Light on/off" button, the watch's right-click menu, or the hotkey (default [b]Scroll Lock[/b] — rebind under Options → Key Bindings → "Minidoracat Map Watch"; no Scroll Lock on your keyboard? Use the panel or the right-click menu). With no light in your hands, the vanilla "Equip/Turn On/Off Light Source" key (default [b]F[/b]) toggles the watch light too; a flashlight in hand is toggled first, as in vanilla.
 [/list]
 
 [h3]Paid slots[/h3]
@@ -89,15 +89,15 @@ Rules are set by the server: the four sandbox pages "Minidoracat Map Watch" (Fea
 
 [h3]Player settings[/h3]
 [list]
-[*] The "Map Watch" category in the minimap settings (gear) is visible to every player; the same page is in the game's Options → Mods. Settings are saved on your own computer, not in the save.
-[*] [b]Map watch sound volume[/b]: 0–100% (default 70%), on top of the game's master volume; 0% plays nothing.
+[*] The "Map Watch" category in the "Add-ons" group of Map Display Settings (the gear on the mini-map, or the paw-print button on the world map) is visible to every player; the same page is in the game's Options → Mods. Settings are saved on your own computer, not in the save.
+[*] [b]Map watch sound volume[/b]: 0–100% (default 70%), on top of the game's master volume; 0% plays nothing. You can also set it right above the battery bar in the watch panel. When you adjust it in the panel or this category, your watch's install sound plays once at the new volume after you stop, so you can compare (the Options → Mods page doesn't preview).
 [*] [b]Ping on scheduled scan updates[/b] (off by default): a short ping when zombie dots or vehicles and animals are rescanned (once if both update together). [b]Only plays when the server sets the minimap scan interval to scheduled[/b]; live updates (the default) don't ping. Your watch must be able to use that feature.
 [*] [b]Show Map Watch button[/b] (on by default): the Map Watch button in the family toolbar. Untick it to hide it right away (in Options → Mods, press Apply); you can still open the panel by right-clicking the map watch in your inventory and choosing "Open Map Watch".
 [/list]
 
 [h3]Admin settings window[/h3]
 [list]
-[*] "Map Watch Admin" in MiniMap settings (gear) is visible to admins and moderators (not gm or players), and always in single player. Press "Open Map Watch Settings".
+[*] "Map Watch Admin" in the "Admin" group of Map Display Settings is visible to admins and moderators (not gm or players), and always in single player. Press "Open Map Watch Settings".
 [*] Six pages: Overview (presets Relaxed / Standard (recommended) / Hardcore, current settings), Features, Slots & Prices, Battery, Obtaining, Zombie Drops.
 [*] [b]Review & Apply[/b] lists every change (old → new; warns about rent, currency or period changes) and [b]needs a reason[/b]. The reason and changes go to admin-audit.log next to the server settings file, plus the server log. The server re-checks permission.
 [*] If two admins edit at once, the later one is blocked and reloads the current settings; editing the file directly also counts as a change.
@@ -113,15 +113,15 @@ Rules are set by the server: the four sandbox pages "Minidoracat Map Watch" (Fea
 [/list]
 
 [h3]Selling in the Economy Center[/h3]
-"Sell in Economy Center" on the Obtaining page opens the Economy admin shop page with a draft for each of the seven watches, eleven modules and the battery not yet sold; you set prices, and nothing goes on sale until you apply. Needs a newer Economy and Economy Center admin access. Paid slot prices are sandbox options, sent to Economy within 5 seconds of startup or a change.
+"Sell in Economy Center" on the Obtaining page opens the Economy admin shop page with a draft for each of the seven watches, ten modules and the battery not yet sold; you set prices, and nothing goes on sale until you apply. Needs Economy 42.21.0-0.11.0 or later and Economy Center admin access. Paid slot prices are sandbox options, sent to Economy within 5 seconds of startup or a change.
 
 [h3]Sandbox options (the four "Minidoracat Map Watch" pages) and defaults[/h3]
 [list]
 [*] Enable map watch: on | Minimap rule: Watch required
-[*] Feature rules (arrow, resource points, navigation, faction sharing, vehicles & animals, zombie positions, light): Module required
+[*] Feature rules (resource points, navigation incl. the direction arrow, faction sharing, vehicles & animals, zombie positions, light): Module required
 [*] Full battery runtime: 72 h | Drain while offline: off | Drain while paused (single player): off | Needs a battery: on | When the battery is dead: All features off
 [*] Charge in a running vehicle: off (6 h) | Charge in a powered building: off (12 h)
-[*] Module drain: Compass, Directory 10%; Positioning, Comms, Scanner, Long-Range Comms, Relay Core 25%; Detector, Military Detector 50% | Light Module drain while on: 100% | Light radius: 4 tiles
+[*] Module drain: Directory 10%; Positioning, Comms, Scanner, Long-Range Comms, Relay Core 25%; Detector, Military Detector 50% | Light Module drain while on: 100% | Light radius: 4 tiles
 [*] Radius: scan 60, detection 40, military detection 80 | Comm range 2000, long-range 8000 tiles (never beyond the minimap view distance)
 [*] Expansion/Advanced/Core Slot access: Economy | Add-on slots: Free | Also accept unlock cards: off
 [*] Buy / rent: Expansion 400/60, Advanced 1200/150, Core 2400/300, add-on 600/80 | Currency: Survivor Coin | 7 days per period | Retry window 24 h | Reminder 24 h | Auto-renew allowed
@@ -139,8 +139,8 @@ Rules are set by the server: the four sandbox pages "Minidoracat Map Watch" (Fea
 
 [h2]⚠️ Known limitations[/h2]
 [list]
-[*] Needs a newer Minidoracat MiniMap; with an older one the watch has no effect, the minimap stays open, and you're told to update. The panel and settings window need a newer Minidoracat UI.
-[*] Buying and renting slots needs a multiplayer server with Minidoracat Economy 42.21.0-0.8.0 or later; "Sell in Economy Center" and freezing rentals while an add-on mod is removed need a newer Economy. Older versions only stop auto-renew charges while that mod is gone; the rental still ends on time.
+[*] Needs Minidoracat MiniMap 42.21.0-0.37.0 or later; with an older one the watch has no effect, the minimap stays open, and you're told to update. The panel and settings window need Minidoracat UI 42.21.0-0.8.0 or later.
+[*] Buying and renting slots needs a multiplayer server with Minidoracat Economy 42.21.0-0.8.0 or later; "Sell in Economy Center" and freezing rentals while an add-on mod is removed need Economy 42.21.0-0.11.0 or later. Older versions only stop auto-renew charges while that mod is gone; the rental still ends on time.
 [*] If Economy itself is removed and re-added, rentals aren't compensated (they keep counting).
 [*] No-steam servers have no identity check: a player renamed to an offline player may use that player's opened slots.
 [*] Already-searched corpses and already-spawned container loot aren't affected by setting changes.

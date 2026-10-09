@@ -30,7 +30,7 @@ end
 W.STYLE_BY_ID = { valutech = "ValuTech", paws = "Paws", nexus = "Nexus", spiffo = "Spiffo", ranger = "Ranger",
     luthex = "Luthex", crt = "BB3000" }
 W.STYLE_IDS = { "valutech", "paws", "nexus", "spiffo", "ranger", "luthex", "crt" }
-W.GENERAL_MODULES = { "compass", "ledger", "gps", "comm", "scan", "detect", "light" }
+W.GENERAL_MODULES = { "ledger", "gps", "comm", "scan", "detect", "light" }
 W.CARD_TIERS = { "ext", "adv", "core" }
 
 -- 預設 10 條（設計稿 DEFAULT_DROPS；機率單位是 %）。每次回新的一份

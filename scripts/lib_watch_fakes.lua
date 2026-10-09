@@ -249,6 +249,9 @@ end
 -- 充電：所在車輛（BaseVehicle.isEngineRunning）與所在格（IsoGridSquare 的 getRoom／haveElectricity／hasGridPower）。
 -- 格子只給這三個方法，發電機（{ fuel = n }）藏在 closure 裡：被測程式碰到別的方法就當場報錯，也碰不到燃料。
 function Player:getVehicle() return self.vehicle end
+function Player:getPrimaryHandItem() return self.primary end
+function Player:getSecondaryHandItem() return self.secondary end
+function Player:isAiming() return self.aiming == true end
 function Player:getCurrentSquare() return self.square end
 function F.vehicle(running)
     return { running = running, isEngineRunning = function(v) return v.running == true end }
@@ -276,6 +279,9 @@ function Emitter:playSoundImpl(name, obj)
 end
 function Emitter:setVolume(ref, v)
     for _, s in ipairs(F.sounds) do if s.ref == ref then s.volume = v end end
+end
+function Emitter:stopSoundLocal(ref)
+    for _, s in ipairs(F.sounds) do if s.ref == ref then s.stopped = true end end
 end
 function Player:getEmitter()
     self.emitter = self.emitter or setmetatable({ player = self }, Emitter)
@@ -458,6 +464,11 @@ function Element:getMouseY() return self.my or 0 end
 function Element:getAbsoluteX() return self.x end
 function Element:getAbsoluteY() return self.y end
 function Element:addChild(c) self.children = self.children or {}; c.parent = self; table.insert(self.children, c) end
+function Element:removeChild(c)
+    for i, x in ipairs(self.children or {}) do
+        if x == c then table.remove(self.children, i); c.parent = nil; return end
+    end
+end
 function Element:update() end
 function Element:prerender() end
 function Element:render() end
@@ -477,6 +488,7 @@ function F.installUI(rev)
     function Button:setEnabled(e) self.enable = e ~= false end
     function Button:isEnabled() return self.enable == true end
     function Button:setActive(a) self.active = a == true end
+    function Button:setTooltip(t) self.tooltip = t end
     function Button:forceClick() if self.visible and self.enable then self.onClick(self.target, self) end end
     local Window = Element:derive("FakeUIWindow")
     function Window:contentTop() return 26 end
@@ -526,6 +538,24 @@ function F.installUI(rev)
             refresh = function() F.dockRefreshes = (F.dockRefreshes or 0) + 1 end },
     }
     if UI.API_REVISION >= 15 then UI.Skin.shapeOf = function() return nil end end
+    -- rev 17：SliderRow（標籤＋滑桿＋數值）；setValue 夾限＋依 step 量化，非 silent 時值真的變了才回呼（同真框架）
+    if UI.API_REVISION >= 17 then
+        UI.CAPABILITIES.sliderRow = true
+        local SliderRow = Element:derive("FakeUISliderRow")
+        function SliderRow:getValue() return self.value end
+        function SliderRow:setValue(v, silent)
+            v = math.max(self.min, math.min(self.max, self.min + math.floor((v - self.min) / self.step + 0.5) * self.step))
+            if v == self.value then return end
+            self.value = v
+            if not silent and self.onChange then self.onChange(self.target, v, self) end
+        end
+        UI.SliderRow = { new = function(o)
+            local r = Element.new(SliderRow, o.x or 0, o.y or 0, o.width or 240, 20)
+            r.label, r.tooltip, r.min, r.max, r.step, r.value = o.label, o.tooltip, o.min, o.max, o.step or 1, o.value
+            r.format, r.theme, r.target, r.onChange, r._focusKind = o.format, o.theme, o.target, o.onChange, "button"
+            return r
+        end }
+    end
     MinidoracatUI = { v1 = UI }
     return UI
 end
