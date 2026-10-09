@@ -602,4 +602,33 @@ check(W.power(cw) == nil, "需要電池（預設）：沒電池＝nil")
 sbw.ChargeCar, sbw.ChargeHouse = nil, nil
 F.mode = "sp"
 
+-- ===== Pack Mule 相容：它的「手錶」選項開著才把地圖手錶搬到它的手錶部位 =====
+do
+    local items = {}
+    local savedSM = getScriptManager
+    getScriptManager = function()
+        return { FindItem = function(_, t)
+            if t:find("Luthex_Right", 1, true) then return nil end -- 缺一件腳本也不影響其他
+            items[t] = items[t] or { setBodyLocation = function(self, loc) self.loc = loc end }
+            return items[t]
+        end }
+    end
+    local LEFT_W, RIGHT_W = { "mule:left_watch" }, { "mule:right_watch" }
+    SandboxVars.B42PackMule = { Watch = true }
+    check(W.packMuleWatchSlots() == false and next(items) == nil, "沒裝 Pack Mule：不動地圖手錶的部位")
+    MuleBodyLocations = { LEFT_WATCH = LEFT_W, RIGHT_WATCH = RIGHT_W }
+    SandboxVars.B42PackMule.Watch = false
+    check(W.packMuleWatchSlots() == false and next(items) == nil, "Pack Mule 的手錶選項關著：不動")
+    SandboxVars.B42PackMule.Watch = true
+    check(W.packMuleWatchSlots() == true, "選項開著：搬到 Pack Mule 的手錶部位")
+    local ok = true
+    for _, s in ipairs(W.STYLES) do
+        local l = items["MinidoracatWatch.MapWatch_" .. s .. "_Left"]
+        local r = items["MinidoracatWatch.MapWatch_" .. s .. "_Right"]
+        ok = ok and l ~= nil and l.loc == LEFT_W and (s == "Luthex" or (r ~= nil and r.loc == RIGHT_W))
+    end
+    check(ok, "七款的左手款進左手位、右手款進右手位；缺一件腳本不影響其他")
+    MuleBodyLocations, SandboxVars.B42PackMule, getScriptManager = nil, nil, savedSM
+end
+
 F.finish("test_watch_core")

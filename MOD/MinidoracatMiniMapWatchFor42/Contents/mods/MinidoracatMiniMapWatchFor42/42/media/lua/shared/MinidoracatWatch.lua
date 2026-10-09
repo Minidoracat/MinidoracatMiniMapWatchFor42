@@ -31,6 +31,28 @@ end
 -- 戰利品、殭屍掉落產生的那一隻：左手（原版分佈表也只放 WristWatch_Left_*；嗶嗶腕機照原作戴左前臂）
 function W.watchType(style) return "MinidoracatWatch.MapWatch_" .. style .. "_Left" end
 
+-- ===== Pack Mule 相容（Workshop 3540903327）=====
+-- Pack Mule 的「手錶」選項把原版手錶搬到它自己的 Mule:LEFT_WATCH／RIGHT_WATCH（NewParams_Mule.lua:94-129、
+-- registries.lua:5-6），這兩個部位不和前臂護具互斥；地圖手錶留在原版手腕時，戴上就會換下同一隻手的護臂
+-- （BodyLocations.lua:580-581）。選項開著時照它對原版錶的做法搬過去，同樣在 OnInitGlobalModData（伺服器、客戶端、
+-- 單機都會跑：IsoWorld.java:2009 → GlobalModData.java:54）。部位每次都從物品腳本讀（InventoryItem.java:4086-4088），
+-- 背包裡的錶立即生效；已經戴著的錶留在存檔記的部位（IsoPlayer.java:1255-1259），拿下再戴或換手一次才換。
+function W.packMuleWatchSlots()
+    local locs = MuleBodyLocations
+    local sb = SandboxVars and SandboxVars.B42PackMule
+    if not (locs and locs.LEFT_WATCH and locs.RIGHT_WATCH and sb and sb.Watch == true) then return false end
+    local sm = getScriptManager()
+    for _, s in ipairs(W.STYLES) do
+        for side, loc in pairs({ Left = locs.LEFT_WATCH, Right = locs.RIGHT_WATCH }) do
+            local item = sm:FindItem("MinidoracatWatch.MapWatch_" .. s .. "_" .. side)
+            if item then item:setBodyLocation(loc) end
+        end
+    end
+    W.log("Pack Mule watch slots: map watches moved to its watch locations")
+    return true
+end
+Events.OnInitGlobalModData.Add(W.packMuleWatchSlots)
+
 W.SETTLE_MS = 60000 -- 每分鐘把累積的耗電寫進 modData 並同步一次
 -- 單一 tick 最多計入的時間：伺服器卡頓、系統時鐘往前跳、單機在沒有 tick 的時段都只算這麼多。
 -- 伺服器正常 tick 遠小於此；誤差上限是「卡頓次數 × 超出的部分」，對 72 小時的電池可忽略。
@@ -176,8 +198,8 @@ function W.minimapDecision(enabled, rule, hasWatch, charge, keepDead)
 end
 
 -- 身上第一支（except 以外的）地圖錶與總支數。WornItems 依 BodyLocationGroup 順序排列
--- （WornItems.java:53-82），原版左腕排在右腕前（BodyLocations.lua:32-33），所以兩支都戴時
--- 生效的是左手那支——規則固定、不看戴上的先後。不配置 table。
+-- （WornItems.java:53-82），原版左腕排在右腕前（BodyLocations.lua:32-33），Pack Mule 的手錶部位也是左在右前
+-- （BodyLocations_Mule.lua:7-8），所以兩支都戴時生效的是左手那支——規則固定、不看戴上的先後。不配置 table。
 function W.wornWatch(player, except)
     local worn = player:getWornItems()
     local first, count = nil, 0
