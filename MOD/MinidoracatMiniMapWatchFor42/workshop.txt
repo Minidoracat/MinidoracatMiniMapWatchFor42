@@ -1,4 +1,5 @@
 version=1
+id=3816406671
 title=Minidoracat MiniMap - Map Watch for B42
 description=[h1]⌚ Minidoracat MiniMap - Map Watch for B42[/h1]
 description=[h3]By Minidoracat[/h3]
@@ -36,6 +37,7 @@ description=[*] [b]Status at a glance[/b]: the title bar shows the battery, and 
 description=[*] [b]Paid slots[/b]: buy or rent them with Economy, or use unlock cards without it
 description=[*] [b]Admin settings[/b]: tune features, slots, batteries and how watches are obtained in one window
 description=[/list]
+description=📖 [b]Getting watches, modules, battery and server settings:[/b] [url=https://steamcommunity.com/workshop/filedetails/discussion/3816406671/586188069723694580/]Map Watch Guide[/url]
 description=
 description=[h2]🔗 More Minidoracat mods[/h2]
 description=All my mods are in the [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3809297109]Minidoracat Mods for B42 collection[/url] — pick what you need.
@@ -52,7 +54,7 @@ description=[url=https://ko-fi.com/minidoracat][img]https://raw.githubuserconten
 description=
 description=[b]#Minidoracat[/b]
 description=
-description=Workshop ID: Not assigned
+description=Workshop ID: 3816406671
 description=Mod ID: MinidoracatMiniMapWatchFor42
 tags=Build 42;Interface;Items;Multiplayer
 visibility=public

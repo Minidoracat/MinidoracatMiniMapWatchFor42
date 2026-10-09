@@ -34,6 +34,7 @@
 [*] [b]付費槽位[/b]：搭配 Economy 買斷或租用，沒有 Economy 時改用解鎖卡
 [*] [b]管理員設定[/b]：在一個視窗調整功能、槽位、電池與取得方式
 [/list]
+📖 [b]取得方式、模組、電池與伺服器設定：[/b][url=https://steamcommunity.com/workshop/filedetails/discussion/3816406671/586188069723694578/]地圖手錶 Map Watch 完整說明[/url]
 
 [h2]🔗 Minidoracat 全系列[/h2]
 其他作品都在[url=https://steamcommunity.com/sharedfiles/filedetails/?id=3809297109]Minidoracat 全系列收藏[/url]，依需求自選訂閱。
@@ -50,5 +51,5 @@ MOD 永遠免費，原始碼公開在 GitHub。贊助用於伺服器與 MOD 開�
 
 [b]#Minidoracat[/b]
 
-Workshop ID: 尚未指派
+Workshop ID: 3816406671
 Mod ID: MinidoracatMiniMapWatchFor42

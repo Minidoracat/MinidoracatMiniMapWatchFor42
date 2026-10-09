@@ -1,8 +1,8 @@
 <!-- Steam discussion source (English); the description only summarizes — this thread is the full reference -->
-<!-- 討論串網址：尚未建立（首發後建） -->
+<!-- 討論串網址：https://steamcommunity.com/workshop/filedetails/discussion/3816406671/586188069723694580/ -->
 <!-- 標題：📖 Map Watch Guide: Getting Watches, Modules, Battery & Server Settings -->
 
-[b]繁體中文版：[/b]地圖手錶 Map Watch 完整說明 (link added after release) | [b]日本語版：[/b]マップウォッチ 完全ガイド (link added after release)
+[b]繁體中文版：[/b][url=https://steamcommunity.com/workshop/filedetails/discussion/3816406671/586188069723694578/]地圖手錶 Map Watch 完整說明[/url] | [b]日本語版：[/b][url=https://steamcommunity.com/workshop/filedetails/discussion/3816406671/586188069723694582/]マップウォッチ 完全ガイド[/url]
 
 [h2]🚀 Quick start[/h2]
 [olist]

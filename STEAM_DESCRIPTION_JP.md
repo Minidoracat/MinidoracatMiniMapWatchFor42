@@ -34,6 +34,7 @@
 [*] [b]有料スロット[/b]：Economy で買い切り・レンタルでき、Economy がなければアンロックカードで開放します
 [*] [b]管理者設定[/b]：機能、スロット、電池、入手方法をひとつのウィンドウで調整できます
 [/list]
+📖 [b]入手方法、モジュール、電池、サーバー設定：[/b][url=https://steamcommunity.com/workshop/filedetails/discussion/3816406671/586188069723694582/]マップウォッチ 完全ガイド[/url]
 
 [h2]🔗 Minidoracat の MOD 一覧[/h2]
 すべての MOD を[url=https://steamcommunity.com/sharedfiles/filedetails/?id=3809297109]Minidoracat 全シリーズ コレクション[/url]にまとめています。必要なものを選んでサブスクライブしてください。
@@ -49,5 +50,5 @@
 
 [b]#Minidoracat[/b]
 
-Workshop ID: 未割り当て
+Workshop ID: 3816406671
 Mod ID: MinidoracatMiniMapWatchFor42

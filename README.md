@@ -4,7 +4,9 @@
 
 Project Zomboid Build 42 MOD，[Minidoracat MiniMap for B42](https://steamcommunity.com/sharedfiles/filedetails/?id=3763913359) 的 addon。
 
-> **開發中，尚未發布到 Steam Workshop。**
+## 發布狀態
+
+已發布到 Steam Workshop（ID：[3816406671](https://steamcommunity.com/sharedfiles/filedetails/?id=3816406671)）。
 
 ## 功能
 

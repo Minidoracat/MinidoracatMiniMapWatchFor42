@@ -1,8 +1,8 @@
 <!-- Steam 討論區貼文稿源（繁中）；簡介只放摘要，詳細內容以本串為準 -->
-<!-- 討論串網址：尚未建立（首發後建） -->
+<!-- 討論串網址：https://steamcommunity.com/workshop/filedetails/discussion/3816406671/586188069723694578/ -->
 <!-- 標題：📖 地圖手錶 Map Watch 完整說明：取得、模組、電池與伺服器設定 -->
 
-[b]English version:[/b] Map Watch Guide（首發後補連結） ｜ [b]日本語版：[/b]マップウォッチ 完全ガイド（首發後補連結）
+[b]English version:[/b] [url=https://steamcommunity.com/workshop/filedetails/discussion/3816406671/586188069723694580/]Map Watch Guide[/url] ｜ [b]日本語版：[/b][url=https://steamcommunity.com/workshop/filedetails/discussion/3816406671/586188069723694582/]マップウォッチ 完全ガイド[/url]
 
 [h2]🚀 快速上手[/h2]
 [olist]
