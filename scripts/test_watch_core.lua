@@ -114,6 +114,37 @@ F.wear(q, qa); F.wear(q, qb)
 local eff, n = W.wornWatch(q)
 check(eff == qb and n == 2, "兩支都戴時左腕那支生效、回報 2 支")
 
+-- MP 客戶端：伺服器在 complete 裡穿上時就送穿戴同步、之後才送完成，客戶端每幀先問 isValid 才看完成。
+-- ClothingExtra 穿上的是新建的物品（右鍵「戴在左手／右手」與換手都走這條），動作開始後不能把它當成另一支
+F.mode = "client"
+F.halos = {}
+local m = F.player("dave", 2)
+local mOld = F.item(F.LEFT)
+m.inv:AddItem(mOld)
+local started = { isStarted = function() return true end }
+local function serverWore(action, newType) -- 伺服器的結果到了：舊物移除、新物（新 ID）穿上
+    F.unwear(m, action.item)
+    m.inv:DoRemoveItem(action.item)
+    local new = F.item(newType)
+    m.inv:AddItem(new)
+    F.wear(m, new)
+    return new
+end
+local wearLeft = F.action(ISClothingExtraAction, m, mOld, F.LEFT)
+check(wearLeft:isValid() == true, "MP：右鍵戴在左手，開始前可戴")
+wearLeft.action = started
+local mWorn = serverWore(wearLeft, F.LEFT)
+check(wearLeft:isValid() == true and #F.halos == 0, "MP：伺服器穿上的新錶不算另一支、不跳提示")
+local toRight = F.action(ISClothingExtraAction, m, mWorn, F.RIGHT)
+check(toRight:isValid() == true, "MP：左手換右手，開始前可換")
+toRight.action = started
+serverWore(toRight, F.RIGHT)
+check(toRight:isValid() == true and #F.halos == 0, "MP：換手後的新錶不算另一支、不跳提示")
+local mSecond = F.item(F.LEFT)
+m.inv:AddItem(mSecond)
+check(F.action(ISClothingExtraAction, m, mSecond, F.LEFT):isValid() == false and #F.halos == 1,
+    "MP：開始前照樣擋第二支並提示")
+
 -- ===== 換電池：守恆與反例（伺服器模式）=====
 F.mode = "server"
 F.reset()

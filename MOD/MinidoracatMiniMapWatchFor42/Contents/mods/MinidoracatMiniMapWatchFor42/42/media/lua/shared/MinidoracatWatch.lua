@@ -210,11 +210,15 @@ function W.wornDetached(player)
 end
 
 -- ===== 同時只能戴一支 =====
--- 所有穿戴入口（右鍵穿戴、雙擊、拖曳、手把、快捷列）都建 ISWearClothing（ISInventoryPaneContextMenu.lua:2888-2895、
--- ISInventoryPane.lua:1189-1190）；換手與「改戴另一手」走 ISClothingExtraAction（:4396-4411），它對沒戴著的錶也會直接
--- 穿上（ISClothingExtraAction.lua:121-137），所以兩個動作都要攔。
--- 擋在兩層：isValid（客戶端與單機，拒絕並提示）、complete（MP 只在伺服器執行，LuaTimedActionNew.java:163-167；
+-- 穿戴入口有兩種動作：雙擊、拖曳、手把、快捷列建 ISWearClothing（ISInventoryPaneContextMenu.lua:2888-2895、
+-- ISInventoryPane.lua:1189-1190）；錶有 ClothingExtraSubmenu，右鍵「穿戴」子選單（戴在左手／右手；原版穿戴選項讓給它，
+-- :1777-1780、:4370-4394）與換手都走 ISClothingExtraAction（:4396-4411）。後者對沒戴著的錶也會直接穿上，而且穿上的是
+-- 新建的物品（ISClothingExtraAction.lua:121-137），所以兩個動作都要攔。
+-- 擋在兩層：isValid（客戶端與單機，動作開始前拒絕並提示）、complete（MP 只在伺服器執行，LuaTimedActionNew.java:163-167；
 -- 回 false＝動作被拒，NetTimedAction.java:132-139）。伺服器不跑 isValid，所以 complete 才是權威。
+-- isValid 只在開始前擋：MP 伺服器在 complete 裡穿上時就送穿戴同步（IsoGameCharacter.java:3472-3475），之後才送完成
+-- （ActionManager.java:69-86），客戶端每幀先問 isValid 才看完成（IsoGameCharacter.java:9013-9017、
+-- LuaTimedActionNew.java:95-100）；開始後再檢查，會把 ClothingExtra 自己換上的新錶當成另一支，跳提示並停掉動作。
 -- 擋不到的：客戶端直接送 SyncClothing 封包（SyncClothingPacket.java:230-237 伺服器照收）。這種情況由
 -- wornWatch 的固定生效規則收斂：永遠只有一支在扣電、閘門也只看那一支。
 function W.blockingWatch(action)
@@ -237,7 +241,8 @@ end
 function W.guardWearAction(cls)
     local isValid, complete = cls.isValid, cls.complete
     cls.isValid = function(self)
-        if W.blockingWatch(self) then
+        -- self.action＝建好的 Java 動作，waitToStart 才標成開始（ISBaseTimedAction.lua:59-61、BaseAction.java:97-101）
+        if not (self.action and self.action:isStarted()) and W.blockingWatch(self) then
             W.notify(self.character, "IGUI_MinidoracatWatch_OneWatchOnly")
             return false
         end
