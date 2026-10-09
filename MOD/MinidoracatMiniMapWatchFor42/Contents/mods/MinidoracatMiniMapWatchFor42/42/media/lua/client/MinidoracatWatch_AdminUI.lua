@@ -597,19 +597,20 @@ local function buildZombies(S, p)
     local y = para(p, T("DropsOn_desc"), 0, CH + 2, w) + 4
     local dx = labeled(p, T("DropCap"), 0, y, 200)
     sbField(S, p, dx, y, 60, "ZombieDropCap")
-    text(p, T("Unit_items"), dx + 68, y + (CH - FH) / 2, "textMuted")
-    text(p, T("DropCap_desc"), dx + 110, y + (CH - FH) / 2, "textMuted")
-    y = y + ROW + 2
+    -- 單位與說明依實際字寬往右排、說明在頁寬內換行：寫死 dx+68／dx+110 時德文的單位壓到說明、說明超出視窗
+    local unit = T("Unit_items")
+    text(p, unit, dx + 68, y + (CH - FH) / 2, "textMuted")
+    local hx = dx + 68 + measure(unit) + 12
+    y = math.max(y + ROW + 2, para(p, T("DropCap_desc"), hx, y + (CH - FH) / 2, w - hx) + 4)
     text(p, T("Rules"), 0, y, "text")
     y = y + FH + 6
-    -- 批量列：全選｜已選幾條｜機率設為／乘以｜數值｜套用｜刪除選取
+    -- 批量列：全選｜機率設為／乘以｜數值｜套用｜刪除選取（已選幾條放在下一行）
     S.pickAll = UI.Checkbox.new({ x = 0, y = y, label = T("PickAll"), theme = THEME, onChange = function(_, v)
         S.picked = {}
         if v then for _, r in ipairs(S.draft.drops) do S.picked[r] = true end end
         AU.refreshRules(S)
     end })
     p:addChild(S.pickAll)
-    S.pickText = text(p, "", S.pickAll.width + 12, y + (CH - FH) / 2, "textMuted")
     local bx = w - 470
     S.batchOp = UI.Dropdown.new({ x = bx, y = y, width = 120, height = CH, theme = THEME, selected = "set",
         options = { { id = "set", label = T("BatchSet") }, { id = "mul", label = T("BatchMul") } } })
@@ -619,6 +620,9 @@ local function buildZombies(S, p)
     S.batchApply = button(p, bx + 202, y, T("BatchApply"), function() AU.batch(S, false) end, "normal", 150)
     S.batchDel = button(p, bx + 358, y, T("BatchDel"), function() AU.batch(S, true) end, "danger", w - bx - 358)
     y = y + ROW
+    -- 已選幾條／沒選時的提示用整頁寬放在批量列下一行：夾在勾選框與右邊控制項之間只剩約 250px，英文、德文的提示都會壓到控制項
+    S.pickText = text(p, "", 0, y, "textMuted")
+    y = y + FH + 6
     -- 規則清單（UI.Table＝VirtualList）：點列首方框＝勾選，點其他地方＝在下方編輯這條
     local editorH = ROW * 2 + FH + 12
     local listH = math.max(ROW * 3, p.height - y - editorH)
@@ -716,7 +720,8 @@ function AU.refreshRules(S)
     local n = 0
     for _ in pairs(keep) do n = n + 1 end
     S.rules:setItems(drops)
-    S.pickText.text = n == 0 and T("PickNone") or T("PickN", tostring(n))
+    local pick = n == 0 and T("PickNone") or T("PickN", tostring(n))
+    S.pickText.text = UI.Text and UI.Text.fit and UI.Text.fit(pick, S.rules.width, FONT) or pick
     S.pickAll:setChecked(n > 0 and n == #drops, true)
     S.batchApply:setEnabled(n > 0)
     S.batchDel:setEnabled(n > 0)
@@ -815,7 +820,15 @@ function AU.refresh(S)
     S.dirty = n
     S.dirtyText.text = n == 0 and T("Clean") or T("Dirty", tostring(n))
     S.msg = AU.liveMsg(S)
-    S.msgText.text = S.msg and (UI.Text and UI.Text.fit and UI.Text.fit(S.msg, S.footer.width - 420, FONT) or S.msg) or ""
+    -- 頁尾訊息最多兩行（頁尾高 CH+16 放得下兩行字），寬度到變更數（dirtyText）為止：寫死 width-420 時長訊息會壓到
+    -- 中間的「Unverändert」，衝突、被拒的原因在英文、德文一行也放不下。第二行取原字串剩下的部分（不補空格，中日文不會多空白）
+    local msgW = S.dirtyText.x - S.msgText.x - GAP
+    local lines = S.msg and wrap(S.msg, msgW) or {}
+    local rest = lines[2] and S.msg:sub(#lines[1] + 1):gsub("^%s+", "") or nil
+    S.msgText.text = lines[1] or ""
+    S.msgText2.text = rest and (UI.Text and UI.Text.fit and UI.Text.fit(rest, msgW, FONT) or rest) or ""
+    S.msgText.y = rest and (FOOT_H - FH * 2 - 2) / 2 or (FOOT_H - FH) / 2
+    S.msgText2.y = S.msgText.y + FH + 2
     S.discard:setEnabled(n > 0)
     S.apply:setEnabled(n > 0 and not S.busy)
 end
@@ -887,6 +900,7 @@ function AU.build(pn, player, st)
     win:addChild(foot)
     S.footer = foot
     S.msgText = text(foot, "", PAD, (FOOT_H - FH) / 2, "accent")
+    S.msgText2 = text(foot, "", PAD, 0, "accent")
     S.apply = button(foot, w - PAD - 170, 8, T("Apply"), function() AU.check(S) end, "primary", 170)
     S.discard = button(foot, w - PAD - 170 - GAP - 120, 8, T("Discard"), function()
         S.draft = M.copy(S.base)
