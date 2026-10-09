@@ -28,10 +28,12 @@ function C.toggleLight(player) C.requestLight(player, not W.lightOn(player)) end
 -- （GameServer.java:2775-2790），不必另送 syncItemActivated。旁人只在「自己此刻看得到的格子」上看到這盞燈
 -- （約 3.5 格內或視野錐內），和原版手電筒相同（features.md）。
 -- 開關燈的音效也在這裡：狀態真的變了才響（伺服器開關、自動熄燈、原版切燈鍵都算；剛上線只記基準）。
+-- 外觀 MOD 暫時把身上的衣物與掛著的物品換成複製品時（W.wornDetached；Mirage Wardrobe 會一起換掉 AttachedItems，
+-- MirageWardrobeCore.lua:5511-5524）不動掛載：改到的是複製品、換回來就被蓋掉，還白送一個封包。
 function C.syncLight(p)
     local item = W.lightItem(p)
     local want = item ~= nil and item:isActivated() and item or nil
-    if p:getAttachedItem(W.LIGHT_LOC) ~= want then p:setAttachedItem(W.LIGHT_LOC, want) end
+    if p:getAttachedItem(W.LIGHT_LOC) ~= want and not W.wornDetached(p) then p:setAttachedItem(W.LIGHT_LOC, want) end
     MinidoracatWatchSound.lightSeen(p, want ~= nil)
 end
 
@@ -61,7 +63,9 @@ function C.lightPoll()
         for i = 0, list:size() - 1 do fitRadius(list:get(i), r) end
     end
 end
-Events.OnTick.Add(C.lightPoll)
+-- 掛 OnTickEvenPaused：每幀在 OnTick 之前（IngameState.java:1347、:1563），外觀 MOD 在 OnTick 換上複製品之前
+-- 讀到的才是真的掛載；改半徑也才改到真的光源。單機暫停時照跑。
+Events.OnTickEvenPaused.Add(C.lightPoll)
 
 -- 伺服器開關燈後的提醒（只送給本人）：不等下一秒，立刻對齊
 Events.OnServerCommand.Add(function(module, command, args)

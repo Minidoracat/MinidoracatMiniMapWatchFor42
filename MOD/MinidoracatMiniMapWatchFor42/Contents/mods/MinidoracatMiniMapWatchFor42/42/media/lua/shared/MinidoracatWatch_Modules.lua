@@ -392,7 +392,12 @@ end
 -- 每位玩家一筆：生效的錶、錶上已知模組與其所在槽位是否有效。期限 1 秒；W.invalidate() 讓所有快取失效
 -- （穿脫衣物、安裝／拆下、解鎖、登記槽位）。電量不快取：每次直接讀錶的 modData。
 -- 模組清單用平行陣列（ids／states＋n）原地覆寫：不清表、不配置。
+-- 穿戴清單暫時被外觀 MOD 換掉時（W.wornDetached）不重算、也不記時間，沿用上一筆：換回來後第一次呼叫就重算。
+-- 我們的 OnTick 輪詢排在 Mirage Wardrobe 換上之後（它先載入；IngameState.java:1563），不擋就會把複製品
+-- （100%、沒有模組）或「沒戴錶」快取一秒。連續 DETACHED_MAX_MS 都對不回背包（例如身上只剩背包裡沒有的物品）
+-- 就照看到的算，不一直停在舊狀態。
 local STATUS_TTL_MS = 1000
+local DETACHED_MAX_MS = 3000
 local statusGen = 0
 local statusCache = {}
 function W.invalidate() statusGen = statusGen + 1 end
@@ -414,8 +419,14 @@ function W.status(player)
     local e = statusCache[player]
     if e and e.gen == statusGen and now >= e.at and now - e.at < STATUS_TTL_MS then return e end
     if not e then
-        e = { ids = {}, states = {}, n = 0 }
+        e = { ids = {}, states = {}, n = 0, watch = false, count = 0 }
         statusCache[player] = e
+    end
+    if W.wornDetached(player) then
+        if not e.detachedAt or now < e.detachedAt then e.detachedAt = now end
+        if now - e.detachedAt < DETACHED_MAX_MS then return e end
+    else
+        e.detachedAt = nil
     end
     e.gen, e.at = statusGen, now
     local watch, count = effectiveWatch(player)

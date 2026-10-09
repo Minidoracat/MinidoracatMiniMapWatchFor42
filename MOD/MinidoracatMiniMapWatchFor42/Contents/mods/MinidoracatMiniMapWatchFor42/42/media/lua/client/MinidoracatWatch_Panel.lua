@@ -220,7 +220,9 @@ end
 -- ===== 槽位區（Focus 目標＋拖放）=====
 local Sockets = ISUIElement:derive("MinidoracatWatchSockets")
 
--- 槽位外框（i＝panel:slots() 的索引；Sockets 的元素座標）：內建 6 格依皮膚版面，其他 MOD 的槽位在錶面下方一列一列排
+-- 槽位外框（i＝所屬面板 slots() 的索引；Sockets 的元素座標）：內建 6 格依皮膚版面，其他 MOD 的槽位在錶面下方一列一列排。
+-- 所屬面板一律用 self.parent（addChild 設的，ISUIElement.lua:1476），不用模組的單例 panel：關面板只是排進下一幀才移除
+-- （UIManager.java:119-123、:497-501），關掉的那一幀引擎照樣呼叫它的 update（UIElement.java:1661-1676），單例那時已是 nil。
 local RING = {}
 for i, deg in ipairs({ -150, -90, -30, 30, 90, 150 }) do
     RING[i] = { math.cos(deg * math.pi / 180), math.sin(deg * math.pi / 180) }
@@ -253,7 +255,7 @@ function Sockets:socketRect(i)
 end
 
 function Sockets:socketAt(x, y)
-    for i = 1, #panel:slots() do
+    for i = 1, #self.parent:slots() do
         local sx, sy, s = self:socketRect(i)
         if x >= sx and x < sx + s and y >= sy and y < sy + s then return i end
     end
@@ -261,14 +263,14 @@ function Sockets:socketAt(x, y)
 end
 
 function Sockets:areaH()
-    local n = #panel:slots()
+    local n = #self.parent:slots()
     if n <= 6 then return self:faceH() end
     local _, y, s = self:socketRect(n)
     return y + s + 20
 end
 
 function Sockets:drawSocket(i, player, watch, colors, drop)
-    local p = panel
+    local p = self.parent
     local slot = p:slots()[i]
     local x, y, s = self:socketRect(i)
     local k = s / SOCK
@@ -333,8 +335,7 @@ function Sockets:drawSocket(i, player, watch, colors, drop)
 end
 
 function Sockets:prerender()
-    local p = panel
-    if not p then return end
+    local p = self.parent
     local player, watch = p:target()
     if not (player and watch) then return end
     local colors = p.theme.colors
@@ -378,7 +379,7 @@ end
 
 function Sockets:onMouseDown(x, y)
     local i = self:socketAt(x, y)
-    if i then panel:select(i) end
+    if i then self.parent:select(i) end
     return true
 end
 
@@ -386,27 +387,28 @@ function Sockets:onMouseUp(x, y)
     local item, def = draggedModule()
     if not item then return true end
     local i = self:socketAt(x, y)
-    local player, w = panel:target()
+    local p = self.parent
+    local player, w = p:target()
     if i and player and w then
-        panel:select(i)
-        panel:dropOn(player, w, panel:slots()[i], item, def)
+        p:select(i)
+        p:dropOn(player, w, p:slots()[i], item, def)
     end
     return true
 end
 
 -- Focus：游標框目前那格；方向鍵往該方向最近的一格（主軸距離＋2×側向偏移最小）；Enter／Space／A 選取
 function Sockets:focusRect()
-    local x, y, s = self:socketRect(self.cur or panel.sel)
+    local x, y, s = self:socketRect(self.cur or self.parent.sel)
     return x, y, s, s
 end
 
 local DIRS -- 方向鍵 → { dx, dy }（Keyboard 常數在遊戲裡才有，第一次用到才建）
 function Sockets:move(dx, dy)
-    local cur = self.cur or panel.sel
+    local cur = self.cur or self.parent.sel
     local x0, y0, s0 = self:socketRect(cur)
     x0, y0 = x0 + s0 / 2, y0 + s0 / 2
     local best, bestScore = nil, 1e9
-    for i = 1, #panel:slots() do
+    for i = 1, #self.parent:slots() do
         if i ~= cur then
             local x, y, s = self:socketRect(i)
             local ddx, ddy = x + s / 2 - x0, y + s / 2 - y0
@@ -416,7 +418,7 @@ function Sockets:move(dx, dy)
     end
     if not best then return false end
     self.cur = best
-    panel:refreshFocusLabel()
+    self.parent:refreshFocusLabel()
     return true
 end
 
@@ -434,7 +436,7 @@ function Sockets:onFocusKey(key)
     return false
 end
 
-function Sockets:forceClick() panel:select(self.cur or panel.sel) end
+function Sockets:forceClick() self.parent:select(self.cur or self.parent.sel) end
 
 -- 焦點說明（UI 框架 rev 16 每幀讀 focusLabel()）：游標那格的名稱與狀態，scan 每 250ms 與換格時重算，這裡只回快取
 function Sockets:focusLabel() return self.liveLabel end

@@ -352,6 +352,54 @@ F.unwear(p, phantom)
 F.wear(p, watch)
 F.fire("OnClothingUpdated", p)
 
+-- 外觀 MOD（Mirage Wardrobe）從 OnTick 到畫完，把身上衣物整份換成重建的複製品（新 ID、不在背包、沒有我們的 modData；
+-- 隱藏的部位換成 Base.Belt2）：期限到也不讀複製品、沿用上一筆，換回來後第一次呼叫就重算
+do
+    local function swapAppearance(items)
+        local real = p.worn
+        p.worn = {}
+        for i, it in ipairs(items) do p.worn[i] = { loc = "look" .. i, item = it } end
+        return function() p.worn = real end
+    end
+    W.setCharge(watch, W.NO_BATTERY)
+    tick()
+    check(C.watchOf(0) == watch and W.moduleState(p, "gps") == "unpowered", "（換上前：背包那支、沒電池、定位模組停用中）")
+    local restore = swapAppearance({ F.item("Base.Tshirt_DefaultTEXTURE"), F.item(F.RIGHT) })
+    tick()
+    F.fire("OnClothingUpdated", p) -- 它換上時的 resetModel 也會觸發這個事件
+    check(C.watchOf(0) == watch, "乾淨外觀：期限到也不讀複製品（100%、沒有模組），沿用背包那支")
+    check(W.moduleState(p, "gps") == "unpowered" and select(2, gate(0, "minimap")) == W.REASON_NO_BATTERY,
+        "乾淨外觀：模組與小地圖閘門照舊是沒電池")
+    restore()
+    check(C.watchOf(0) == watch, "換回來：讀背包那支")
+    restore = swapAppearance({ F.item("Base.Belt2") })
+    tick()
+    check(C.watchOf(0) == watch, "隱藏原本衣物（手腕換成 Base.Belt2）：不當成沒戴錶")
+    restore()
+    W.clearStatus()
+    restore = swapAppearance({ F.item(F.RIGHT) })
+    check(C.watchOf(0) == nil, "第一次就碰上：不讀複製品，先當沒戴錶")
+    restore()
+    check(C.watchOf(0) == watch, "換回來不必等期限就讀到背包那支")
+    -- 充電中：複製品沒有電量鍵（＝100%），不能被當成已充飽
+    W.setCharge(watch, 0.5)
+    F.fire("OnServerCommand", W.MODULE, W.CMD_CHARGE, { to = "alice", kind = "car" })
+    restore = swapAppearance({ F.item(F.RIGHT) })
+    tick()
+    check(W.chargeState(p) == "car", "乾淨外觀：照舊是車上充電中")
+    restore()
+    F.fire("OnServerCommand", W.MODULE, W.CMD_CHARGE, { to = "alice" })
+    -- 身上真的只剩背包裡沒有的物品（例如 SyncClothing 送來、背包沒有的化妝品）：連續 3 秒都這樣就照看到的算
+    restore = swapAppearance({ F.item("Base.MakeUp_Lipstick") })
+    tick()
+    check(C.watchOf(0) == watch, "只剩對不回背包的物品：3 秒內沿用")
+    F.now = F.now + 3000
+    check(C.watchOf(0) == nil, "連續 3 秒都對不回背包：照看到的算（沒戴錶）")
+    restore()
+    F.fire("OnClothingUpdated", p)
+    check(C.watchOf(0) == watch, "（換回來）")
+end
+
 -- ===== Dock =====
 local dockSpec = F.dockSpec
 check(C.docked == true and dockSpec and dockSpec.id == "minimapwatch", "UI 框架 rev 14＋dock：登記")
@@ -818,6 +866,8 @@ panel.x, panel.y = px, py
 panel:close()
 check(not C.isPanelOpen() and not panel.inUI, "關閉鈕：關閉面板")
 check(F.avoid.MinidoracatWatchPanel() == nil, "關閉後 Toast 不再避開")
+-- 引擎把移除排到下一幀（UIManager.java:119-123、:497-501），關掉的那一幀照樣呼叫 update（UIElement.java:1661-1676）
+check(pcall(panel.update, panel), "關掉後同一幀還跑到 update：不拋錯（槽位區讀自己的面板，不讀已清空的單例）")
 C.openPanel(0, nil)
 check(F.lastPanel.x == px and F.lastPanel.y == py, "重開沿用這次的位置")
 C.closePanel()

@@ -328,6 +328,28 @@ F.fire("OnServerCommand", W.MODULE, W.CMD_LIGHT, { to = "someone-else" })
 F.fire("OnServerCommand", "OtherMod", W.CMD_LIGHT, { to = "cid" })
 check(true, "別人的提醒、別的 MOD：不出錯")
 
+-- 外觀 MOD（Mirage Wardrobe）從 OnTick 到畫完，把身上衣物與掛著的物品都換成重建的複製品：這時不動掛載（改到的是
+-- 複製品、換回來就被蓋掉，還白送封包）；開著的燈照樣算在戴著的那支
+do
+    local lamp = give(c, LIGHT)
+    lamp:setActivated(true)
+    C.syncLight(c)
+    check(c:getAttachedItem(LOC) == lamp, "（燈開著、掛著）")
+    local realWorn, realAttached = c.worn, c.attached
+    c.worn = { { loc = "leftwrist", item = F.item(F.LEFT) } }
+    c.attached = { [LOC] = F.item(LIGHT) }
+    F.reset()
+    F.now = F.now + 2000
+    C.syncLight(c)
+    check(#F.attachPackets == 0, "外觀複製品換上時：不改掛載、不送封包")
+    check(W.lightLit(c, cw), "外觀複製品換上時：開著的燈照樣算在戴著的那支")
+    c.worn, c.attached = realWorn, realAttached
+    C.syncLight(c)
+    check(c:getAttachedItem(LOC) == lamp and #F.attachPackets == 0, "換回來：還是那個光源，不必重掛")
+    c.inv:DoRemoveItem(lamp)
+    C.syncLight(c)
+end
+
 -- 半徑：每台客戶端改每位玩家那份（本機與遠端）
 local remote = F.player("rem", 1)
 table.remove(F.players) -- 遠端玩家：不是本機座位（getSpecificPlayer／getNumActivePlayers 看不到）
@@ -339,11 +361,11 @@ SB.LightRadius = 7
 local realOnline = getOnlinePlayers
 function getOnlinePlayers() return F.javaList({ c, remote }) end
 F.now = F.now + 2000
-F.fire("OnTick")
+C.lightPoll()
 check(rem:getLightDistance() == 7 and mine:getLightDistance() == 7, "沙盒半徑 7：遠端玩家與自己的光源都改成 7")
 SB.LightRadius = nil
 F.now = F.now + 2000
-F.fire("OnTick")
+C.lightPoll()
 check(rem:getLightDistance() == 4, "改回預設：跟著變回 4")
 getOnlinePlayers = realOnline
 

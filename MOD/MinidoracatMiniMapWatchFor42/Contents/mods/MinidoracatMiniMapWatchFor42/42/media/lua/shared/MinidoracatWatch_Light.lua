@@ -44,11 +44,12 @@ function W.lightOn(player)
     return item ~= nil and item:isActivated()
 end
 
--- 這支錶正在替開著的燈供電嗎（W.drainFactor 用；面板算別支沒戴著的錶時不加）
+-- 這支錶正在替開著的燈供電嗎（W.drainFactor 用；面板算別支沒戴著的錶時不加）。戴著哪支照狀態快取取，
+-- 不直接讀穿戴清單：外觀 MOD 換掉身上衣物時那是複製品（W.wornDetached）
 function W.lightLit(player, watch)
     if not watch or not W.lightOn(player) then return false end
-    local worn = W.wornWatch(player)
-    return worn ~= nil and worn:getID() == watch:getID()
+    local worn = W.status(player).watch
+    return worn ~= false and worn:getID() == watch:getID()
 end
 
 -- 現在能不能開著燈：回 true 或 false, 原因鍵（客戶端提示與伺服器校正共用）。

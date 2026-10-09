@@ -192,6 +192,23 @@ function W.wornWatch(player, except)
     return first, count
 end
 
+-- 穿戴清單是不是暫時被換成別的物件：外觀 MOD 會在畫角色前把 WornItems 整份換成重建的複製品、畫完再換回來
+-- （Mirage Wardrobe，Workshop 3770186452：OnTick 換上、OnPostRender 還原，MirageWardrobeCore.lua:5371-5534、:7808-7813；
+-- 每件用 instanceItem 重建，新 ID、不在背包、沒有我們的 modData，:1291；隱藏的部位換成 Base.Belt2，:122）。
+-- 判定：身上有東西，卻沒有任何一件對得回主背包（本身在主背包，或同 ID 在主背包＝SyncClothing 先到時的臨時物件）。
+-- 翻到第一件對得上的就回 false；不配置 table。
+function W.wornDetached(player)
+    local worn = player:getWornItems()
+    local n = worn and worn:size() or 0
+    if n == 0 then return false end
+    local inv = player:getInventory()
+    for i = 0, n - 1 do
+        local it = worn:get(i):getItem()
+        if it and (it:getContainer() == inv or inv:getItemWithID(it:getID())) then return false end
+    end
+    return true
+end
+
 -- ===== 同時只能戴一支 =====
 -- 所有穿戴入口（右鍵穿戴、雙擊、拖曳、手把、快捷列）都建 ISWearClothing（ISInventoryPaneContextMenu.lua:2888-2895、
 -- ISInventoryPane.lua:1189-1190）；換手與「改戴另一手」走 ISClothingExtraAction（:4396-4411），它對沒戴著的錶也會直接
@@ -476,7 +493,7 @@ function W.chargeState(player)
         kind = s and s.power
     end
     if not kind then return nil end
-    local w = W.wornWatch(player)
+    local w = W.status(player).watch -- 不直接讀穿戴清單：外觀 MOD 換掉身上衣物時那是複製品（W.wornDetached）
     local c = w and W.charge(w)
     if not c or c >= 1 then return nil end
     return kind
