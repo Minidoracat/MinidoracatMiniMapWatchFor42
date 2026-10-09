@@ -63,9 +63,13 @@ function A.parseDrains(raw)
     return out
 end
 
--- addonSlots：{ [第三方槽位 id] = { mode = free|card|econ|off, buy?, buyPrice?, rent?, rentPrice?, card? } }；
--- 沒寫的欄位照沙盒 SlotAddon*（card＝經濟系統也接受解鎖卡）。內建槽位不收。
-local SLOT_KEYS = { mode = true, buy = true, buyPrice = true, rent = true, rentPrice = true, card = true }
+-- addonSlots：{ [第三方槽位 id] = { mode = free|card|econ|off, buy?, buyPrice?, rent?, rentPrice?, card?, currency?,
+-- rentDays?, retryHours?, reminderHours?, autoRenew? } }；沒寫的欄位照沙盒 SlotAddon*（card＝經濟系統也接受解鎖卡）。
+-- 內建槽位不收。
+local SLOT_KEYS = {}
+for _, k in ipairs(W.SLOT_CFG_KEYS) do SLOT_KEYS[k] = true end
+local SLOT_INTS = { { "buyPrice", 1, 1000000000 }, { "rentPrice", 1, 1000000000 }, { "rentDays", 1, 365 },
+    { "retryHours", 0, 168 }, { "reminderHours", 0, 168 } }
 function A.parseSlots(raw)
     local t = objectOf(raw)
     if not t then return nil, { "must be an object of slot id -> settings" } end
@@ -86,17 +90,22 @@ function A.parseSlots(raw)
                 if not SLOT_KEYS[k] then bad(id, "unknown field " .. tostring(k)); ok = false end
             end
             if not W.MODE_VALUE[e.mode] then bad(id, "mode must be free, card, econ or off"); ok = false end
-            for _, f in ipairs({ "buy", "rent", "card" }) do
+            for _, f in ipairs({ "buy", "rent", "card", "autoRenew" }) do
                 if e[f] ~= nil and type(e[f]) ~= "boolean" then bad(id, f .. " must be true or false"); ok = false end
             end
-            for _, f in ipairs({ "buyPrice", "rentPrice" }) do
-                if e[f] ~= nil and not intIn(e[f], 1, 1000000000) then
-                    bad(id, f .. " must be a whole number from 1 to 1000000000"); ok = false
+            if e.currency ~= nil and not W.CURRENCY_VALUE[e.currency] then
+                bad(id, "currency must be survivor or cat"); ok = false
+            end
+            for _, r in ipairs(SLOT_INTS) do
+                local f = r[1]
+                if e[f] ~= nil and not intIn(e[f], r[2], r[3]) then
+                    bad(id, f .. " must be a whole number from " .. r[2] .. " to " .. r[3]); ok = false
                 end
             end
             if ok then
-                out[id] = { mode = e.mode, buy = e.buy, buyPrice = e.buyPrice, rent = e.rent, rentPrice = e.rentPrice,
-                    card = e.card }
+                local copy = {}
+                for _, k in ipairs(W.SLOT_CFG_KEYS) do copy[k] = e[k] end
+                out[id] = copy
             end
         end
     end
@@ -105,7 +114,7 @@ function A.parseSlots(raw)
     return out
 end
 
-Cfg.keyOrder({ "mode", "buy", "buyPrice", "rent", "rentPrice", "card" })
+Cfg.keyOrder(W.SLOT_CFG_KEYS)
 Cfg.section("moduleDrains", { default = function() return {} end, parse = A.parseDrains })
 Cfg.section("addonSlots", { default = function() return {} end, parse = A.parseSlots })
 

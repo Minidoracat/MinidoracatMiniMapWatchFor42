@@ -263,7 +263,8 @@ local hasDevice, adCalls = true, 0
 MinidoracatAutoDriveAPI = { navDeviceApiVersion = 1, hasNavDevice = function(pn) adCalls = adCalls + 1; return hasDevice end }
 expect("nav：沒模組、有 GPS 導航儀＝放行", "nav", nil, true, nil, nil)
 hasDevice = false
-expect("nav：沒模組、沒裝置＝擋", "nav", nil, false, "IGUI_MinidoracatWatch_Reason_Need_gps", nil)
+expect("nav：沒模組、沒裝置＝擋；裝了 AutoDrive＝原因是定位模組或 GPS 導航儀", "nav", nil, false,
+    "IGUI_MinidoracatWatch_Reason_Need_gpsOrDevice", nil)
 hasDevice = true
 SB.RuleNav = 4
 expect("nav 關閉：有裝置也擋", "nav", nil, false, W.REASON_FEATURE_OFF, nil)
@@ -271,6 +272,9 @@ SB.RuleNav = nil
 F.unwear(p, watch)
 F.fire("OnClothingUpdated", p)
 expect("nav：沒戴錶、有裝置＝放行", "nav", nil, true, nil, nil)
+hasDevice = false
+expect("nav：沒戴錶、沒裝置＝原因照舊是戴錶（只換定位模組那條）", "nav", nil, false, W.REASON_NEED_WATCH, nil)
+hasDevice = true
 F.wear(p, watch)
 F.fire("OnClothingUpdated", p)
 MinidoracatAutoDriveAPI.navDeviceApiVersion = 0
@@ -281,8 +285,8 @@ MinidoracatAutoDriveAPI = nil
 expect("AutoDrive 不存在", "nav", nil, false, "IGUI_MinidoracatWatch_Reason_Need_gps", nil)
 MinidoracatAutoDriveAPI = { navDeviceApiVersion = 2, hasNavDevice = function() error("ad boom") end }
 F.reset()
-expect("hasNavDevice 拋錯：當沒有", "nav", nil, false, "IGUI_MinidoracatWatch_Reason_Need_gps", nil)
-expect("hasNavDevice 再拋錯", "nav", nil, false, "IGUI_MinidoracatWatch_Reason_Need_gps", nil)
+expect("hasNavDevice 拋錯：當沒有（API 在，原因仍提導航儀）", "nav", nil, false, "IGUI_MinidoracatWatch_Reason_Need_gpsOrDevice", nil)
+expect("hasNavDevice 再拋錯", "nav", nil, false, "IGUI_MinidoracatWatch_Reason_Need_gpsOrDevice", nil)
 check(#F.logs == 1 and F.logs[1]:find("hasNavDevice", 1, true), "AutoDrive 拋錯只 log 一次")
 MinidoracatAutoDriveAPI = { navDeviceApiVersion = 1, hasNavDevice = function() adCalls = adCalls + 1; return true end }
 local gpsItem = give(MOD("GPS"))

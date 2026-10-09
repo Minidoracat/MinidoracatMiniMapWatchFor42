@@ -155,7 +155,7 @@ do
     check(#bad == 0, "admin field table matches sandbox-options.txt: " .. table.concat(bad, ", "))
     -- 順序與分頁：M.FIELDS＝檔案順序；四頁照視窗分頁（總覽＋功能／槽位與價格／電池／取得方式＋殭屍掉落），每頁連續
     local function tabOf(k)
-        if k:find("^Slot") or k:find("^Pay") then return "Slots" end
+        if k:find("^Slot") then return "Slots" end
         if k:find("^Drain") or k:find("^Charge") or k:find("Hours$") or k == "LightDrain" or k == "NeedBattery"
             or k == "DeadMode" then return "Battery" end
         if k:find("^Loot") or k:find("^Zombie") or k:find("Craft") or k == "NeedScrewdriver" then return "Acquire" end
@@ -211,6 +211,11 @@ do
     d.sb.SlotExtCard = true
     check(has(M.summary(d, true), "擴充槽：租用每 7 天 60 倖存幣，或買斷 400 倖存幣，也接受解鎖卡"),
         "summary: economy tier that also takes unlock cards")
+    d.sb.SlotCoreCurrency, d.sb.SlotCoreRentDays = 2, 30
+    s = M.summary(d, true)
+    check(has(s, "核心槽：租用每 30 天 300 貓幣，或買斷 2,400 貓幣")
+        and has(s, "擴充槽：租用每 7 天 60 倖存幣，或買斷 400 倖存幣，也接受解鎖卡"),
+        "summary: each tier shows its own currency and period")
     d.sb.NeedBattery = false
     s = M.summary(d, true)
     check(has(s, "電池：不需要電池，地圖手錶不會沒電") and not find(s, "充電：") and not find(s, "沒電時："),
@@ -241,6 +246,20 @@ do
     check(find(lines, "新增掉落規則：穿 HazardSuit, Bandit 的殭屍每隻有 0.5% 機率掉落") ~= nil, "diff: added custom rule")
     check(warn and lines[#lines]:find("重新同意", 1, true) ~= nil and n == #lines - 1,
         "diff: rent price change warns about re-consent (Phase 6 D3), last line, not counted")
+    -- 每一級自己的幣別、天數是條款（要重新同意）；重試、提醒、自動續租不是
+    local t = M.copy(base)
+    t.sb.SlotAdvRetryHours, t.sb.SlotAdvReminderHours, t.sb.SlotAdvAutoRenew = 48, 0, false
+    lines, warn = M.diff(base, t)
+    check(has(lines, "進階槽：到期後續租重試時間（小時）：從 24 改成 48") and has(lines, "進階槽：到期前提醒（小時）：從 24 改成 0")
+        and has(lines, "進階槽：允許自動續租：從 開 改成 關") and not warn,
+        "diff: one tier's retry, reminder and auto-renew, no re-consent warning")
+    t.sb.SlotAdvCurrency = 2
+    lines, warn = M.diff(base, t)
+    check(has(lines, "進階槽：幣別：從 倖存幣 改成 貓幣") and warn, "diff: a tier's currency is a term (re-consent warning)")
+    t = M.copy(base)
+    t.sb.SlotAddonRentDays = 30
+    _, warn = M.diff(base, t)
+    check(warn, "diff: the add-on default period is a term too")
     local c = M.copy(base)
     c.sb.NeedBattery, c.sb.DeadMode, c.sb.CraftLevel = false, 2, 5
     lines = M.diff(base, c)
@@ -341,6 +360,11 @@ do
     check(r.code == "invalid", "invalid: price below 1")
     r = A.apply(admin, req({ addonSlots = { weather = { mode = "econ", card = "yes" } } }))
     check(r.code == "invalid", "invalid: card must be true or false")
+    for _, c in ipairs({ { "currency", "gold" }, { "rentDays", 0 }, { "rentDays", 366 }, { "retryHours", 169 },
+        { "reminderHours", -1 }, { "autoRenew", "yes" } }) do
+        r = A.apply(admin, req({ addonSlots = { weather = { mode = "econ", [c[1]] = c[2] } } }))
+        check(r.code == "invalid", "invalid: per-slot " .. c[1] .. " = " .. tostring(c[2]))
+    end
     r = A.apply(admin, req({ moduleDrains = { weather = 10 }, zombieDrops = { { group = "army", item = "nope", chance = 1 } } }))
     check(r.code == "invalid" and Cfg.get("moduleDrains").weather == nil,
         "invalid: one bad section rejects the whole request (valid section not applied)")
@@ -355,10 +379,12 @@ do
     F.reset()
     local rev = Cfg.revision
     local r = A.apply(admin, req({ moduleDrains = { weather = 40 },
-        addonSlots = { weather = { mode = "econ", buy = false, rentPrice = 90 } } }, { reason = "balance pass", sandbox = 2 }))
+        addonSlots = { weather = { mode = "econ", buy = false, rentPrice = 90, currency = "cat", rentDays = 14 } } },
+        { reason = "balance pass", sandbox = 2 }))
     check(r.ok and r.rev == rev + 1 and Cfg.revision == rev + 1, "applied: revision +1")
     check(Cfg.get("moduleDrains").weather == 40 and Cfg.get("addonSlots").weather.rentPrice == 90, "applied: values live")
     check(FS[cfgPath]:find('"moduleDrains"', 1, true) and FS[cfgPath]:find('"rentPrice": 90', 1, true)
+        and FS[cfgPath]:find('"currency": "cat"', 1, true) and FS[cfgPath]:find('"rentDays": 14', 1, true)
         and not FS[cfgPath]:find("outfitSet", 1, true), "applied: written to the settings file (file shape only)")
     local audit = FS[auditPath] or ""
     check(audit:find("boss (revision " .. (rev + 1) .. "): balance pass", 1, true) and audit:find("  - a: 1 to 2", 1, true),
@@ -429,7 +455,9 @@ do
     F.load("server/MinidoracatWatch_Economy.lua")
     local plan = W.Econ.planValues(slot, false)
     check(plan.permanentEnabled == false and plan.rentalEnabled == true and plan.rentalPrice == 90
-        and plan.permanentPrice == 600, "Economy plan uses the per-slot settings, unset fields fall back to SlotAddon*")
+        and plan.permanentPrice == 600 and plan.rentalCurrency == "cat" and plan.permanentCurrency == "cat"
+        and plan.rentalDays == 14 and plan.graceHours == 24 and plan.autoRenewAllowed == true,
+        "Economy plan uses the per-slot settings (currency, period included), unset fields fall back to SlotAddon*")
     Cfg.save({ addonSlots = {} })
     check(W.slotModeValue(slot) == 1 and W.Econ.planValues(slot, false).rentalPrice == 80,
         "without a per-slot entry the slot follows SlotAddon again")
@@ -520,6 +548,196 @@ do
     sent = nil
     M.applySandbox({})
     check(sent == nil, "nothing to send without sandbox changes")
+    F.mode = "server"
+end
+
+-- ===== 10. 管理員視窗電池頁：充電時數列（真的 AU.build＋框架替身）=====
+-- 時數在開關下一列、標籤起點對齊開關文字（框架 Checkbox：toggle 36＋間距 8）、欄位＋單位收在自己的半欄；
+-- 開關關閉時時數欄停用，打開才可用。字寬替身：每個字 7px。
+do
+    F.mode = "sp"
+    local FH, TEXT_X = 15, 44
+    local function mw(s) return utf8.len(s) * 7 end
+    function getTextManager() return { getFontHeight = function() return FH end, MeasureStringX = function(_, _, s) return mw(s) end } end
+    function getCore() return { getScreenWidth = function() return 1920 end, getScreenHeight = function() return 1080 end } end
+    function getScriptManager() return { FindItem = function() return nil end } end
+    local UI = F.installUI(17)
+    for _, k in ipairs({ "dialog", "dropdown", "table", "scrollPanel", "textWrap", "textFieldInvalid" }) do UI.CAPABILITIES[k] = true end
+    local Widget = F.Element:derive("FakeAdminWidget")
+    function Widget:setEnabled(e) self.enabled = e ~= false end
+    function Widget:setChecked(v, silent)
+        if v == self.checked then return end
+        self.checked = v
+        if not silent and self.onChange then self.onChange(self.target, v, self) end
+    end
+    function Widget:setSelected(id) self.selected = id end
+    function Widget:setText(s) self.text = s end
+    function Widget:getText() return self.text end
+    function Widget:setInvalid(b) self.invalid = b end
+    function Widget:contentWidth() return self.width end
+    function Widget:setItems(items) self.items = items end
+    function Widget:setSelectedIndex() end
+    local function widget(o, w, h)
+        local e = F.Element.new(Widget, o.x or 0, o.y or 0, o.width or w, o.height or h)
+        for k, v in pairs(o) do if e[k] == nil then e[k] = v end end
+        e.enabled = true
+        return e
+    end
+    UI.Checkbox = { new = function(o) return widget(o, TEXT_X + mw(o.label or ""), 26) end }
+    UI.TextField = { new = function(o) return widget(o, 100, 26) end }
+    UI.Dropdown = { new = function(o) return widget(o, 100, 26) end, close = function() end }
+    UI.Tabs = { new = function(o) return widget(o, 400, 30) end }
+    UI.ScrollPanel = { new = function(o) return widget(o, 100, 100) end }
+    UI.Table = { new = function(o) return widget(o, 100, 100) end, rowBackground = function() return false end }
+    UI.Text = { wrap = function(s) return { s } end,
+        fit = function(s, maxW)
+            while mw(s) > maxW and utf8.len(s) > 0 do s = s:sub(1, utf8.offset(s, -1) - 1) end
+            return s
+        end }
+    F.load("client/MinidoracatWatch_AdminUI.lua")
+    local AU = MinidoracatWatchAdminUI
+    check(AU.uiReady == true, "admin window: fake framework satisfies the rev 16 guard")
+    local st = { rev = 1, zombieDrops = W.defaultDrops(), moduleDrains = {}, addonSlots = {} }
+    local ROW = FH + 16 -- AdminUI：CH＝FH＋10、ROW＝CH＋6
+    -- 時數列的文字（欄位那一列、垂直置中）：單位與標籤各兩個，依 x 排
+    local function build()
+        AU.state = nil
+        local S = AU.build(0, F.player("admin"), st)
+        local p = S.panes.battery
+        local unit = getText("IGUI_MinidoracatWatch_Admin_Unit_hours")
+        local labels, units = {}, {}
+        for _, t in ipairs(p.texts) do
+            if t.y == S.ctrl.CarHours.y + 5 then
+                local list = t.text == unit and units or labels
+                list[#list + 1] = t
+            end
+        end
+        table.sort(labels, function(a, b) return a.x < b.x end)
+        table.sort(units, function(a, b) return a.x < b.x end)
+        return S, p, labels, units
+    end
+    local S, p, labels, units = build()
+    local c = S.ctrl
+    local half = math.floor(p.width / 2)
+    check(#labels == 2 and labels[1].text == "從沒電到充滿約" and #units == 2, "charge hours row: two 'empty to full in about' labels")
+    local ok = #labels == 2 and #units == 2
+    for i, pair in ipairs({ { c.ChargeCar, c.CarHours, half - 8 }, { c.ChargeHouse, c.HouseHours, p.width } }) do
+        local cb, tf, right = pair[1], pair[2], pair[3]
+        local l, u = labels[i], units[i]
+        ok = ok and l and u and tf.y == cb.y + ROW and l.x == cb.x + TEXT_X and tf.x >= l.x + mw(l.text)
+            and u.x >= tf.x + tf.width and u.x + mw(u.text) <= right
+    end
+    check(ok and c.ChargeHouse.x == half and c.ChargeHouse.y == c.ChargeCar.y,
+        "charge switches share a row; hours sit one row below, aligned to the switch text, field and unit inside the half")
+    check(c.CarHours.enabled == false and c.HouseHours.enabled == false, "charging off by default: both hours fields disabled")
+    c.ChargeCar:setChecked(true)
+    check(c.CarHours.enabled == true and c.HouseHours.enabled == false, "vehicle charging on: its hours field enabled, building's not")
+    c.ChargeHouse:setChecked(true)
+    c.ChargeCar:setChecked(false)
+    check(c.CarHours.enabled == false and c.HouseHours.enabled == true, "switches drive their own hours field")
+    -- 開著時打了壞值（擋套用）；把開關關掉＝丟掉壞值：文字回 draft、紅框清掉、移出 S.bad，「不合法」訊息跟著清
+    c.ChargeCar:setChecked(true)
+    c.CarHours.onChange(nil, "abc")
+    local blocked = S.bad[c.CarHours] == true and c.CarHours.invalid == true
+    S.msg = MinidoracatWatchAdminModel.T("Invalid")
+    c.ChargeCar:setChecked(false)
+    check(blocked and S.bad[c.CarHours] == nil and c.CarHours.invalid == false
+        and c.CarHours.text == tostring(S.draft.sb.CarHours) and S.msg == nil and c.CarHours.enabled == false,
+        "switching charging off drops a half-typed bad value: field back to the draft, not blocking apply")
+    -- 很長的標籤（德文等）：截短，欄位與單位仍收在左半欄、不壓到右欄
+    local saved = TR["IGUI_MinidoracatWatch_Admin_ChargeFull"]
+    TR["IGUI_MinidoracatWatch_Admin_ChargeFull"] = string.rep("Ladedauer ", 12)
+    S, p, labels, units = build()
+    local u = units[1]
+    check(#units == 2 and u.x + mw(u.text) <= half - 8 and S.ctrl.CarHours.x + 56 <= u.x
+        and mw(labels[1].text) < mw(string.rep("Ladedauer ", 12)), "long label is fitted; the left unit stays left of the right column")
+    TR["IGUI_MinidoracatWatch_Admin_ChargeFull"] = saved
+    -- ===== 槽位與價格：「續租與提醒」表 =====
+    -- 列同上表（三級＋其他 MOD 的預設＋第三方槽位），欄：幣別｜每期天數｜重試｜提醒｜自動續租；
+    -- 欄名在自己的欄寬內換行（換行替身：依字寬硬切），列從最低的欄名下面開始
+    UI.Text.wrap = function(s, width)
+        local out, line = {}, ""
+        for ch in s:gmatch(utf8.charpattern) do
+            if line ~= "" and mw(line .. ch) > width then out[#out + 1], line = line, "" end
+            line = line .. ch
+        end
+        out[#out + 1] = line
+        return out
+    end
+    local COLS = { "Currency", "RentDays", "RetryHours", "ReminderHours", "AutoRenew" }
+    local function slotsPage()
+        AU.state = nil
+        local S = AU.build(0, F.player("admin"), st)
+        local sp, c = S.panes.slots, S.ctrl
+        local xs, ok, prevY = {}, true, nil
+        for i, f in ipairs(COLS) do xs[i] = c["SlotExt" .. f].x end
+        for _, key in ipairs({ "SlotExt", "SlotAdv", "SlotCore", "SlotAddon" }) do
+            local y0 = c[key .. "Currency"].y
+            for i, f in ipairs(COLS) do ok = ok and c[key .. f].x == xs[i] and c[key .. f].y == y0 end
+            ok = ok and y0 > c.SlotAddonCard.y and (prevY == nil or y0 == prevY + ROW)
+            prevY = y0
+        end
+        -- 欄名＝幣別那一欄（x 同幣別下拉）最上面一行起、到第一列之前的 textMuted 文字
+        local top = math.huge
+        for _, t in ipairs(sp.texts) do
+            if t.token == "textMuted" and t.x == xs[1] and t.y > c.SlotAddonCard.y then top = math.min(top, t.y) end
+        end
+        local heads = {}
+        for _, t in ipairs(sp.texts) do
+            if t.token == "textMuted" and t.y >= top and t.y < c.SlotExtCurrency.y then heads[#heads + 1] = t end
+        end
+        local inside, lowest = #heads > 0, top
+        for _, t in ipairs(heads) do
+            local right = sp.width
+            for _, x in ipairs(xs) do if x > t.x then right = math.min(right, x) end end
+            inside = inside and t.x + mw(t.text) <= right - 8
+            lowest = math.max(lowest, t.y)
+        end
+        return S, ok, heads, inside and c.SlotExtCurrency.y >= lowest + FH, top
+    end
+    local S2, aligned, heads, inside, top = slotsPage()
+    local oneLine = #heads == 6
+    for _, t in ipairs(heads) do oneLine = oneLine and t.y == top end
+    check(aligned, "renewal table: one row per tier, same order as the price table, five columns aligned")
+    check(inside and oneLine, "renewal table: six headers on one line, each inside its column, rows start below them")
+    local savedRetry = TR["IGUI_MinidoracatWatch_Admin_Col_retryHours"]
+    TR["IGUI_MinidoracatWatch_Admin_Col_retryHours"] = "Wiederholungsfenster nach Ablauf (Stunden)"
+    S2, aligned, heads, inside = slotsPage()
+    check(aligned and inside and #heads > 6, "renewal table: a long header wraps inside its column; rows move below it")
+    TR["IGUI_MinidoracatWatch_Admin_Col_retryHours"] = savedRetry
+    -- 第三方槽位那一列（上表也有一列）：改幣別、天數就建立這個槽位的設定（帶上目前生效的其他欄位）
+    S2 = slotsPage()
+    local rowY = S2.ctrl.SlotAddonCurrency.y + ROW
+    local dd, days
+    for _, w in ipairs(S2.panes.slots:getChildren()) do
+        if w.y == rowY and w.x == S2.ctrl.SlotExtCurrency.x then dd = w end
+        if w.y == rowY and w.x == S2.ctrl.SlotExtRentDays.x then days = w end
+    end
+    dd.onChange(nil, 2)
+    days.onChange(nil, "30")
+    local we = S2.draft.addon.weather
+    check(we and we.currency == "cat" and we.rentDays == 30 and we.mode == "free" and we.retryHours == 24,
+        "add-on slot row: currency and period edits create the slot's own settings")
+    local lines, warn = M.diff(S2.base, S2.draft)
+    check(has(lines, "Weather Slot：幣別：從 倖存幣 改成 貓幣") and has(lines, "Weather Slot：每期天數：從 7 改成 30") and not warn,
+        "diff: one line per add-on slot field; a free slot's terms need no re-consent")
+    we.mode = "econ"
+    _, warn = M.diff(S2.base, S2.draft)
+    check(warn, "diff: an economy add-on slot's currency or period change warns about re-consent")
+    local args = M.payload(S2.base, S2.draft, 1, "r", {})
+    check(args.lists.addonSlots and args.lists.addonSlots.weather.currency == "cat"
+        and args.lists.addonSlots.weather.rentDays == 30, "payload: the add-on slot's currency and period are sent")
+    -- 修改超過 AU.MAX_LINES 項：要玩家重新同意的提醒仍在確認框最後，不被「還有 N 項沒有列出」截掉
+    local shownText
+    UI.Dialog = { show = function(o) shownText = o.text; return {} end }
+    for i = 1, AU.MAX_LINES + 2 do S2.draft.drops[#S2.draft.drops + 1] = { group = "army", item = "battery", chance = i } end
+    AU.check(S2)
+    local _, _, n = M.diff(S2.base, S2.draft)
+    local warnText = M.T("Diff_PriceWarn")
+    check(n > AU.MAX_LINES and shownText and shownText:find(M.T("More", tostring(n - AU.MAX_LINES)), 1, true)
+        and shownText:sub(-#warnText) == warnText, "confirm dialog: the re-consent warning survives truncation, last line")
+    AU.state = nil
+    MinidoracatUI = nil
     F.mode = "server"
 end
 

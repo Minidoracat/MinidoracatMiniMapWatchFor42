@@ -396,6 +396,8 @@ local function buildFeatures(S, p)
 end
 
 -- ===== 分類：槽位與價格 =====
+-- 兩張表、列相同（三級＋其他 MOD 的預設＋每個第三方槽位）：上表是開啟方式與價格，下表「續租與提醒」是每個槽位
+-- 自己的幣別、每期天數、重試、提醒、自動續租。
 local function buildSlots(S, p)
     local w = p.width
     local y = para(p, T("Slots_desc"), 0, 0, w) + 2
@@ -421,28 +423,25 @@ local function buildSlots(S, p)
     end
     for _, t in ipairs(M.TIERS) do sbRow(getText("IGUI_MinidoracatWatch_Slot_" .. t.id), t.key) end
     sbRow(T("AddonDefault"), "SlotAddon")
-    -- 第三方槽位逐槽設定：改任何一欄就建立這個槽位的設定（存設定檔）；「用預設」刪掉它
-    for _, slot in ipairs(M.addonSlots()) do
+    -- 第三方槽位逐槽設定（兩張表共用）：改任何一欄就建立這個槽位的設定（存設定檔）；「用預設」刪掉它
+    local addon = M.addonSlots()
+    local function entry(id)
+        if not S.draft.addon[id] then S.draft.addon[id] = M.copyEntry(M.slotEntry(S.draft, id)) end
+        return S.draft.addon[id]
+    end
+    local function cur(id, f) return M.slotEntry(S.draft, id)[f] end
+    for _, slot in ipairs(addon) do
         local id = slot.id
-        local function entry()
-            if not S.draft.addon[id] then
-                local e = M.slotEntry(S.draft, id)
-                S.draft.addon[id] = { mode = e.mode, buy = e.buy, buyPrice = e.buyPrice, rent = e.rent, rentPrice = e.rentPrice,
-                    card = e.card }
-            end
-            return S.draft.addon[id]
-        end
-        local function cur(f) return M.slotEntry(S.draft, id)[f] end
         text(p, M.slotName(slot), cx[1], y + (CH - FH) / 2, "text")
-        dropdown(S, p, cx[2], y, 170, modeOpts, function() return W.MODE_VALUE[cur("mode")] end,
-            function(v) entry().mode = M.MODES[v] end)
-        check(S, p, cx[3], y, "", function() return cur("buy") end, function(v) entry().buy = v end, 40)
-        field(S, p, cx[4], y, 96, function() return cur("buyPrice") end, function(v) entry().buyPrice = v end, price,
+        dropdown(S, p, cx[2], y, 170, modeOpts, function() return W.MODE_VALUE[cur(id, "mode")] end,
+            function(v) entry(id).mode = M.MODES[v] end)
+        check(S, p, cx[3], y, "", function() return cur(id, "buy") end, function(v) entry(id).buy = v end, 40)
+        field(S, p, cx[4], y, 96, function() return cur(id, "buyPrice") end, function(v) entry(id).buyPrice = v end, price,
             priceMsg)
-        check(S, p, cx[5], y, "", function() return cur("rent") end, function(v) entry().rent = v end, 40)
-        field(S, p, cx[6], y, 96, function() return cur("rentPrice") end, function(v) entry().rentPrice = v end, price,
+        check(S, p, cx[5], y, "", function() return cur(id, "rent") end, function(v) entry(id).rent = v end, 40)
+        field(S, p, cx[6], y, 96, function() return cur(id, "rentPrice") end, function(v) entry(id).rentPrice = v end, price,
             priceMsg)
-        check(S, p, cx[7], y, "", function() return cur("card") end, function(v) entry().card = v end, 40)
+        check(S, p, cx[7], y, "", function() return cur(id, "card") end, function(v) entry(id).card = v end, 40)
         button(p, cx[8], y, T("UseDefault"), function()
             S.draft.addon[id] = nil
             AU.syncAll(S)
@@ -450,21 +449,43 @@ local function buildSlots(S, p)
         end, "ghost", w - cx[8])
         y = y + ROW
     end
+    -- 續租與提醒。欄：槽位｜幣別｜每期天數｜到期後重試（小時）｜到期前提醒（小時）｜允許自動續租；
+    -- 欄名在自己的欄寬內換行（德文等長字串），列從最低的欄名下面開始
     y = y + 4
     text(p, T("Renewal"), 0, y, "text")
     y = para(p, T("Renewal_desc"), 0, y + FH + 4, w) + 4
-    local cw = math.floor((w - GAP * 2) / 2)
-    local dx = labeled(p, M.sbLabel("PayCurrency"), 0, y, cw - 160)
-    sbDropdown(S, p, dx, y, 150, "PayCurrency")
-    dx = labeled(p, M.sbLabel("PayRentDays"), cw + GAP * 2, y, cw - 110)
-    sbField(S, p, dx, y, 100, "PayRentDays")
-    y = y + ROW
-    dx = labeled(p, M.sbLabel("PayRetryHours"), 0, y, cw - 110)
-    sbField(S, p, dx, y, 100, "PayRetryHours")
-    dx = labeled(p, M.sbLabel("PayReminderHours"), cw + GAP * 2, y, cw - 110)
-    sbField(S, p, dx, y, 100, "PayReminderHours")
-    y = y + ROW
-    sbCheck(S, p, 0, y, "PayAutoRenew")
+    local rx = { 0, 170, 340, 450, 590, 730 }
+    local top = y
+    for i, k in ipairs({ "Col_slot", "Col_currency", "Col_rentDays", "Col_retryHours", "Col_reminderHours", "Col_autoRenew" }) do
+        y = math.max(y, para(p, T(k), rx[i], top, (rx[i + 1] or w) - rx[i] - GAP, "textMuted"))
+    end
+    y = y + 4
+    local function renewRow(name, key)
+        text(p, name, rx[1], y + (CH - FH) / 2, "text")
+        sbDropdown(S, p, rx[2], y, 150, key .. "Currency")
+        sbField(S, p, rx[3], y, 80, key .. "RentDays")
+        sbField(S, p, rx[4], y, 80, key .. "RetryHours")
+        sbField(S, p, rx[5], y, 80, key .. "ReminderHours")
+        sbCheck(S, p, rx[6], y, key .. "AutoRenew", "", 40)
+        y = y + ROW
+    end
+    for _, t in ipairs(M.TIERS) do renewRow(getText("IGUI_MinidoracatWatch_Slot_" .. t.id), t.key) end
+    renewRow(T("AddonDefault"), "SlotAddon")
+    local curOpts = enumOptions("SlotAddonCurrency")
+    for _, slot in ipairs(addon) do
+        local id = slot.id
+        text(p, M.slotName(slot), rx[1], y + (CH - FH) / 2, "text")
+        dropdown(S, p, rx[2], y, 150, curOpts, function() return W.CURRENCY_VALUE[cur(id, "currency")] end,
+            function(v) entry(id).currency = W.CURRENCIES[v] end)
+        for i, f in ipairs({ { "rentDays", "SlotAddonRentDays" }, { "retryHours", "SlotAddonRetryHours" },
+            { "reminderHours", "SlotAddonReminderHours" } }) do
+            local spec = M.FIELD[f[2]]
+            field(S, p, rx[2 + i], y, 80, function() return cur(id, f[1]) end, function(v) entry(id)[f[1]] = v end,
+                intParser(spec.min, spec.max), rangeText(spec.min, spec.max))
+        end
+        check(S, p, rx[6], y, "", function() return cur(id, "autoRenew") end, function(v) entry(id).autoRenew = v end, 40)
+        y = y + ROW
+    end
 end
 
 -- ===== 分類：電池 =====
@@ -483,14 +504,22 @@ local function buildBattery(S, p)
     sbCheck(S, p, 0, y, "DrainOffline")
     sbCheck(S, p, math.floor(w / 2), y, "DrainPaused")
     y = y + ROW + 2
-    -- 充電：開關＋「從沒電到充滿約 N 小時」（車上＝引擎發動時；不扣車輛電瓶，文案不寫「從電瓶」）
-    local cb = sbCheck(S, p, 0, y, "ChargeCar")
-    sbField(S, p, cb:getRight() + GAP, y, 56, "CarHours")
-    text(p, T("Unit_hours"), cb:getRight() + GAP + 62, y + (CH - FH) / 2, "textMuted")
-    cb = sbCheck(S, p, half, y, "ChargeHouse")
-    sbField(S, p, cb:getRight() + GAP, y, 56, "HouseHours")
-    text(p, T("Unit_hours"), cb:getRight() + GAP + 62, y + (CH - FH) / 2, "textMuted")
-    y = para(p, T("Charge_desc"), 0, y + ROW, w) + 4
+    -- 充電：兩個開關同一列；下一列各自對齊開關文字寫「從沒電到充滿約 [N] 小時」，開關關閉時時數欄停用（AU.refresh）。
+    -- 車上＝引擎發動時；不扣車輛電瓶，文案不寫「從電瓶」。
+    -- 開關文字的起點＝自動寬度扣掉文字寬（框架 Checkbox 的 toggle＋間距），不寫死框架常數
+    local unit, full = T("Unit_hours"), T("ChargeFull")
+    local uw = measure(unit)
+    local function hoursRow(key, hoursKey, x, right)
+        local cb = sbCheck(S, p, x, y, key)
+        local lx = x + cb:getWidth() - measure(M.sbLabel(key))
+        -- 標籤寬依字寬、最多到「欄位＋單位」剛好收在欄內（德文等長字串由 labeled 截短，不壓到右欄）
+        local fx = labeled(p, full, lx, y + ROW, math.min(measure(full) + GAP, right - lx - 62 - uw))
+        sbField(S, p, fx, y + ROW, 56, hoursKey)
+        text(p, unit, fx + 62, y + ROW + (CH - FH) / 2, "textMuted")
+    end
+    hoursRow("ChargeCar", "CarHours", 0, half - GAP)
+    hoursRow("ChargeHouse", "HouseHours", half, w)
+    y = para(p, T("Charge_desc"), 0, y + ROW * 2, w) + 4
     text(p, T("Drains"), 0, y, "text")
     y = para(p, T("Drains_desc"), 0, y + FH + 4, w) + 4
     local cw = math.floor((w - GAP * 4) / 3)
@@ -788,9 +817,20 @@ end
 local Footer = ISUIElement:derive("MinidoracatWatchAdminFooter")
 Footer.render = Pane.render
 
+-- 充電開關關掉：時數沒有作用，欄位停用；打到一半的壞值丟掉（文字回 draft、清紅框、移出 S.bad），停用的欄位不擋套用
+local function chargeHours(S, key, on)
+    local tf = S.ctrl[key]
+    if not on and S.bad[tf] then
+        markBad(S, tf, false)
+        tf:setText(tostring(S.draft.sb[key]))
+    end
+    tf:setEnabled(on)
+end
 -- 動態文字（總覽一覽、續航試算、頁尾修改數與訊息）；每次修改後重算
 function AU.refresh(S)
     if not S.footer then return end
+    chargeHours(S, "CarHours", S.draft.sb.ChargeCar == true) -- 先於 liveMsg：丟掉壞值後「不合法」訊息跟著清
+    chargeHours(S, "HouseHours", S.draft.sb.ChargeHouse == true)
     local p = S.summaryPane
     local keep = {}
     for _, t in ipairs(p.texts) do if not t.summary then keep[#keep + 1] = t end end
@@ -940,7 +980,7 @@ function AU.check(S, err)
         S.msg = T("Invalid")
         return changed(S)
     end
-    local lines, _, n = M.diff(S.base, S.draft)
+    local lines, warn, n = M.diff(S.base, S.draft)
     if n == 0 then
         S.msg = T("NoChanges")
         return changed(S)
@@ -948,8 +988,9 @@ function AU.check(S, err)
     local shown = {}
     if err then shown[#shown + 1] = err end
     shown[#shown + 1] = T("WillChange")
-    for i = 1, math.min(#lines, AU.MAX_LINES) do shown[#shown + 1] = T("Bullet", lines[i]) end
-    if #lines > AU.MAX_LINES then shown[#shown + 1] = T("More", tostring(#lines - AU.MAX_LINES)) end
+    for i = 1, math.min(n, AU.MAX_LINES) do shown[#shown + 1] = T("Bullet", lines[i]) end
+    if n > AU.MAX_LINES then shown[#shown + 1] = T("More", tostring(n - AU.MAX_LINES)) end
+    if warn then shown[#shown + 1] = lines[n + 1] end -- 要玩家重新同意的提醒不能被「還有 N 項」截掉
     S.dialog = UI.Dialog.show({ title = T("ApplyTitle"), text = table.concat(shown, "\n"), width = 560, theme = THEME,
         confirmText = T("Confirm"), cancelText = T("Back"), input = { placeholder = T("Reason_ph") },
         onResult = function(ok, reason)

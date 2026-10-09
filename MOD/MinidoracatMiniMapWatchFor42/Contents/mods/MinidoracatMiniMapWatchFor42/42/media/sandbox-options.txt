@@ -72,6 +72,22 @@ option MinidoracatWatch.SlotExtRentPrice
 option MinidoracatWatch.SlotExtCard
 {type = boolean, default = false, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotExtCard,}
 
+/* 每一級自己的幣別與續租：Currency 1 倖存幣（survivor）、2 貓幣（cat）＝Economy EC.CURRENCY_ORDER。RetryHours＝Economy 的 graceHours：到期立刻停用，這段時間內每小時重試自動續租（使用者裁定：寬限期視為停用） */
+option MinidoracatWatch.SlotExtCurrency
+{type = enum, numValues = 2, default = 1, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotExtCurrency,}
+
+option MinidoracatWatch.SlotExtRentDays
+{type = integer, min = 1, max = 365, default = 7, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotExtRentDays,}
+
+option MinidoracatWatch.SlotExtRetryHours
+{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotExtRetryHours,}
+
+option MinidoracatWatch.SlotExtReminderHours
+{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotExtReminderHours,}
+
+option MinidoracatWatch.SlotExtAutoRenew
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotExtAutoRenew,}
+
 option MinidoracatWatch.SlotAdv
 {type = enum, numValues = 4, default = 3, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAdv,}
 
@@ -89,6 +105,21 @@ option MinidoracatWatch.SlotAdvRentPrice
 
 option MinidoracatWatch.SlotAdvCard
 {type = boolean, default = false, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAdvCard,}
+
+option MinidoracatWatch.SlotAdvCurrency
+{type = enum, numValues = 2, default = 1, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAdvCurrency,}
+
+option MinidoracatWatch.SlotAdvRentDays
+{type = integer, min = 1, max = 365, default = 7, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAdvRentDays,}
+
+option MinidoracatWatch.SlotAdvRetryHours
+{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAdvRetryHours,}
+
+option MinidoracatWatch.SlotAdvReminderHours
+{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAdvReminderHours,}
+
+option MinidoracatWatch.SlotAdvAutoRenew
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAdvAutoRenew,}
 
 option MinidoracatWatch.SlotCore
 {type = enum, numValues = 4, default = 3, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotCore,}
@@ -108,6 +139,21 @@ option MinidoracatWatch.SlotCoreRentPrice
 option MinidoracatWatch.SlotCoreCard
 {type = boolean, default = false, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotCoreCard,}
 
+option MinidoracatWatch.SlotCoreCurrency
+{type = enum, numValues = 2, default = 1, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotCoreCurrency,}
+
+option MinidoracatWatch.SlotCoreRentDays
+{type = integer, min = 1, max = 365, default = 7, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotCoreRentDays,}
+
+option MinidoracatWatch.SlotCoreRetryHours
+{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotCoreRetryHours,}
+
+option MinidoracatWatch.SlotCoreReminderHours
+{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotCoreReminderHours,}
+
+option MinidoracatWatch.SlotCoreAutoRenew
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotCoreAutoRenew,}
+
 option MinidoracatWatch.SlotAddon
 {type = enum, numValues = 4, default = 1, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAddon,}
 
@@ -126,21 +172,20 @@ option MinidoracatWatch.SlotAddonRentPrice
 option MinidoracatWatch.SlotAddonCard
 {type = boolean, default = false, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAddonCard,}
 
-/* 1 倖存幣（survivor）、2 貓幣（cat）：Economy EC.CURRENCY_ORDER。PayRetryHours＝Economy 的 graceHours：到期立刻停用，這段時間內每小時重試自動續租（使用者裁定：寬限期視為停用） */
-option MinidoracatWatch.PayCurrency
-{type = enum, numValues = 2, default = 1, page = MinidoracatWatchSlots, translation = MinidoracatWatch_PayCurrency,}
+option MinidoracatWatch.SlotAddonCurrency
+{type = enum, numValues = 2, default = 1, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAddonCurrency,}
 
-option MinidoracatWatch.PayRentDays
-{type = integer, min = 1, max = 365, default = 7, page = MinidoracatWatchSlots, translation = MinidoracatWatch_PayRentDays,}
+option MinidoracatWatch.SlotAddonRentDays
+{type = integer, min = 1, max = 365, default = 7, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAddonRentDays,}
 
-option MinidoracatWatch.PayRetryHours
-{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatchSlots, translation = MinidoracatWatch_PayRetryHours,}
+option MinidoracatWatch.SlotAddonRetryHours
+{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAddonRetryHours,}
 
-option MinidoracatWatch.PayReminderHours
-{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatchSlots, translation = MinidoracatWatch_PayReminderHours,}
+option MinidoracatWatch.SlotAddonReminderHours
+{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAddonReminderHours,}
 
-option MinidoracatWatch.PayAutoRenew
-{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_PayAutoRenew,}
+option MinidoracatWatch.SlotAddonAutoRenew
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAddonAutoRenew,}
 
 /* ===== MinidoracatWatchBattery：設定視窗「電池」頁 ===== */
 

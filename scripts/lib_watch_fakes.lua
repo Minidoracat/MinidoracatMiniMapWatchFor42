@@ -454,6 +454,10 @@ function Element:setX(v) self.x = v end
 function Element:setY(v) self.y = v end
 function Element:getX() return self.x end
 function Element:getY() return self.y end
+function Element:getWidth() return self.width end
+function Element:getHeight() return self.height end
+function Element:getRight() return self.x + self.width end
+function Element:getChildren() return self.children or {} end
 function Element:setWidth(v) self.width = v end
 function Element:setHeight(v) self.height = v end
 function Element:setVisible(v) self.visible = v end

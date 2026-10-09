@@ -70,6 +70,12 @@ function W.listValue(name)
     return Cfg and Cfg.get(name) or nil
 end
 W.MODE_VALUE = { free = 1, card = 2, econ = 3, off = 4 }
+-- 付費槽位的幣別：沙盒 Slot*Currency 1／2＝Economy 的幣別 id（EC.CURRENCY_ORDER）
+W.CURRENCIES = { "survivor", "cat" }
+W.CURRENCY_VALUE = { survivor = 1, cat = 2 }
+-- 設定檔 addonSlots 一個槽位的欄位（寫檔順序）；沒寫的欄位照沙盒 SlotAddon*
+W.SLOT_CFG_KEYS = { "mode", "buy", "buyPrice", "rent", "rentPrice", "card", "currency", "rentDays", "retryHours",
+    "reminderHours", "autoRenew" }
 function W.addonSlotCfg(slotId)
     local t = W.listValue("addonSlots")
     local e = t and t[slotId]

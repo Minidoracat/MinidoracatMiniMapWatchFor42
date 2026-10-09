@@ -21,19 +21,25 @@ M.FIELDS = {
     { "RuleZombie", E, 1, 4, 3 }, { "RuleLight", E, 1, 2, 1 }, { "ScanRadius", I, 1, 1000, 60 },
     { "DetectRadius", I, 1, 1000, 40 }, { "MilDetectRadius", I, 1, 1000, 80 }, { "CommRange", I, 1, 50000, 2000 },
     { "LongCommRange", I, 1, 50000, 8000 }, { "LightRadius", I, 1, 20, 4 },
-    -- slots
+    -- slots（每級：開啟方式、買斷、租用、也收解鎖卡，再來是這一級自己的幣別、每期天數、重試、提醒、自動續租）
     { "SlotExt", E, 1, 4, 3 }, { "SlotExtBuy", B, nil, nil, true }, { "SlotExtBuyPrice", I, 1, 1000000000, 400 },
     { "SlotExtRent", B, nil, nil, true }, { "SlotExtRentPrice", I, 1, 1000000000, 60 },
-    { "SlotExtCard", B, nil, nil, false }, { "SlotAdv", E, 1, 4, 3 }, { "SlotAdvBuy", B, nil, nil, true },
+    { "SlotExtCard", B, nil, nil, false }, { "SlotExtCurrency", E, 1, 2, 1 }, { "SlotExtRentDays", I, 1, 365, 7 },
+    { "SlotExtRetryHours", I, 0, 168, 24 }, { "SlotExtReminderHours", I, 0, 168, 24 },
+    { "SlotExtAutoRenew", B, nil, nil, true }, { "SlotAdv", E, 1, 4, 3 }, { "SlotAdvBuy", B, nil, nil, true },
     { "SlotAdvBuyPrice", I, 1, 1000000000, 1200 }, { "SlotAdvRent", B, nil, nil, true },
-    { "SlotAdvRentPrice", I, 1, 1000000000, 150 }, { "SlotAdvCard", B, nil, nil, false }, { "SlotCore", E, 1, 4, 3 },
+    { "SlotAdvRentPrice", I, 1, 1000000000, 150 }, { "SlotAdvCard", B, nil, nil, false },
+    { "SlotAdvCurrency", E, 1, 2, 1 }, { "SlotAdvRentDays", I, 1, 365, 7 }, { "SlotAdvRetryHours", I, 0, 168, 24 },
+    { "SlotAdvReminderHours", I, 0, 168, 24 }, { "SlotAdvAutoRenew", B, nil, nil, true }, { "SlotCore", E, 1, 4, 3 },
     { "SlotCoreBuy", B, nil, nil, true }, { "SlotCoreBuyPrice", I, 1, 1000000000, 2400 },
     { "SlotCoreRent", B, nil, nil, true }, { "SlotCoreRentPrice", I, 1, 1000000000, 300 },
-    { "SlotCoreCard", B, nil, nil, false }, { "SlotAddon", E, 1, 4, 1 }, { "SlotAddonBuy", B, nil, nil, true },
+    { "SlotCoreCard", B, nil, nil, false }, { "SlotCoreCurrency", E, 1, 2, 1 }, { "SlotCoreRentDays", I, 1, 365, 7 },
+    { "SlotCoreRetryHours", I, 0, 168, 24 }, { "SlotCoreReminderHours", I, 0, 168, 24 },
+    { "SlotCoreAutoRenew", B, nil, nil, true }, { "SlotAddon", E, 1, 4, 1 }, { "SlotAddonBuy", B, nil, nil, true },
     { "SlotAddonBuyPrice", I, 1, 1000000000, 600 }, { "SlotAddonRent", B, nil, nil, true },
     { "SlotAddonRentPrice", I, 1, 1000000000, 80 }, { "SlotAddonCard", B, nil, nil, false },
-    { "PayCurrency", E, 1, 2, 1 }, { "PayRentDays", I, 1, 365, 7 }, { "PayRetryHours", I, 0, 168, 24 },
-    { "PayReminderHours", I, 0, 168, 24 }, { "PayAutoRenew", B, nil, nil, true },
+    { "SlotAddonCurrency", E, 1, 2, 1 }, { "SlotAddonRentDays", I, 1, 365, 7 }, { "SlotAddonRetryHours", I, 0, 168, 24 },
+    { "SlotAddonReminderHours", I, 0, 168, 24 }, { "SlotAddonAutoRenew", B, nil, nil, true },
     -- battery
     { "NeedBattery", B, nil, nil, true }, { "DeadMode", E, 1, 2, 1 }, { "FullHours", I, 1, 720, 72 },
     { "DrainOffline", B, nil, nil, false }, { "DrainPaused", B, nil, nil, false },
@@ -116,22 +122,23 @@ function M.readBase(st)
         if type(id) == "string" and type(v) == "number" then s.drains[id] = v end
     end
     for id, e in pairs(st and st.addonSlots or {}) do
-        if type(id) == "string" and type(e) == "table" and W.MODE_VALUE[e.mode] then
-            s.addon[id] = { mode = e.mode, buy = e.buy, buyPrice = e.buyPrice, rent = e.rent, rentPrice = e.rentPrice,
-                card = e.card }
-        end
+        if type(id) == "string" and type(e) == "table" and W.MODE_VALUE[e.mode] then s.addon[id] = M.copyEntry(e) end
     end
     return s
+end
+
+-- 第三方槽位的一筆逐槽設定（設定檔欄位；沒寫的欄位是 nil）
+function M.copyEntry(e)
+    local out = {}
+    for _, k in ipairs(W.SLOT_CFG_KEYS) do out[k] = e[k] end
+    return out
 end
 
 function M.copy(s)
     local out = { sb = {}, drops = copyDrops(s.drops), drains = {}, addon = {} }
     for k, v in pairs(s.sb) do out.sb[k] = v end
     for k, v in pairs(s.drains) do out.drains[k] = v end
-    for k, e in pairs(s.addon) do
-        out.addon[k] = { mode = e.mode, buy = e.buy, buyPrice = e.buyPrice, rent = e.rent, rentPrice = e.rentPrice,
-            card = e.card }
-    end
+    for k, e in pairs(s.addon) do out.addon[k] = M.copyEntry(e) end
     return out
 end
 
@@ -150,16 +157,13 @@ function M.addonSlots()
     end
     return out
 end
--- 第三方槽位實際生效的設定（逐槽設定，沒寫的欄位照 SlotAddon*）
+-- 第三方槽位實際生效的設定（逐槽設定有寫的欄位，其餘照 SlotAddon*）
 function M.slotEntry(s, id)
-    local e = s.addon[id] or {}
-    local function pick(field, key)
-        if e[field] ~= nil then return e[field] end
-        return s.sb[key]
+    local out, e = M.tierEntry(s, "SlotAddon"), s.addon[id] or {}
+    for _, k in ipairs(W.SLOT_CFG_KEYS) do
+        if e[k] ~= nil then out[k] = e[k] end
     end
-    return { mode = e.mode or M.MODES[s.sb.SlotAddon] or "free", buy = pick("buy", "SlotAddonBuy"),
-        buyPrice = pick("buyPrice", "SlotAddonBuyPrice"), rent = pick("rent", "SlotAddonRent"),
-        rentPrice = pick("rentPrice", "SlotAddonRentPrice"), card = pick("card", "SlotAddonCard") }
+    return out
 end
 function M.addonDrain(s, def)
     local v = s.drains[def.id]
@@ -194,13 +198,16 @@ function M.ruleText(feature, value)
     return T("Rule_" .. tostring(r))
 end
 
-function M.currencyName(s) return getText("Sandbox_MinidoracatWatch_PayCurrency_option" .. tostring(s.sb.PayCurrency)) end
+-- 幣別名（Economy 的幣別 id）：四級的幣別選項文字相同，借擴充槽那一組
+function M.currencyName(id)
+    return getText("Sandbox_MinidoracatWatch_SlotExtCurrency_option" .. tostring(W.CURRENCY_VALUE[id] or 1))
+end
 
--- 一個付費槽位的開啟方式（白話）；e＝{ mode, buy, buyPrice, rent, rentPrice, card }
-function M.tierText(s, e, econReady)
+-- 一個付費槽位的開啟方式（白話）；e＝M.tierEntry／M.slotEntry（幣別、天數是這個槽位自己的）
+function M.tierText(e, econReady)
     if e.mode ~= "econ" then return T("Mode_" .. e.mode) end
     if not econReady then return T("Mode_noEcon") end
-    local cur, days = M.currencyName(s), tostring(s.sb.PayRentDays)
+    local cur, days = M.currencyName(e.currency), tostring(e.rentDays)
     local txt
     if e.rent and e.buy then txt = T("Mode_rentBuy", days, M.num(e.rentPrice), cur, M.num(e.buyPrice))
     elseif e.rent then txt = T("Mode_rent", days, M.num(e.rentPrice), cur)
@@ -209,9 +216,13 @@ function M.tierText(s, e, econReady)
     if e.card then txt = T("Mode_cardAlso", txt) end
     return txt
 end
+-- 內建一級（沙盒鍵前綴 key）的設定，欄位同設定檔 addonSlots 的一筆（W.SLOT_CFG_KEYS）
 function M.tierEntry(s, key)
-    return { mode = M.MODES[s.sb[key]] or "free", buy = s.sb[key .. "Buy"], buyPrice = s.sb[key .. "BuyPrice"],
-        rent = s.sb[key .. "Rent"], rentPrice = s.sb[key .. "RentPrice"], card = s.sb[key .. "Card"] }
+    local sb = s.sb
+    return { mode = M.MODES[sb[key]] or "free", buy = sb[key .. "Buy"], buyPrice = sb[key .. "BuyPrice"],
+        rent = sb[key .. "Rent"], rentPrice = sb[key .. "RentPrice"], card = sb[key .. "Card"],
+        currency = W.CURRENCIES[sb[key .. "Currency"]] or "survivor", rentDays = sb[key .. "RentDays"],
+        retryHours = sb[key .. "RetryHours"], reminderHours = sb[key .. "ReminderHours"], autoRenew = sb[key .. "AutoRenew"] }
 end
 function M.slotName(slot) return getText(slot.name) end
 
@@ -290,10 +301,10 @@ function M.summary(s, econReady)
         out[#out + 1] = T("Sum_Line", M.featureName(f.id), M.ruleText(f, s.sb[f.key]))
     end
     for _, t in ipairs(M.TIERS) do
-        out[#out + 1] = T("Sum_Line", getText("IGUI_MinidoracatWatch_Slot_" .. t.id), M.tierText(s, M.tierEntry(s, t.key), econReady))
+        out[#out + 1] = T("Sum_Line", getText("IGUI_MinidoracatWatch_Slot_" .. t.id), M.tierText(M.tierEntry(s, t.key), econReady))
     end
     for _, slot in ipairs(M.addonSlots()) do
-        out[#out + 1] = T("Sum_Line", M.slotName(slot), M.tierText(s, M.slotEntry(s, slot.id), econReady))
+        out[#out + 1] = T("Sum_Line", M.slotName(slot), M.tierText(M.slotEntry(s, slot.id), econReady))
     end
     if not s.sb.NeedBattery then
         out[#out + 1] = T("Sum_NoBattery") -- 不扣電：耗電與充電都用不到
@@ -347,16 +358,27 @@ function M.valueText(key, v)
     return M.num(v)
 end
 
--- 改了會讓自動續租暫停、要玩家重新同意的欄位（Economy 的設計，Phase 6 D3）：租金、幣別、天數
-local TERMS = { SlotExtRentPrice = true, SlotAdvRentPrice = true, SlotCoreRentPrice = true, SlotAddonRentPrice = true,
-    PayCurrency = true, PayRentDays = true }
+-- 改了會讓自動續租暫停、要玩家重新同意的欄位（Economy 的設計，Phase 6 D3）：每一級的租金、幣別、天數
+local TERMS = {}
+for _, k in ipairs({ "SlotExt", "SlotAdv", "SlotCore", "SlotAddon" }) do
+    TERMS[k .. "RentPrice"], TERMS[k .. "Currency"], TERMS[k .. "RentDays"] = true, true, true
+end
 local RULE_KEYS = {}
 for _, f in ipairs(M.FEATURES) do RULE_KEYS[f.key] = f end
 
 local function sameEntry(a, b)
     if a == nil or b == nil then return a == b end
-    return a.mode == b.mode and a.buy == b.buy and a.buyPrice == b.buyPrice and a.rent == b.rent
-        and a.rentPrice == b.rentPrice and a.card == b.card
+    for _, k in ipairs(W.SLOT_CFG_KEYS) do
+        if a[k] ~= b[k] then return false end
+    end
+    return true
+end
+-- 第三方槽位一欄的值（白話，給「這次會改變」）
+local function entryValue(k, v)
+    if k == "mode" then return T("ModeOpt_" .. tostring(v)) end
+    if k == "currency" then return M.currencyName(v) end
+    if type(v) == "boolean" then return T(v and "On" or "Off") end
+    return M.num(v)
 end
 
 -- 回 lines（白話）, priceWarn（租約條款改了）, count（改了幾項，給「有 N 項修改」）
@@ -391,12 +413,21 @@ function M.diff(a, b)
             lines[#lines + 1] = T("Diff_Drain", id, tostring(a.drains[id] or "-"), tostring(v))
         end
     end
-    -- 第三方槽位逐槽設定
+    -- 第三方槽位逐槽設定：每一欄各自一行（欄名同兩張表的表頭）；租金、幣別、天數改了要提醒
     for _, slot in ipairs(M.addonSlots()) do
         if not sameEntry(a.addon[slot.id], b.addon[slot.id]) then
             local x, y = M.slotEntry(a, slot.id), M.slotEntry(b, slot.id)
-            lines[#lines + 1] = T("Diff_Line", M.slotName(slot), M.tierText(a, x, true), M.tierText(b, y, true))
-            if b.addon[slot.id] and y.mode == "econ" and (x.rentPrice ~= y.rentPrice) then warn = true end
+            local name, before = M.slotName(slot), #lines
+            for _, k in ipairs(W.SLOT_CFG_KEYS) do
+                if x[k] ~= y[k] then
+                    lines[#lines + 1] = T("Diff_Line", T("Sum_Line", name, T("Col_" .. k)), entryValue(k, x[k]), entryValue(k, y[k]))
+                end
+            end
+            -- 生效的值沒變（改成「用預設」、或改回原值）：仍算一項，寫成開啟方式那句話
+            if #lines == before then lines[#lines + 1] = T("Diff_Line", name, M.tierText(x, true), M.tierText(y, true)) end
+            if y.mode == "econ" and (x.rentPrice ~= y.rentPrice or x.currency ~= y.currency or x.rentDays ~= y.rentDays) then
+                warn = true
+            end
         end
     end
     -- 掉落規則：以句子比對（同一句出現幾次就算幾條）

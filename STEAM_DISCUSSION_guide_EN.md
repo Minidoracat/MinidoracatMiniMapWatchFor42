@@ -109,7 +109,7 @@ Rules are set by the server: the four sandbox pages "Minidoracat Map Watch" (Fea
 [*] Zomboid/Lua/MinidoracatWatch/server name/server-settings.json (sp_save name in single player); a default with 10 drop rules is written if missing.
 [*] Changes apply within 10 seconds, no restart. If the JSON or any rule is invalid, the whole rule list is rejected and the last valid one kept; the server log names the rule and the problem.
 [*] [b]zombieDrops[/b]: group (all, army, police, fire, medic, worker, office, student, survivalist, rich, spiffo, outdoor, or custom with an outfits list — modded zombies work too), item (watch:any or a style, mod:any or mod:id, card:ext/adv/core, battery), chance (percent per zombie, decimals OK).
-[*] [b]moduleDrains[/b]: drain for other mods' modules (0–1000%); built-in drain is in the sandbox. [b]addonSlots[/b]: per-slot access (free/card/econ/off) and prices; omitted values follow the sandbox. Each section is validated on its own, and settings survive a mod being temporarily removed.
+[*] [b]moduleDrains[/b]: drain for other mods' modules (0–1000%); built-in drain is in the sandbox. [b]addonSlots[/b]: per-slot access (free/card/econ/off), prices, currency (survivor/cat), period and renewal; omitted values follow the sandbox. Each section is validated on its own, and settings survive a mod being temporarily removed.
 [/list]
 
 [h3]Selling in the Economy Center[/h3]
@@ -124,7 +124,7 @@ Rules are set by the server: the four sandbox pages "Minidoracat Map Watch" (Fea
 [*] Module drain: Directory 10%; Positioning, Comms, Scanner, Long-Range Comms, Relay Core 25%; Detector, Military Detector 50% | Light Module drain while on: 100% | Light radius: 4 tiles
 [*] Radius: scan 60, detection 40, military detection 80 | Comm range 2000, long-range 8000 tiles (never beyond the minimap view distance)
 [*] Expansion/Advanced/Core Slot access: Economy | Add-on slots: Free | Also accept unlock cards: off
-[*] Buy / rent: Expansion 400/60, Advanced 1200/150, Core 2400/300, add-on 600/80 | Currency: Survivor Coin | 7 days per period | Retry window 24 h | Reminder 24 h | Auto-renew allowed
+[*] Buy / rent: Expansion 400/60, Advanced 1200/150, Core 2400/300, add-on 600/80 | Each tier has its own currency, period and renewal, all defaulting to: Survivor Coin | 7 days per period | Retry window 24 h | Reminder 24 h | Auto-renew allowed
 [*] Screwdriver required for modules: on | Allow crafting modules: on | Electrical level to craft modules: 3
 [*] Watches, modules, unlock cards appear as loot: on | Amount: watches and modules Normal, cards Very Low | Zombies carry map watch items: on | Max drops per zombie: 1
 [/list]

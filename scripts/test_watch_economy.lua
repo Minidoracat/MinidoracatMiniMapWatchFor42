@@ -159,20 +159,31 @@ local n0 = #E.setPlans
 F.now = F.now + 6000
 Econ.tick()
 check(#E.setPlans == n0, "沙盒沒變：不重送")
-SB.SlotExtBuyPrice, SB.PayRetryHours, SB.SlotExtRentPrice = 0, 0, 999
-SB.PayCurrency = 2
+SB.SlotExtBuyPrice, SB.SlotExtRetryHours, SB.SlotExtRentPrice = 0, 0, 999
+SB.SlotExtCurrency, SB.SlotExtRentDays, SB.SlotExtReminderHours, SB.SlotExtAutoRenew = 2, 30, 0, false
 F.now = F.now + 6000
 F.reset()
+local before = #E.setPlans
 Econ.tick()
 pe = planOf("watch_ext")
-check(pe.permanentPrice == 1 and pe.graceHours == 0 and pe.rentalPrice == 999 and pe.rentalCurrency == "cat",
-    "沙盒改了 5 秒內重送：價格至少 1、重試 0 小時、幣別貓幣")
+check(pe.permanentPrice == 1 and pe.graceHours == 0 and pe.rentalPrice == 999 and pe.rentalCurrency == "cat"
+    and pe.permanentCurrency == "cat" and pe.rentalDays == 30 and pe.reminderHours == 0 and pe.autoRenewAllowed == false,
+    "沙盒改了 5 秒內重送：價格至少 1、擴充槽自己的重試 0 小時、幣別貓幣（買斷與租用同一種）、30 天、不提醒、不能自動續租")
+local others = {}
+for i = before + 1, #E.setPlans do
+    if E.setPlans[i].pid ~= "watch_ext" then others[#others + 1] = E.setPlans[i].pid end
+end
+local padv0 = planOf("watch_adv")
+check(#others == 0 and padv0.rentalCurrency == "survivor" and padv0.rentalDays == 7 and padv0.graceHours == 24
+    and padv0.reminderHours == 24 and padv0.autoRenewAllowed == true,
+    "每一級各自設定：只改擴充槽，其他槽位的方案不變、不重送: " .. table.concat(others, ","))
 local warned = false
 for _, c in ipairs(F.serverCmds) do
     if c.command == W.CMD_PLAN_WARN and c.broadcast and c.args.slot == "ext" then warned = true end
 end
 check(warned, "執行中改租金／幣別：提醒在線管理員（自動續租要重新同意）")
-SB.SlotExtBuyPrice, SB.PayRetryHours, SB.SlotExtRentPrice, SB.PayCurrency = nil, nil, nil, nil
+SB.SlotExtBuyPrice, SB.SlotExtRetryHours, SB.SlotExtRentPrice = nil, nil, nil
+SB.SlotExtCurrency, SB.SlotExtRentDays, SB.SlotExtReminderHours, SB.SlotExtAutoRenew = nil, nil, nil, nil
 SB.SlotAdv = 2
 E.notReady = true
 F.now = F.now + 6000

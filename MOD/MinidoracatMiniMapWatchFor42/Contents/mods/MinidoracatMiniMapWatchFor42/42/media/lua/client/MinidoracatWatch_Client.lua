@@ -22,12 +22,17 @@ Events.OnClothingUpdated.Add(function() W.invalidate() end)
 -- 自駕 GPS「任一即可」：AutoDrive 的 hasNavDevice（隨身充電 GPS 或所在車輛有電的 GPS）也放行 nav；
 -- 規則是「關閉」時一律擋。守衛：表存在、版本 >= 1、函式存在，pcall（拋錯當沒有、只 log 一次）。
 local navErrLogged = false
-function C.navDevice(pn)
+local function navApi()
     local api = MinidoracatAutoDriveAPI
     if type(api) ~= "table" or type(api.navDeviceApiVersion) ~= "number" or api.navDeviceApiVersion < 1
             or type(api.hasNavDevice) ~= "function" then
-        return false
+        return nil
     end
+    return api
+end
+function C.navDevice(pn)
+    local api = navApi()
+    if not api then return false end
     local ok, has = pcall(api.hasNavDevice, pn)
     if not ok then
         if not navErrLogged then
@@ -50,7 +55,13 @@ function C.gate(pn, feature, surface)
         return W.minimapDecision(enabled, rule, true, W.power(watch), W.deadKeepsMinimap())
     end
     local ok, reason, dist = W.featureDecision(player, feature, surface)
-    if not ok and feature == "nav" and reason ~= W.REASON_FEATURE_OFF and C.navDevice(pn) then return true end
+    if not ok and feature == "nav" and reason ~= W.REASON_FEATURE_OFF then
+        if C.navDevice(pn) then return true end
+        -- 裝了 AutoDrive（有 GPS 導航儀可用）：缺定位模組時說明兩者任一即可
+        if reason == "IGUI_MinidoracatWatch_Reason_Need_gps" and navApi() then
+            reason = "IGUI_MinidoracatWatch_Reason_Need_gpsOrDevice"
+        end
+    end
     return ok, reason, dist
 end
 

@@ -25,7 +25,6 @@ Econ.RETRY_MS = 10000
 Econ.TICK_MS = 1000
 Econ.PLAN_MS = 5000
 Econ.REASON_CODES = { "entitlement_purchase", "entitlement_renewal", "entitlement_refund" }
-Econ.CURRENCIES = { "survivor", "cat" } -- 沙盒 PayCurrency 1／2（Economy EC.CURRENCY_ORDER）
 -- 沙盒預設價（照設計稿 data.mjs PRICES）；只在沙盒讀不到時用
 Econ.PRICE = { ext = { 60, 400 }, adv = { 150, 1200 }, core = { 300, 2400 }, addon = { 80, 600 } }
 -- Economy 第一次看到產品時用的方案：兩種販售都關，開服立刻用沙盒覆蓋
@@ -72,28 +71,29 @@ local function intIn(v, lo, hi, default)
     return math.max(lo, math.min(hi, math.floor(v)))
 end
 
--- 沙盒 → 12 欄方案。該級不是經濟系統（或第三方產品缺席）：兩種販售與自動續租全關（Economy 就不賣、不扣款，
--- 已付期間照舊）；不刪產品或權益，改回經濟系統就恢復。價格至少 1（Economy 範圍）。
--- 第三方槽位：設定檔 addonSlots 有這個槽位時，買斷／租用開關與價格以它為準（沒寫的欄位照沙盒 SlotAddon*）。
+-- 沙盒 → 12 欄方案（每一級槽位各自的幣別、價格、租期、重試、提醒、自動續租）。該級不是經濟系統（或第三方產品缺席）：
+-- 兩種販售與自動續租全關（Economy 就不賣、不扣款，已付期間照舊）；不刪產品或權益，改回經濟系統就恢復。價格至少 1（Economy 範圍）。
+-- 第三方槽位：設定檔 addonSlots 有這個槽位時，有寫的欄位以它為準（沒寫的欄位照沙盒 SlotAddon*）。
 function Econ.planValues(slot, absent)
     local key = W.SLOT_MODE_KEY[slot.tier] or W.SLOT_MODE_KEY.addon -- 缺席的第三方產品是孤立假槽位
     local econ = not absent and W.slotModeValue(slot) == 3
     local d = Econ.PRICE[slot.tier] or Econ.PRICE.addon
-    local cur = Econ.CURRENCIES[W.sandbox("PayCurrency", 1)] or "survivor"
     local e = slot.tier == "addon" and W.addonSlotCfg(slot.id) or nil
     local function pick(field, suffix, default)
         if e and e[field] ~= nil then return e[field] end
         return W.sandbox(key .. suffix, default)
     end
+    local cur = e and W.CURRENCY_VALUE[e.currency] and e.currency or W.CURRENCIES[W.sandbox(key .. "Currency", 1)]
+        or "survivor"
     return {
         permanentEnabled = econ and pick("buy", "Buy", true) ~= false,
         permanentCurrency = cur, permanentPrice = intIn(pick("buyPrice", "BuyPrice", d[2]), 1, 1e9, d[2]), permanentLimit = 1,
         rentalEnabled = econ and pick("rent", "Rent", true) ~= false,
         rentalCurrency = cur, rentalPrice = intIn(pick("rentPrice", "RentPrice", d[1]), 1, 1e9, d[1]), rentalLimit = 1,
-        rentalDays = intIn(W.sandbox("PayRentDays", 7), 1, 365, 7),
-        graceHours = intIn(W.sandbox("PayRetryHours", 24), 0, 168, 24),
-        reminderHours = intIn(W.sandbox("PayReminderHours", 24), 0, 168, 24),
-        autoRenewAllowed = econ and W.sandbox("PayAutoRenew", true) ~= false,
+        rentalDays = intIn(pick("rentDays", "RentDays", 7), 1, 365, 7),
+        graceHours = intIn(pick("retryHours", "RetryHours", 24), 0, 168, 24),
+        reminderHours = intIn(pick("reminderHours", "ReminderHours", 24), 0, 168, 24),
+        autoRenewAllowed = econ and pick("autoRenew", "AutoRenew", true) ~= false,
     }
 end
 

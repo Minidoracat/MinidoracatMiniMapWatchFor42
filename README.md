@@ -73,24 +73,24 @@ Project Zomboid Build 42 MOD，[Minidoracat MiniMap for B42](https://steamcommun
 ```json
 {
   "moduleDrains": { "weather": 40 },
-  "addonSlots": { "weather": { "mode": "econ", "buy": false, "rentPrice": 90 } }
+  "addonSlots": { "weather": { "mode": "econ", "buy": false, "rentPrice": 90, "currency": "cat", "rentDays": 14 } }
 }
 ```
 
 - `moduleDrains`：其他 MOD 的模組耗電（%，0–1000 的整數），鍵是模組 id；沒寫的模組用它登記的建議值。內建模組的耗電在沙盒，不能寫在這裡。
-- `addonSlots`：其他 MOD 的槽位逐槽設定，鍵是槽位 id；`mode` 是 `free`／`card`／`econ`／`off`（必填），`buy`／`rent`（true／false）與 `buyPrice`／`rentPrice`（1 以上的整數）可省略，省略的照沙盒「其他 MOD 的槽位」那幾項。沒寫的槽位整個照沙盒。
+- `addonSlots`：其他 MOD 的槽位逐槽設定，鍵是槽位 id；`mode` 是 `free`／`card`／`econ`／`off`（必填），其餘可省略、省略的照沙盒「其他 MOD 的槽位」那幾項：`buy`／`rent`／`card`／`autoRenew`（true／false）、`buyPrice`／`rentPrice`（1 以上的整數）、`currency`（`survivor`／`cat`）、`rentDays`（1–365）、`retryHours`／`reminderHours`（0–168）。沒寫的槽位整個照沙盒。
 - 兩個區段各自驗證：任何一筆不合法就保留那個區段上一份有效的值，伺服器 log 寫明原因。提供模組或槽位的 MOD 暫時被移除時，設定照樣保留。
 
 ## 管理員：經濟系統（付費槽位）
 
-選用整合 [Minidoracat Economy](https://steamcommunity.com/sharedfiles/filedetails/?id=3801482125)（多人專用伺服器）。開啟方式設成「經濟系統」的槽位，玩家在地圖手錶面板用 Economy 的錢買斷或租用；價格與租期都在沙盒「Minidoracat 地圖手錶 - 槽位與價格」分頁，伺服器啟動與改設定後 5 秒內自動交給 Economy（Economy 管理台的「整合方案」頁只讀）。
+選用整合 [Minidoracat Economy](https://steamcommunity.com/sharedfiles/filedetails/?id=3801482125)（多人專用伺服器）。開啟方式設成「經濟系統」的槽位，玩家在地圖手錶面板用 Economy 的錢買斷或租用；價格、幣別、租期與續租都在沙盒「Minidoracat 地圖手錶 - 槽位與價格」分頁，每一級槽位各自一組，伺服器啟動與改設定後 5 秒內自動交給 Economy（Economy 管理台的「整合方案」頁只讀）。
 
 - **版本**：需要 Economy `42.21.0-0.8.0` 以上（租約清單與方案由使用端管理）。其他 MOD 的槽位在那個 MOD 被移除時「租約凍結、不扣租金、裝回來接著算」需要 Economy `42.21.0-0.11.0` 以上（API revision 4）；更舊的 Economy 只能在那個 MOD 不在時停止自動續租扣款，租約照原本的到期時間走。設定視窗的「到經濟中心上架」也需要 `42.21.0-0.11.0` 以上（客戶端 API revision 4）。
 - **沒有 Economy、版本太舊或單人遊戲**：設成「經濟系統」的槽位改用解鎖卡，面板會說明。Economy 本身被移除再裝回時，租約不補償（Economy 不在時租約照樣計時）。
-- **到期與自動續租**：租約到期當下就停用；「到期後續租重試時間」是自動續租扣不到款（餘額不足）時每小時重試的期限，這段時間槽位停用，扣到就恢復；0＝到期扣不到就放棄。這段時間租約仍算在名額裡，玩家只能續租、不能另租一張。重試時間與提醒時間只套用到之後付款的租期。
+- **到期與自動續租**：租約到期當下就停用；每一級槽位各自設定「到期後續租重試時間」：自動續租扣不到款（餘額不足）時每小時重試的期限，這段時間槽位停用，扣到就恢復；0＝到期扣不到就放棄。這段時間租約仍算在名額裡，玩家只能續租、不能另租一張。重試時間與提醒時間只套用到之後付款的租期。
 - **改價**：改了租金、幣別或每期天數，已同意自動續租的玩家要在面板按「同意新條款」才會繼續扣款（只扣玩家同意過的價格）；在線的管理員會收到提醒。
 - **買斷與租用**：已買斷的槽位不能再租；租用中可以買斷，但要先關閉那張租約的自動續租。名額綁在帳號（登入名），換戴其他地圖手錶也能用；多人遊戲分割畫面的第 2～4 位玩家沒有付費名額。
-- **其他 MOD 的槽位**：共用沙盒「其他 MOD 的槽位」那一組價格。
+- **其他 MOD 的槽位**：預設照沙盒「其他 MOD 的槽位」那一組設定；管理員可以在設定視窗逐槽設定（存伺服器設定檔 `addonSlots`）。
 
 ## 需求
 
@@ -111,7 +111,7 @@ Project Zomboid Build 42 MOD，[Minidoracat MiniMap for B42](https://steamcommun
 |---|---|
 | `watchApiVersion` | 目前是 `1`。一律用 `>=` 檢查（不要用 `==`，否則地圖手錶升版時你的 MOD 會被擋掉）；新增或改動成員時遞增 |
 | `registerWatchModule(def) --> boolean` | `def = { id, name, class, drain, item, onStateChanged }`：`id` 英數字與底線、不可重複；`name` 是翻譯鍵；`class` 是 `"standard"`／`"advanced"`／`"core"`（決定能裝在哪種槽位）；`drain` 是建議耗電百分比（0–1000）；`item` 是模組物品的完整類型（不可和其他模組共用）；`onStateChanged(player, newState, oldState)` 選用，狀態改變時呼叫（每秒比對一次，第一次的 `oldState` 是 `nil`）。驗證失敗整筆拒收、記一筆 log、回 `false` |
-| `registerWatchSlot(def) --> boolean` | `def = { id, name, accepts, price }`：`accepts` 是能裝的類別陣列；`price = { rent, days, buy }` 是建議價格（目前收費用沙盒「其他 MOD 的槽位」那一組價格）。開啟方式（免費／解鎖卡／經濟系統／不開放）與收費由地圖手錶處理；`name` 也是 Economy 管理台顯示的商品名（翻譯鍵，96 字元以內）；最多 6 個 |
+| `registerWatchSlot(def) --> boolean` | `def = { id, name, accepts, price }`：`accepts` 是能裝的類別陣列；`price = { rent, days, buy }` 是建議價格（實際收費預設照沙盒「其他 MOD 的槽位」那一組設定，管理員可以逐槽調整）。開啟方式（免費／解鎖卡／經濟系統／不開放）與收費由地圖手錶處理；`name` 也是 Economy 管理台顯示的商品名（翻譯鍵，96 字元以內）；最多 6 個 |
 | `getWatchModuleState(player, id) --> string` | `"disabled"`（管理員關閉了對應功能）＞`"active"`（裝在戴著、有電的錶的有效槽位）＞`"notRequired"`（地圖手錶系統關閉，或規則是不需要錶／戴錶就能用而且條件成立）＞`"unpowered"`（戴著但沒電或沒電池）＞`"paused"`（所在槽位沒有開啟）＞`"missing"`（沒戴錶或沒裝）。可每幀呼叫（快取 1 秒、不配置記憶體） |
 
 **模組與槽位一定要在 `media/lua/shared/` 的檔案裡登記**，讓伺服器與客戶端各登記一次：專用伺服器不執行 `client` 資料夾（只算檢查碼），只在 client 登記的話面板看得到、伺服器卻不認得，安裝一律被拒（伺服器 log 會記一筆「is not registered on the server」）。只讀狀態的 UI 邏輯可以放在 client。
@@ -157,7 +157,7 @@ end
 
 - 只看「有沒有」的功能（例如 AutoDrive 的 GPS）只認 `"active"`。
 - 模組耗電：內建模組由沙盒調整；第三方模組預設用你登記的 `drain`，管理員可以在設定視窗（存伺服器設定檔 `moduleDrains`）逐個調整。
-- 其他 MOD 的槽位預設照沙盒「其他 MOD 加入的槽位的開啟方式」（預設免費開放）；管理員可以在設定視窗逐槽設定開啟方式、價格與「也接受解鎖卡」（存伺服器設定檔 `addonSlots` 的 `mode`／`buy`／`buyPrice`／`rent`／`rentPrice`／`card`）。用解鎖卡時用擴充槽解鎖卡。
+- 其他 MOD 的槽位預設照沙盒「其他 MOD 加入的槽位的開啟方式」（預設免費開放）；管理員可以在設定視窗逐槽設定開啟方式、價格、「也接受解鎖卡」、幣別、每期天數與續租（存伺服器設定檔 `addonSlots`，欄位見「管理員：伺服器設定檔」）。用解鎖卡時用擴充槽解鎖卡。
 - 解鎖卡開啟的名額綁在帳號（登入名）。多人伺服器上分割畫面的第 2～4 位玩家無法確認身分，不能使用解鎖卡；Steam 伺服器以連線的 SteamID 確認身分，改名冒用別人讀不到對方的名額。**已知殘餘風險**：no-steam 伺服器沒有驗證因子，玩家重生時改名成離線玩家仍能使用對方已開啟的名額。
 - 你的 MOD 被移除後（沒有再登記同一個槽位 id），裝在那個槽位裡的模組會停用、不耗電，玩家照樣能從面板或錶的右鍵選單拆下來；槽位與解鎖紀錄保留，MOD 裝回來就恢復。模組的 `item` 類型如果也跟著消失，那個模組會留在錶上、拆不下來，直到 MOD 裝回來。
 - 選「經濟系統」時，每個槽位是 Economy 裡的一個商品：槽位 id 是小寫英數字與底線、26 字元以內時商品 id 是 `w_<槽位 id>`，否則是 `w_` 加 8 位雜湊。**槽位 id 請加上你的 MOD 前綴**（不同 MOD 用同一個 id 會被當成同一個槽位）。你的 MOD 被移除時，Economy（API revision 4 以上）會凍結這個槽位的租約，不扣租金、MOD 裝回來後剩餘時間接著算；買斷的名額一直保留。槽位要在 shared 檔案載入時登記，伺服器啟動後才登記的槽位沒有商品、不能購買。
