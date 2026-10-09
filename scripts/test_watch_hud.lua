@@ -409,18 +409,41 @@ step()
 H.check(0, alice, F.now)
 check(#toasts == 14 and toasts[14].title == "IGUI_MinidoracatWatch_Toast_Lapsed|IGUI_MinidoracatWatch_Slot_ext"
     and toasts[14].message:find("^IGUI_MinidoracatWatch_PayFailFunds") ~= nil, "續租後 60 秒內再到期：照報到期與原因")
+-- Economy 的失敗通知先到、伺服器的停用推播後到（1009rc2 第 19 步）：只報一則帶原因的「到期」，不先報「自動續租沒有成功」
+step(61000)
+W.clientPay.alice = { ext = true }
+econ(rental("r1", F.now + 7 * 86400000, { autoRenew = true }))
+step()
+H.check(0, alice, F.now)
+check(#toasts == 15 and toasts[15].title == "IGUI_MinidoracatWatch_Toast_Renewed|IGUI_MinidoracatWatch_Slot_ext", "再補到款：續租成功")
+econ(rental("r1", F.now, { autoRenew = true, state = "grace", graceUntil = F.now + 3600000 }),
+    { code = "renewal_failed", error = "insufficient_funds" })
+step()
+H.check(0, alice, F.now)
+check(#toasts == 15, "失敗通知先到、槽位仍有效：先不報")
+W.clientPay.alice = {}
+step()
+H.check(0, alice, F.now)
+check(#toasts == 16 and toasts[16].title == "IGUI_MinidoracatWatch_Toast_Lapsed|IGUI_MinidoracatWatch_Slot_ext"
+    and toasts[16].message:find("^IGUI_MinidoracatWatch_PayFailFunds") ~= nil, "停用推播後到：只有一則到期、內文帶原因")
+step(3600000)
+econ(rental("r1", F.now - 3600000, { autoRenew = true, state = "grace", graceUntil = F.now + 3600000 }),
+    { code = "renewal_failed", error = "insufficient_funds" })
+step()
+H.check(0, alice, F.now)
+check(#toasts == 16, "停用後每小時重試再失敗：不重報")
 -- 換錶：重設基準
 wear(alice, 0)
 step()
 H.check(0, alice, F.now)
-check(#toasts == 14, "換一支沒電的錶：基準，不報")
--- 音效跟著同一則 Toast（同樣不重報）：低電量兩次、沒電、租約到期三次（#7、#12 併扣款失敗、#14）；
+check(#toasts == 16, "換一支沒電的錶：基準，不報")
+-- 音效跟著同一則 Toast（同樣不重報）：低電量兩次、沒電、租約到期四次（#7、#12 併扣款失敗、#14、#16）；
 -- 充電、充飽、模組停用、扣款失敗、續租不響
 local heard = {}
 for _, s in ipairs(F.sounds) do heard[#heard + 1] = s.name .. "@" .. tostring(s.volume) end
 check(table.concat(heard, ",") == "MinidoracatWatch_BatteryLow@0.7,MinidoracatWatch_BatteryLow@0.7,"
     .. "MinidoracatWatch_BatteryDead@0.7,MinidoracatWatch_SlotLapsed@0.7,MinidoracatWatch_SlotLapsed@0.7,"
-    .. "MinidoracatWatch_SlotLapsed@0.7",
+    .. "MinidoracatWatch_SlotLapsed@0.7,MinidoracatWatch_SlotLapsed@0.7",
     "音效：低電量／沒電／租約到期跟著 Toast 響一次（預設音量 70%）：" .. table.concat(heard, ","))
 
 -- ===== 管理員視窗：到經濟中心上架（Economy 客戶端 rev 4＋shopAdd）=====

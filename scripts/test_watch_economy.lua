@@ -1,5 +1,5 @@
 -- 地圖錶 Phase 6：Economy 付費槽位。伺服器（守衛退回解鎖卡、產品命名與註冊、凍結旗標、舊版 Economy 缺席產品關閉、
--- 沙盒 → setPlan、狀態對應、到期立刻停用、讀取失敗、變更通知、validatePurchase、推播、重登、分割畫面）與客戶端
+-- 沙盒 → setPlan、狀態對應、到期立刻停用、自動續租到期等 Economy 試扣、讀取失敗、變更通知、validatePurchase、推播、重登、分割畫面）與客戶端
 -- （推播、付款流程：報價比對、價格剛變更、沒回應只查原訂單、重複付款、餘額不足、自動續租同意、檢視區文字與按鈕）。
 -- 用法（repo 根目錄）：lua scripts/test_watch_economy.lua
 local F = dofile("scripts/lib_watch_fakes.lua")
@@ -51,6 +51,18 @@ check(v1 == true and u1 == W.PAY_FOREVER, "買斷永久有效（和租約並存�
 check(W.payEval({ permanent = 0 }, NOW) == nil and W.payEval(nil, NOW) == nil, "缺 rentals／不是表：讀取失敗（nil）")
 local _, best = W.payEval(ent(0, { rental("active", NOW + HOUR), rental("paused_terms", NOW + 2 * HOUR) }), NOW)
 check(best == NOW + 2 * HOUR, "有效到期取最晚的一張")
+-- 等續租：自動續租 on 的租約剛到期、Economy 還沒試扣 → 最多 W.PAY_RENEW_WAIT_MS 仍有效；試扣失敗、超過等候、沒開自動續租都無效
+local AUTO = { autoRenew = true, autoRenewState = "on" }
+local vw, uw = W.payEval(ent(0, { rental("grace", NOW - 700, AUTO) }), NOW)
+check(vw == true and uw == NOW - 700 + W.PAY_RENEW_WAIT_MS, "自動續租剛到期、還沒試扣：有效到 paidUntil＋等候上限")
+local failedEnt = ent(0, { rental("grace", NOW - 700, AUTO) })
+failedEnt.notice = { code = "renewal_failed", error = "insufficient_funds", rental = "o1" }
+check(W.payEval(failedEnt, NOW) == false, "Economy 已試扣失敗（renewal_failed）：立刻無效")
+failedEnt.notice.rental = "other"
+check(W.payEval(failedEnt, NOW) == true, "別張租約的 renewal_failed 不算這張試扣過")
+check(W.payEval(ent(0, { rental("grace", NOW - W.PAY_RENEW_WAIT_MS, AUTO) }), NOW) == false, "等候上限到了 Economy 仍沒扣：無效")
+check(W.payEval(ent(0, { rental("grace", NOW - 1, { autoRenew = true, autoRenewState = "paused_terms" }) }), NOW) == false,
+    "自動續租暫停（不會扣）：到期立刻無效")
 
 -- ===== 假 Economy（server facade）=====
 local E = { products = {}, plans = {}, setPlans = {}, ents = {}, listeners = {}, notReady = false }
@@ -201,14 +213,50 @@ Econ.tick()
 pushed = nil
 for _, c in ipairs(F.serverCmds) do if c.command == W.CMD_PAY and c.player == alice then pushed = c.args end end
 check(pushed and pushed.slots.ext == nil, "到期當秒推播：擴充槽不在有效清單")
--- 自動續租扣到款：Economy 通知帶新快照 → 立刻恢復
-E.ents.alice.watch_ext = ent(0, { rental("active", F.now + 7 * 24 * HOUR, { autoRenew = true, autoRenewState = "on" }) })
-for _, fn in ipairs(E.listeners) do fn("alice", "watch_ext", { ok = true, entitlement = E.ents.alice.watch_ext }) end
-check(W.slotValid(alice, ext) == true, "續租成功的通知：立刻有效")
--- 餘額不足：grace＋renewal_failed → 停用
-E.ents.alice.watch_ext = ent(0, { rental("grace", F.now - 1, { autoRenew = true, autoRenewState = "on" }) })
-for _, fn in ipairs(E.listeners) do fn("alice", "watch_ext", { ok = true, entitlement = E.ents.alice.watch_ext }) end
-check(W.slotValid(alice, ext) == false, "續租扣款失敗（寬限中）：停用")
+-- 自動續租（重現 mmw-econ-mp-1009rc 首輪的順序）：到期後地圖錶每秒的輪詢先讀到 grace，Economy 那一步才扣款
+local function notify(e)
+    E.ents.alice.watch_ext = e
+    for _, fn in ipairs(E.listeners) do fn("alice", "watch_ext", { ok = true, entitlement = e }) end
+end
+local function autoLease(untilMs, state, notice)
+    local e = ent(0, { rental(state, untilMs, AUTO) })
+    e.notice = notice
+    return e
+end
+local function pushedExt() -- 下一秒的 tick：沒推＝nil，推了回擴充槽有沒有效
+    F.reset()
+    F.now = F.now + 1000
+    Econ.tick()
+    local got = nil
+    for _, c in ipairs(F.serverCmds) do if c.command == W.CMD_PAY and c.player == alice then got = c.args.slots.ext == true end end
+    return got
+end
+local RENEWED = { code = "renewed", rental = "o1" }
+local due = F.now + 1500
+notify(autoLease(due, "active", RENEWED))
+check(pushedExt() == true, "自動續租開著、租用中：推有效")
+E.ents.alice.watch_ext = autoLease(due, "grace", RENEWED) -- 過了 paidUntil，Economy 還沒走到這一列
+check(pushedExt() == nil and W.slotValid(alice, ext) == true, "到期後 Economy 還沒試扣：不推停用（玩家不會先看到到期）")
+notify(autoLease(due, "grace", { code = "grace", rental = "o1" })) -- Economy 那一步：先發 grace 通知，同一步再試扣
+notify(autoLease(due + 7 * 24 * HOUR, "active", RENEWED))
+check(W.slotValid(alice, ext) == true and pushedExt() == nil, "續租扣到款：從頭到尾沒推過停用")
+-- 扣不到款：Economy 同一步發 renewal_failed → 立刻停用，下一秒推播（到期／扣款失敗的 Toast 照報）
+due = F.now + 500
+notify(autoLease(due, "active", RENEWED))
+E.ents.alice.watch_ext = autoLease(due, "grace", RENEWED)
+check(pushedExt() == nil and W.slotValid(alice, ext) == true, "扣款前（已過 paidUntil）：同樣先等 Economy")
+notify(autoLease(due, "grace", { code = "grace", rental = "o1" }))
+check(W.slotValid(alice, ext) == true, "grace 通知（還沒試扣）：仍有效")
+notify(autoLease(due, "grace", { code = "renewal_failed", error = "insufficient_funds", rental = "o1" }))
+check(W.slotValid(alice, ext) == false and pushedExt() == false, "續租扣款失敗（寬限中）：立刻停用並推播")
+-- Economy 一直沒走到這一列：等候上限一到就停用
+due = F.now + 5000
+notify(autoLease(due, "active", RENEWED))
+check(pushedExt() == true, "新一期：推有效")
+E.ents.alice.watch_ext = autoLease(due, "grace", RENEWED)
+F.now = due + W.PAY_RENEW_WAIT_MS - 1500
+check(pushedExt() == nil, "等候上限內：仍有效")
+check(pushedExt() == false, "等候上限到了 Economy 仍沒扣：停用並推播")
 -- 讀取失敗：沿用上次有效值到它的到期時間；沒有舊值＝無效
 E.ents.alice.watch_core = ent(0, { rental("active", F.now + 5000) })
 for _, fn in ipairs(E.listeners) do fn("alice", "watch_core", { ok = true, entitlement = E.ents.alice.watch_core }) end

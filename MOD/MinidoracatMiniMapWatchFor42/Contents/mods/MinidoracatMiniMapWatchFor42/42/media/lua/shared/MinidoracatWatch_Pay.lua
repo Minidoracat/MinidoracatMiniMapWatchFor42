@@ -42,17 +42,29 @@ end
 -- 使用者裁定「租約到期立刻停用」：只認買斷，或 state 是 active／paused_terms／paused_system 而且 paidUntil 還沒到的租約；
 -- grace（寬限＝自動續租重試時間）、expired、frozen（產品缺席，槽位本來就孤立）一律無效。
 -- 不用 entitlement.usable：它把寬限算成可用（Economy leaseLive）。paused_*：已付期間仍屬玩家（停售／系統暫停不是到期）。
+-- 例外（等續租）：自動續租 on 的租約剛到期、Economy 還沒試扣（沒有這張的 renewal_failed）時，最多再算 W.PAY_RENEW_WAIT_MS 有效。
+-- Economy 只在 paidUntil 之後的排程那一步扣款（ECEntitlements visitLease，每秒一步、一步 20 列），先停用會讓
+-- 續租成功的玩家先看到「到期」再看到「續租成功」；扣不到款時 Economy 同一步就發 renewal_failed，照樣立刻停用。
+-- ponytail: 等候上限 10 秒＝Economy 一輪最多 200 列有租約的權益；租約更多的伺服器要加長（只影響扣款前的等候）。
 W.PAY_FOREVER = 1e300
+W.PAY_RENEW_WAIT_MS = 10000
 local LIVE = { active = true, paused_terms = true, paused_system = true }
 function W.payEval(ent, now)
     if type(ent) ~= "table" or type(ent.rentals) ~= "table" then return nil end
     if type(ent.permanent) == "number" and ent.permanent >= 1 then return true, W.PAY_FOREVER end
+    local n = type(ent.notice) == "table" and ent.notice.code == "renewal_failed" and ent.notice or nil
     local best = nil
     for _, r in ipairs(ent.rentals) do
-        if type(r) == "table" and LIVE[r.state] and type(r.paidUntil) == "number" and r.paidUntil > now
-            and (best == nil or r.paidUntil > best) then
-            best = r.paidUntil
+        local untilMs = nil
+        if type(r) == "table" and type(r.paidUntil) == "number" then
+            if LIVE[r.state] and r.paidUntil > now then
+                untilMs = r.paidUntil
+            elseif r.state == "grace" and r.autoRenewState == "on" and now < r.paidUntil + W.PAY_RENEW_WAIT_MS
+                and not (n and (n.rental == nil or n.rental == r.id)) then
+                untilMs = r.paidUntil + W.PAY_RENEW_WAIT_MS
+            end
         end
+        if untilMs and (best == nil or untilMs > best) then best = untilMs end
     end
     if best then return true, best end
     return false, nil

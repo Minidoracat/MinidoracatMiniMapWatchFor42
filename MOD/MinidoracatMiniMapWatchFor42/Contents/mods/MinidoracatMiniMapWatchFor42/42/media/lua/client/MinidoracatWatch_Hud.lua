@@ -270,7 +270,9 @@ local function leaseEvents(s, player, watch, slot, now, valid)
         -- 到期那一步自動續租就沒扣到款：併成一則（原因＋重試期限）
         local msg = v.fail and failText(v) or (rec and T("Toast_Lapsed_msg", C.moduleName(rec.id)) or T("Toast_Lapsed_empty"))
         say(s, player, "lapse:" .. slot.id, now, T("Toast_Lapsed", name), msg, Snd.LAPSED)
-    elseif v.fail and not e.fail then
+    elseif v.fail and not e.fail and not valid then
+        -- 槽位還有效＝Economy 的失敗通知比伺服器的停用推播先到（1009rc2）：不先報，停用那則會帶原因；
+        -- e.fail 照樣記下，停用後的每小時重試再失敗也不重報
         say(s, player, "fail:" .. slot.id, now, T("Toast_RenewFailed", name), failText(v))
     end
     e.fail = v.fail
