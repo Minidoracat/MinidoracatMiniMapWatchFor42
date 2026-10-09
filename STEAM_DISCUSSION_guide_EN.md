@@ -78,7 +78,7 @@ Rules are set by the server: the four sandbox pages "Minidoracat Map Watch" (Fea
 [list]
 [*] Expansion, Advanced, Core and add-on slots can each be [b]Free, Unlock Card, Economy or Disabled[/b]. Defaults: Economy for the first three, Free for add-on slots.
 [*] [b]Unlock cards[/b]: one card opens a slot for good (add-on slots use Expansion cards); a card isn't used up if the slot is already open. Use the panel button on a locked slot, or right-click the card → "Use Unlock Card".
-[*] [b]Economy[/b]: on multiplayer servers with Minidoracat Economy, buy or rent in the panel. Bought slots can't be rented; to buy a rented slot, turn off its auto-renew first. Admins can let Economy slots accept unlock cards too (off by default).
+[*] [b]Economy[/b]: on multiplayer servers with Minidoracat Economy, buy or rent in the panel. Bought slots can't be rented; to buy a rented slot, turn off its auto-renew first. Admins can let Economy slots accept unlock cards too (off by default). Currency, period, retry window, reminder and auto-renew are set per slot type.
 [*] All access (card, purchase, rental) is tied to your account and works on any watch.
 [*] [b]Expiry[/b]: a slot stops the moment its rental ends (modules stay, use no power, removable). If auto-renew can't charge, it retries hourly within the retry window (24 h by default) and resumes once paid; meanwhile you can renew but not start a new rental. Reminder 24 h before the end by default.
 [*] [b]Price changes[/b]: if rent, currency or period changes, players with auto-renew must press "Accept New Terms"; you're only charged what you agreed to.
