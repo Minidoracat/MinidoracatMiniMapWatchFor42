@@ -151,11 +151,13 @@ Rules are set by the server: the four sandbox pages "Minidoracat Map Watch" (Fea
 [*] [b]The minimap works without a watch?[/b] The admin may have turned off "Enable map watch" or set the minimap rule to "No watch needed"; an outdated MiniMap also leaves it open with a notice.
 [*] [b]The minimap says "No Signal"?[/b] The watch is dead or has no battery; insert or replace one.
 [*] [b]A module shows as disabled?[/b] Its slot isn't open, the rental ended, or the watch is dead; it also won't work if the admin turned its feature off. Move it to a working slot.
+[*] [b]Detector or Scanner installed, but nothing shows on the minimap?[/b] The server's minimap settings may have zombie positions and heat, or vehicle and animal icons, turned off; the modules can't show them then. Ask the admin to turn them on in the minimap settings.
 [*] [b]Can't install a module?[/b] Check for a screwdriver (servers can drop this), that watch and module are on you, and that the slot is open and accepts that class (Core modules only fit the Core Slot). Don't walk while installing.
 [*] [b]Battery dropped a lot after logging back in?[/b] Offline drain is off by default; only with "Drain while offline" is it deducted, up to 30 days. Single-player pause doesn't drain by default either.
 [*] [b]Do paid slots carry over to another watch?[/b] Yes, they're tied to your account; the modules stay on the old watch, so move them over.
 [*] [b]Paid slots in single player?[/b] There's no Economy payment; Economy slots use unlock cards, or set them to Free in the settings window.
 [*] [b]Can I charge batteries with the watch?[/b] No. A removed battery is never fuller than when it went in.
+[*] [b]Putting on the watch takes off the arm guard on that arm?[/b] In vanilla, the wrist and forearm armor on the same arm can't be worn together, and vanilla watches work the same way. If the server runs Pack Mule with its "Slot: Watch" option on, map watches move to Pack Mule's watch slot just like vanilla watches and can be worn with arm guards. Take off a watch you were already wearing and put it back on once.
 [/list]
 
 [h2]💬 Feedback[/h2]
