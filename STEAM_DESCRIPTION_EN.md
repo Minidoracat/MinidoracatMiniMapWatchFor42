@@ -34,7 +34,7 @@ Without this mod installed, the minimap stays fully available as before. Works i
 [*] [b]Paid slots[/b]: buy or rent them with Economy, or use unlock cards without it
 [*] [b]Admin settings[/b]: tune features, slots, batteries and how watches are obtained in one window
 [/list]
-📖 [b]Getting watches, modules, battery and server settings:[/b] [url=https://steamcommunity.com/workshop/filedetails/discussion/3816406671/586188069723694580/]Map Watch Guide[/url]
+📖 [b]Getting watches, modules, battery and server settings:[/b] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3816991145]Map Watch Guide[/url]
 
 [h2]🔗 More Minidoracat mods[/h2]
 All my mods are in the [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3809297109]Minidoracat Mods for B42 collection[/url] — pick what you need.
