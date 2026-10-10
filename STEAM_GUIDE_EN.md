@@ -94,7 +94,7 @@ Default rules:
 [list]
 [*] slots and modules on the watch face
 [*] charge and time left
-[*] which module a feature is missing
+[*] which module a feature is missing (hover it to see where to find one and whether you can craft it)
 [*] buttons for the battery, the light and the BB-3000 screen
 [/list]
 [*] [b]Watch right-click menu[/b]: open the panel, insert/replace/remove the battery, remove modules.
@@ -104,7 +104,7 @@ Default rules:
 [*] [b]Minimap title bar[/b]: watch charge %, in a warning color when low or a rental ended.
 [*] [b]Family toolbar[/b]: the Map Watch button icon shows charge too.
 [*] [b]Hover a watch[/b]: charge, time left (or charging / no battery needed), installed modules (rented / disabled) and paid slots.
-[*] [b]Hover a module[/b]: class, drain and feature.
+[*] [b]Hover a module[/b]: class, drain, feature and range, using this server's settings; it also says when the feature is off or works without a module.
 [/list]
 {{img:07-item-tooltip-en.jpg}}
 [h3]Pop-ups and sounds[/h3]
@@ -163,7 +163,7 @@ Default rules:
 [*] Use the module buttons in the panel
 [*] Right-click the module → "Install to Map Watch"
 [/list]
-[*] [b]Module buttons[/b]: sorted Core, Advanced, General, with a stripe in the slot's tier color; hover one to see what it does and its drain.
+[*] [b]Module buttons[/b]: sorted Core, Advanced, General, with a stripe in the slot's tier color; hover one to see what it does, its range and its drain (using this server's settings).
 [*] [b]Filter[/b]: slots that take several tiers get a tier filter.
 [*] [b]Time[/b]: about 3 seconds, screwdriver by default; walking cancels it and the module stays where it was.
 [*] [b]Keep them on you[/b]: watch and module must be on you. Modules stay on the watch and only work while it's worn.

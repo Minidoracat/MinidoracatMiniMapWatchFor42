@@ -125,19 +125,75 @@ C.registerGate()
 F.fire("OnTick")
 check(#F.halos == 0, "分享 API 足夠：不提示")
 
--- 通訊類模組說明的分享距離從沙盒讀（不寫死 2000／8000）
+-- 模組說明接上伺服器設定的範圍（和閘門、分享過濾讀同一份沙盒，不寫死）或這台伺服器的處境；
+-- 面板檢視區每幀都畫，同一個模組 250ms 內沿用同一份文字
+local function later() F.now = F.now + 300 end
 check(C.moduleDesc("comm") == "IGUI_MinidoracatWatch_ShareRange|IGUI_MinidoracatWatch_ModuleDesc_comm|2000"
     and C.moduleDesc("longcomm") == "IGUI_MinidoracatWatch_ShareRange|IGUI_MinidoracatWatch_ModuleDesc_longcomm|8000",
     "預設：通訊 2000、長距 8000")
-SB.CommRange, SB.LongCommRange = 1234, 30000
-check(C.moduleDesc("comm"):find("|1234", 1, true) and C.moduleDesc("longcomm"):find("|30000", 1, true), "說明的距離跟著沙盒改")
-SB.CommRange, SB.LongCommRange = nil, nil
+check(C.moduleDesc("detect") == "IGUI_MinidoracatWatch_ModuleRange|IGUI_MinidoracatWatch_ModuleDesc_detect|40"
+    and C.moduleDesc("mildetect") == "IGUI_MinidoracatWatch_ModuleRange|IGUI_MinidoracatWatch_ModuleDesc_mildetect|80"
+    and C.moduleDesc("scan") == "IGUI_MinidoracatWatch_ModuleRange|IGUI_MinidoracatWatch_ModuleDesc_scan|60",
+    "預設：偵測 40、軍規偵測 80、掃描 60")
+SB.CommRange, SB.LongCommRange, SB.DetectRadius, SB.MilDetectRadius = 1234, 30000, 60, 70
+check(C.moduleDesc("detect"):find("|40", 1, true), "250ms 內沿用同一份文字")
+later()
+check(C.moduleDesc("comm"):find("|1234", 1, true) and C.moduleDesc("longcomm"):find("|30000", 1, true)
+    and C.moduleDesc("detect"):find("|60", 1, true) and C.moduleDesc("mildetect"):find("|70", 1, true),
+    "說明的範圍跟著沙盒改（軍規偵測不再寫死成偵測的兩倍）")
+SB.CommRange, SB.LongCommRange, SB.DetectRadius, SB.MilDetectRadius = nil, nil, nil, nil
+later()
 check(C.moduleDesc("relay") == "IGUI_MinidoracatWatch_ShareRangeUnlimited|IGUI_MinidoracatWatch_ModuleDesc_relay",
     "中繼核心：不限距離")
-check(C.moduleDesc("gps") == "IGUI_MinidoracatWatch_ModuleDesc_gps", "其他模組沒有距離")
-SB.RuleShare = 2
-check(C.moduleDesc("comm") == "IGUI_MinidoracatWatch_ModuleDesc_comm", "陣營分享不是「需要模組」：不量距離，不寫")
-SB.RuleShare = nil
+check(C.moduleDesc("gps") == "IGUI_MinidoracatWatch_ModuleDesc_gps" and C.moduleDesc("eco") == "IGUI_MinidoracatWatch_ModuleDesc_eco"
+    and C.moduleDesc("light") == "IGUI_MinidoracatWatch_ModuleDesc_light|4", "沒有範圍的模組只有說明；照明的半徑本來就在說明裡")
+SB.RuleShare, SB.RuleZombie, SB.RuleLight = 2, 4, 2
+later()
+check(C.moduleDesc("comm") == "IGUI_MinidoracatWatch_ModuleNotNeeded|IGUI_MinidoracatWatch_ModuleDesc_comm|IGUI_MinidoracatWatch_Feature_share",
+    "陣營分享是「戴錶就能用」：不寫距離，註明不裝模組也能用")
+check(C.moduleDesc("detect") == "IGUI_MinidoracatWatch_ModuleRuleOff|IGUI_MinidoracatWatch_ModuleDesc_detect|IGUI_MinidoracatWatch_Feature_zombie"
+    and C.moduleDesc("light"):find("IGUI_MinidoracatWatch_ModuleRuleOff|", 1, true) == 1, "功能關閉：註明沒有作用、不耗電")
+SB.RuleShare, SB.RuleZombie, SB.RuleLight = nil, nil, nil
+local gateApi = MinidoracatMiniMapAPI
+MinidoracatMiniMapAPI = { featureApiVersion = 2, featureServerOff = function(f) return f == "scan" end }
+later()
+check(C.moduleDesc("scan") == "IGUI_MinidoracatWatch_ModuleServerOff|IGUI_MinidoracatWatch_ModuleDesc_scan|IGUI_MinidoracatWatch_Feature_scan"
+    and C.moduleDesc("detect"):find("IGUI_MinidoracatWatch_ModuleRange|", 1, true) == 1,
+    "小地圖設定沒開放掃描：註明裝了也看不到；其他照舊")
+MinidoracatMiniMapAPI = gateApi
+later()
+
+-- 耗電照伺服器現在的設定（和 W.drainFactor 同一套：功能關閉的模組不計、不需要電池時整支錶不耗電）
+local function drainOf(id) return C.drainText(W.modules[id]) end
+check(drainOf("detect") == "IGUI_MinidoracatWatch_DrainPlus|50" and drainOf("eco") == "IGUI_MinidoracatWatch_DrainHalf"
+    and drainOf("light") == "IGUI_MinidoracatWatch_DrainLight|100", "預設：偵測 +50%、節能核心減半、照明開燈時 +100%")
+SB.RuleZombie, SB.RuleLight = 4, 2
+check(drainOf("detect") == "IGUI_MinidoracatWatch_DrainNone" and drainOf("mildetect") == "IGUI_MinidoracatWatch_DrainNone"
+    and drainOf("light") == "IGUI_MinidoracatWatch_DrainNone" and drainOf("scan") == "IGUI_MinidoracatWatch_DrainPlus|25",
+    "功能關閉：那幾個模組寫不耗電，其他照舊")
+SB.RuleZombie, SB.RuleLight = nil, nil
+SB.NeedBattery = false
+check(drainOf("scan") == "IGUI_MinidoracatWatch_DrainNoBattery" and drainOf("eco") == "IGUI_MinidoracatWatch_DrainNoBattery",
+    "不需要電池：每個模組都寫不耗電")
+SB.NeedBattery = nil
+
+-- 缺模組時的取得方式：只用客戶端有的沙盒值與 shared 的戰利品表（殭屍掉落不公開）
+F.load("shared/MinidoracatWatch_Recipe.lua")
+local function acquire(id)
+    local t = C.acquireLines(id)
+    return t and table.concat(t, "\n")
+end
+local LOOT, SEP, PLACE = "IGUI_MinidoracatWatch_Acquire_Loot|", "IGUI_MinidoracatWatch_ListSep", "IGUI_MinidoracatWatch_LootPlace_"
+check(acquire("ledger") == LOOT .. PLACE .. "ElectronicStoreMisc" .. SEP .. PLACE .. "CrateElectronics\n"
+    .. "IGUI_MinidoracatWatch_Acquire_Craft|3", "名錄模組：電器行、倉庫的電子用品箱；可以製作（電學 3）")
+check(acquire("gps") == LOOT .. PLACE .. "ElectronicStoreMisc" .. SEP .. PLACE .. "ArmyStorageElectronics",
+    "定位模組：沒有配方，只寫地點")
+SB.LootModules, SB.CraftLevel = false, 0
+check(acquire("ledger") == "IGUI_MinidoracatWatch_Acquire_CraftAny" and acquire("gps") == nil,
+    "模組不出現在容器：只剩製作（電學 0＝不需要技能）；兩樣都沒有就不寫")
+SB.LootModules, SB.CraftLevel, SB.AllowCraft = nil, nil, false
+check(acquire("comm") == LOOT .. PLACE .. "ElectronicStoreMisc" .. SEP .. PLACE .. "PoliceLockers", "關閉製作：不寫可以製作")
+SB.AllowCraft = nil
 
 -- ===== 小地圖閘門 =====
 local gate = registered.fn
@@ -883,10 +939,42 @@ F.wear(p, watch)
 F.fire("OnClothingUpdated", p)
 tick()
 panel:update()
+-- 「需要 X 模組」的膠囊：滑過顯示取得方式（每句斷成 300px、以 <LINE> 接起來）；移開收掉、關面板也收掉
+ISToolTip = {}
+ISToolTip.__index = ISToolTip
+function ISToolTip:new() return setmetatable({ visible = false }, ISToolTip) end
+function ISToolTip:setOwner(o) self.owner = o end
+function ISToolTip:setVisible(v) self.visible = v end
+function ISToolTip:getIsVisible() return self.visible end
+function ISToolTip:setAlwaysOnTop() end
+function ISToolTip:addToUIManager() self.inUI = true end
+function ISToolTip:removeFromUIManager() self.inUI = false end
+local needChip, okChip
+for _, f in ipairs(panel.feats) do
+    if f.tip and not needChip then needChip = f end
+    if f.ok then okChip = f end
+end
+local needId = needChip and W.PROVIDERS[needChip.label:match("Feature_(.+)$")][1]
+check(needChip and needChip.note:find("Reason_Need_", 1, true)
+    and needChip.tip:gsub(" <LINE> ", "") == table.concat(C.acquireLines(needId)) and okChip and okChip.tip == nil,
+    "缺模組的功能有取得方式的說明；能用的功能沒有")
+panel.mouseOver, panel.mx, panel.my = true, needChip.x + 2, needChip.y + 2
+panel:update()
+local featTip = panel.featTip
+check(featTip and featTip.visible and featTip.inUI and featTip.owner == panel and featTip.maxLineWidth == 300
+    and featTip.description == needChip.tip, "滑到膠囊上：顯示取得方式")
+panel.my = needChip.y - 200
+panel:update()
+check(not featTip.visible and not featTip.inUI, "滑鼠移開：收掉")
+panel.my = needChip.y + 2
+panel:update()
+check(featTip.visible and panel.featTip == featTip, "滑回來：同一個說明框再顯示")
 local px, py = 333, 222
 panel.x, panel.y = px, py
 panel:close()
 check(not C.isPanelOpen() and not panel.inUI, "關閉鈕：關閉面板")
+check(not featTip.visible and not featTip.inUI, "關閉面板：功能清單的說明框一起收掉")
+panel.mouseOver = nil
 check(F.avoid.MinidoracatWatchPanel() == nil, "關閉後 Toast 不再避開")
 -- 引擎把移除排到下一幀（UIManager.java:119-123、:497-501），關掉的那一幀照樣呼叫 update（UIElement.java:1661-1676）
 check(pcall(panel.update, panel), "關掉後同一幀還跑到 update：不拋錯（槽位區讀自己的面板，不讀已清空的單例）")

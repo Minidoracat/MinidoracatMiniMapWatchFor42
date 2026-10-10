@@ -348,6 +348,25 @@ NATIVE = {}
 F.now = F.now + Lt.POLL_MS
 Lt.tick()
 check(ours() == total, "原生選項拿不到：退回 SandboxVars（預設全開）")
+-- 面板的取得方式照模組在表上的地點寫（C.acquireLines）：模組用到的每張表都要有地點名稱，不然畫面上出現翻譯鍵。
+-- 各語言鍵集一致由 verify 擋，這裡只對照英文
+do
+    local keys = {}
+    for line in io.lines(F.MEDIA .. "/shared/Translate/EN/IG_UI.json") do
+        local k = line:match('^%s*"(IGUI_[%w_]+)"%s*:')
+        if k then keys[k] = true end
+    end
+    local missing = {}
+    for _, e in ipairs(Lt.ENTRIES) do
+        if e[1] == "LootModules" then
+            for i = 1, #e[3], 2 do
+                local k = "IGUI_MinidoracatWatch_LootPlace_" .. e[3][i]
+                if not keys[k] then missing[#missing + 1] = k end
+            end
+        end
+    end
+    check(#missing == 0, "模組用到的分佈表都有地點名稱（缺：" .. table.concat(missing, ",") .. "）")
+end
 
 -- ===== 配方 OnTest =====
 check(MinidoracatWatch_Recipe == nil, "配方 OnTest 在 shared 檔，尚未載入")
@@ -369,7 +388,8 @@ do
         function r:addRequiredSkill(perk, lv) self.skills[#self.skills + 1] = { perk, lv } end
         return r
     end
-    for _, n in ipairs(R.RECIPES) do recipes[n] = recipe() end
+    local nRecipes = 0
+    for _, n in pairs(R.RECIPES) do recipes[n], nRecipes = recipe(), nRecipes + 1 end
     local savedSM, savedPerks = getScriptManager, Perks
     getScriptManager = function() return { getCraftRecipe = function(_, n) return recipes[n] end } end
     Perks = { Electricity = "Electricity" }
@@ -377,7 +397,7 @@ do
     poll()
     local all3 = true
     for _, r in pairs(recipes) do all3 = all3 and #r.skills == 1 and r.skills[1][2] == 3 end
-    check(#R.RECIPES == 3 and all3 and R.applied == 3, "預設電學 3：三條配方都套上")
+    check(nRecipes == 3 and all3 and R.applied == 3, "預設電學 3：三條配方都套上")
     SB.CraftLevel = 7
     poll()
     local c = recipes.CraftMinidoracatWatchLight

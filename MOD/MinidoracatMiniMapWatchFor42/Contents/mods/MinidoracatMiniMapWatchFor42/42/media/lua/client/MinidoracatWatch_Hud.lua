@@ -114,13 +114,24 @@ local function watchLines(player, watch)
     return out
 end
 
+-- 模組：類別、耗電、功能（這台伺服器關了、不需要模組或小地圖設定沒開放時用警示色註明），需要模組時再加範圍
+local FEATURE_TIP = { module = "Tip_Feature", off = "Tip_FeatureOff", serverOff = "Tip_FeatureServerOff",
+    free = "Tip_FeatureFree" }
 local function moduleLines(def)
     local out = {
         { getText("IGUI_MinidoracatWatch_KV_Class", C.className(def.class)), false },
         { getText("IGUI_MinidoracatWatch_KV_Drain", C.drainText(def)), false },
     }
-    local b = W.BUILTIN[def.id]
-    if b and b.feature then out[3] = { T("Tip_Feature", T("Feature_" .. b.feature)), false } end
+    local state, f = C.moduleRule(def.id)
+    if not state then return out end
+    out[3] = { T(FEATURE_TIP[state], T("Feature_" .. f)), state ~= "module" }
+    if state ~= "module" then return out end
+    local kind, n = C.moduleReach(def.id)
+    if n == W.RANGE_UNLIMITED then
+        out[4] = { T("Tip_ShareUnlimited"), false }
+    elseif kind then
+        out[4] = { T(kind == "share" and "Tip_ShareRange" or "Tip_Range", tostring(n)), false }
+    end
     return out
 end
 

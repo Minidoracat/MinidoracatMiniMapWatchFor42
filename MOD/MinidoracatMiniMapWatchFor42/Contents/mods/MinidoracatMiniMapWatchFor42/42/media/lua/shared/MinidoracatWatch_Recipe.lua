@@ -18,7 +18,8 @@ function MinidoracatWatch_Recipe.canCraft() -- verify 第 18 項依這個寫法�
     return W.enabled() and W.sandbox("AllowCraft", true) ~= false
 end
 
-R.RECIPES = { "CraftMinidoracatWatchLedger", "CraftMinidoracatWatchComm", "CraftMinidoracatWatchLight" }
+-- 模組 id → 配方名（media/scripts/MinidoracatWatch_recipes.txt）；面板的取得方式也查這張表
+R.RECIPES = { ledger = "CraftMinidoracatWatchLedger", comm = "CraftMinidoracatWatchComm", light = "CraftMinidoracatWatchLight" }
 R.POLL_MS = 2000
 
 function R.level()
@@ -30,7 +31,7 @@ end
 -- 0＝不需要技能（不加需求）
 function R.applyLevel(level)
     local sm = getScriptManager()
-    for _, name in ipairs(R.RECIPES) do
+    for _, name in pairs(R.RECIPES) do
         local recipe = sm:getCraftRecipe(name) -- ScriptManager.java:1005
         if recipe then
             recipe:clearRequiredSkills()

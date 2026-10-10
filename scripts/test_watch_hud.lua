@@ -194,6 +194,32 @@ s = texts(H.tipLines(alice, ledger))
 check(s == "IGUI_MinidoracatWatch_KV_Class|IGUI_MinidoracatWatch_Class_standard\nIGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainPlus|10\n"
     .. "IGUI_MinidoracatWatch_Tip_Feature|IGUI_MinidoracatWatch_Feature_poi", "模組：類別、耗電、功能")
 check(#H.tipLines(alice, alice.inv:AddItem(MOD("Eco"))) == 2, "節能核心：沒有對應功能，不寫功能列")
+-- 需要模組時再加範圍（沙盒值）；功能關閉、不需要模組或小地圖設定沒開放時，功能列用警示色註明、不寫範圍
+local function modTip(t)
+    step(300)
+    return H.tipLines(alice, alice.inv:AddItem(MOD(t)))
+end
+lines = modTip("Detect")
+check(#lines == 4 and lines[3][1] == "IGUI_MinidoracatWatch_Tip_Feature|IGUI_MinidoracatWatch_Feature_zombie" and not lines[3][2]
+    and lines[4][1] == "IGUI_MinidoracatWatch_Tip_Range|40", "偵測模組：範圍 40 格")
+SB.CommRange = 1500
+check(modTip("Comm")[4][1] == "IGUI_MinidoracatWatch_Tip_ShareRange|1500"
+    and modTip("Relay")[4][1] == "IGUI_MinidoracatWatch_Tip_ShareUnlimited", "通訊模組：沙盒的分享距離；中繼核心：不限")
+SB.CommRange = nil
+SB.RuleZombie = 4
+lines = modTip("Detect")
+check(#lines == 3 and lines[2][1] == "IGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainNone"
+    and lines[3][1] == "IGUI_MinidoracatWatch_Tip_FeatureOff|IGUI_MinidoracatWatch_Feature_zombie" and lines[3][2],
+    "殭屍點位關閉：不耗電、功能列警示「伺服器已關閉」、沒有範圍")
+SB.RuleZombie = 2
+lines = modTip("Detect")
+check(lines[2][1] == "IGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainPlus|50"
+    and lines[3][1] == "IGUI_MinidoracatWatch_Tip_FeatureFree|IGUI_MinidoracatWatch_Feature_zombie" and lines[3][2] and #lines == 3,
+    "戴錶就能用：照樣耗電、功能列警示「不裝模組也能用」")
+SB.RuleZombie = nil
+SB.NeedBattery = false
+check(modTip("Detect")[2][1] == "IGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainNoBattery", "不需要電池：耗電寫不耗電")
+SB.NeedBattery = nil
 check(H.tipLines(alice, alice.inv:AddItem("Base.Apple")) == nil, "其他物品：不加")
 check(H.tipLines(alice, { getEnergy = function() end }) == nil, "不是物品（ISEnergyBar 的電力資源）：不碰")
 SB.Enabled = false

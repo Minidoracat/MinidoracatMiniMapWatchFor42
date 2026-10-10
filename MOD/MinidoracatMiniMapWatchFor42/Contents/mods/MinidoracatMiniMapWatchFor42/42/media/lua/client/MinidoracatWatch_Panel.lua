@@ -49,11 +49,18 @@ local function fontH(f) return getTextManager():getFontHeight(f or UIFont.Small)
 local function measure(s, f) return getTextManager():MeasureStringX(f or UIFont.Small, s) end
 
 -- ===== 文字換行（依實際字寬；CJK 沒有空格也能斷）=====
--- Kahlua 的字串是 Java String，sub／#／byte 以字元計。結果依 (寬度, 文字) 快取，逐幀不重量測。
--- 斷點落在兩個 ASCII 字元中間（英文單字、數字）才退回前一個空格；中日文兩字之間直接斷，不為了空格留下大段空白。
--- 框架的 TextWrap 是內部模組（不在 facade 上），所以面板自己保留這一份。
+-- 框架 rev 16 起有 UI.Text.wrap（CAPABILITIES.textWrap）：用中日韓碼位範圍判斷能不能逐字斷、有行首行尾禁則，
+-- 結果依 (字型, 寬度, 文字) 快取；有就用它。2026-10-10 俄文實機：下面這份退路只看是不是 ASCII，「участки」被拆成
+-- 「участк／и」（家族 pitfalls「逐字斷行要看中日韓碼位範圍」）。
+-- ponytail: 退路只給 rev 14／15 的框架，照舊只看 ASCII（非 ASCII 的拉丁、西里爾字會從單字中間斷）；要修就照框架 TextWrap 解碼碼位。
+-- 退路：Kahlua 的字串是 Java String，sub／#／byte 以字元計，結果依 (寬度, 文字) 快取。斷點落在兩個 ASCII 字元中間
+-- （英文單字、數字）才退回前一個空格；其他字兩字之間直接斷。
 local wrapCache, wrapCount = {}, 0
 local function wrap(text, width)
+    local UI = MinidoracatUI and MinidoracatUI.v1
+    if UI and UI.CAPABILITIES and UI.CAPABILITIES.textWrap == true and UI.Text and UI.Text.wrap then
+        return UI.Text.wrap(text, width, UIFont.Small)
+    end
     local byW = wrapCache[width]
     local hit = byW and byW[text]
     if hit then return hit end
@@ -94,10 +101,14 @@ local function acceptsText(slot)
     for i, c in ipairs(slot.acceptsList) do parts[i] = className(c) end
     return table.concat(parts, getText("IGUI_MinidoracatWatch_ListSep"))
 end
+-- 耗電照伺服器現在的設定：不需要電池＝整支錶不耗電；功能規則關閉＝這個模組不計耗電（W.drainFactor）
 local function drainText(def)
-    local d = W.moduleDrain(def)
+    if not W.needBattery() then return getText("IGUI_MinidoracatWatch_DrainNoBattery") end
+    local b = W.BUILTIN[def.id]
+    if b and b.feature and W.featureRule(b.feature) == W.RULE_OFF then return getText("IGUI_MinidoracatWatch_DrainNone") end
     if def.id == "eco" then return getText("IGUI_MinidoracatWatch_DrainHalf") end
     if def.id == "light" then return getText("IGUI_MinidoracatWatch_DrainLight", tostring(W.lightDrain())) end
+    local d = W.moduleDrain(def)
     if d <= 0 then return getText("IGUI_MinidoracatWatch_DrainNone") end
     return getText("IGUI_MinidoracatWatch_DrainPlus", tostring(d))
 end
@@ -112,6 +123,21 @@ local function moduleTip(def)
         .. getText("IGUI_MinidoracatWatch_KV_Drain", drainText(def))
     if not W.BUILTIN[def.id] then return s end
     return s .. " <LINE> " .. table.concat(wrap(C.moduleDesc(def.id), TIP_W), " <LINE> ")
+end
+
+-- 功能清單「需要 X 模組」膠囊的滑過說明：去哪裡找、能不能製作（C.acquireLines），每句各自斷成 TIP_W 再以 <LINE> 接起來。
+-- X＝W.PROVIDERS 的第一個（缺模組的提示也寫這個；導航的「定位模組或 GPS 導航儀」也算）
+local NEED = "IGUI_MinidoracatWatch_Reason_Need_"
+local function acquireTip(feature, reason)
+    local providers = W.PROVIDERS[feature]
+    if not (providers and reason and string.sub(reason, 1, #NEED) == NEED) then return nil end
+    local lines = C.acquireLines(providers[1])
+    if not lines then return nil end
+    local parts = {}
+    for _, s in ipairs(lines) do
+        for _, l in ipairs(wrap(s, TIP_W)) do parts[#parts + 1] = l end
+    end
+    return table.concat(parts, " <LINE> ")
 end
 
 -- 槽位狀態：empty／locked（未開啟）／lapsed（經濟系統的租約到期、槽位空著）／off（不開放）／active／paused（槽位失效）／
@@ -644,7 +670,7 @@ function M:buildActions(player, watch, slot)
     return out
 end
 
--- 功能清單：{ 標籤, 說明, 圖示 }（可用＝勾、停用＝暫停、缺模組／沒開放＝叉）
+-- 功能清單：{ 標籤, 說明, 圖示, tip＝缺模組時的取得方式 }（可用＝勾、停用＝暫停、缺模組／沒開放＝叉）
 -- 伺服器的小地圖設定把這項功能整個關了（C.serverOff）時一律寫「伺服器未開放」：裝了模組也沒有作用，讓玩家與管理員知道要去開
 function M:buildFeatures()
     local out = {}
@@ -654,7 +680,8 @@ function M:buildFeatures()
         local icon = ok and "check" or (PAUSE_REASONS[reason] and "pause" or "close")
         local label, note = getText("IGUI_MinidoracatWatch_Feature_" .. f), (not ok and reason) and getText(reason) or nil
         local w = 10 + 16 + 5 + measure(label) + (note and 6 + measure(note) or 0) + 10
-        out[#out + 1] = { label = label, note = note, icon = icon, ok = ok, w = w }
+        local tip = not ok and acquireTip(f, reason) or nil
+        out[#out + 1] = { label = label, note = note, icon = icon, ok = ok, w = w, tip = tip }
     end
     return out
 end
@@ -763,6 +790,7 @@ function M:update()
         self.icon = nil
     end
     self:arrange(player, w)
+    self:updateFeatTip(player ~= nil and w ~= nil)
 end
 
 -- 版面：橫幅、槽位區、檢視區按鈕、功能清單、電量列依內容排位；視窗高度跟著內容
@@ -1053,6 +1081,43 @@ function M:drawFeatures(colors)
     end
 end
 
+-- 功能清單膠囊的滑過說明（buildFeatures 的 tip：缺模組時的取得方式）。膠囊是面板自己畫的，框架只有按鈕與控制項有
+-- tooltip，所以照原版按鈕的做法自己掛一個 ISToolTip（ISButton.lua:316-346）；它跟著滑鼠畫，不會擋住膠囊
+-- （ISToolTip.lua:67-69）。只比對 ≤7 個膠囊的範圍，文字在 scan（250ms）就備好了
+function M:updateFeatTip(shown)
+    local hit = nil
+    if shown and self:isMouseOver() then
+        local mx, my, h = self:getMouseX(), self:getMouseY(), fontH() + 8
+        for _, f in ipairs(self.feats or {}) do
+            if f.tip and f.x and mx >= f.x and mx < f.x + f.w and my >= f.y and my < f.y + h then
+                hit = f
+                break
+            end
+        end
+    end
+    local tip = self.featTip
+    if not hit then
+        if tip and tip:getIsVisible() then
+            tip:setVisible(false)
+            tip:removeFromUIManager()
+        end
+        return
+    end
+    if not tip then
+        tip = ISToolTip:new()
+        tip:setOwner(self)
+        tip:setVisible(false)
+        tip:setAlwaysOnTop(true)
+        tip.maxLineWidth = TIP_W
+        self.featTip = tip
+    end
+    tip.description = hit.tip
+    if not tip:getIsVisible() then
+        tip:addToUIManager()
+        tip:setVisible(true)
+    end
+end
+
 function M:drawFooter(UI, colors)
     local y, h, r = self.footY, self.footH, 24
     local foot = colors.footSurface or colors.surfaceTitle
@@ -1175,6 +1240,7 @@ function C.closePanel()
     lastX, lastY = p:getX(), p:getY()
     p:setVisible(false) -- Window：放掉手把焦點與焦點框
     p:removeFromUIManager()
+    p:updateFeatTip(false) -- 收掉還掛著的功能清單說明（不等它下一幀自己發現 owner 不見了）
 end
 
 function C.openPanel(pn, watchItem)

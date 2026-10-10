@@ -2,6 +2,7 @@
 -- 客戶端只讀錶的 modData、送請求；扣電、裝卸與解鎖的權威在伺服器（單機在本機）。面板在 MinidoracatWatch_Panel.lua。
 require "MinidoracatWatch"
 require "MinidoracatWatch_Action"
+require "MinidoracatWatch_DropData"
 local W = MinidoracatWatchCore
 local C = {}
 MinidoracatWatchClient = C -- 內部表（測試與 E2E 用），不是公開 API
@@ -382,16 +383,91 @@ function C.moduleName(id)
     return def and getText(def.name) or id
 end
 
--- 內建模組的說明；通訊類模組在「需要模組」規則下接上分享距離（範圍從沙盒讀，和伺服器 W.shareAllowed 同一份；
--- 句間空白依語言不同，所以說明本身也當 %1 交給翻譯）
-function C.moduleDesc(id)
-    if id == "light" then return getText("IGUI_MinidoracatWatch_ModuleDesc_light", tostring(W.lightRadius())) end
-    local s = getText("IGUI_MinidoracatWatch_ModuleDesc_" .. id)
-    if not W.enabled() or W.featureRule("share") ~= W.RULE_MODULE then return s end
-    if id == "relay" then return getText("IGUI_MinidoracatWatch_ShareRangeUnlimited", s) end
+-- 內建模組在這台伺服器的處境（說明、物品停留說明共用）：回 state, feature。沒有對應功能（節能核心）或系統關閉：nil。
+-- "off"＝功能規則關閉（沒有作用、不耗電，W.drainFactor）；"serverOff"＝主 MOD 的小地圖設定沒開放（裝了也看不到）；
+-- "free"＝不需要錶或戴錶就能用（W.featureDecision 不看模組，裝了沒有作用、照樣耗電）；"module"＝需要模組
+function C.moduleRule(id)
+    local b = W.BUILTIN[id]
+    local f = b and b.feature
+    if not f or not W.enabled() then return nil, f end
+    local rule = W.featureRule(f)
+    if rule == W.RULE_OFF then return "off", f end
+    if C.serverOff(f) then return "serverOff", f end
+    if rule ~= W.RULE_MODULE then return "free", f end
+    return "module", f
+end
+
+-- 模組在「需要模組」規則下能到多遠（格，沙盒值；和閘門、伺服器 W.shareAllowed 讀同一份）：
+-- "share", 分享距離（中繼核心＝W.RANGE_UNLIMITED）｜"radius", 半徑（掃描、偵測、軍規偵測、照明）｜nil
+function C.moduleReach(id)
+    if id == "relay" then return "share", W.RANGE_UNLIMITED end
     local k = W.SHARE_RANGE[id]
-    if not k then return s end
-    return getText("IGUI_MinidoracatWatch_ShareRange", s, tostring(math.floor(W.radius(k[1], k[2]))))
+    if k then return "share", math.floor(W.radius(k[1], k[2])) end
+    if W.MODULE_RADIUS[id] then return "radius", math.floor(W.moduleRadius(id)) end
+    if id == "light" then return "radius", W.lightRadius() end
+    return nil
+end
+
+-- 內建模組的說明：基本說明接上這台伺服器的範圍或處境（句間空白依語言不同，所以前面的說明也當 %1 交給翻譯）。
+-- 照明的半徑本來就在基本說明裡。面板檢視區每幀都畫：同一個模組 250ms 內沿用同一份文字
+local RULE_NOTE = { off = "IGUI_MinidoracatWatch_ModuleRuleOff", serverOff = "IGUI_MinidoracatWatch_ModuleServerOff",
+    free = "IGUI_MinidoracatWatch_ModuleNotNeeded" }
+local function describe(id)
+    local s = id == "light" and getText("IGUI_MinidoracatWatch_ModuleDesc_light", tostring(W.lightRadius()))
+        or getText("IGUI_MinidoracatWatch_ModuleDesc_" .. id)
+    local state, f = C.moduleRule(id)
+    local note = state and RULE_NOTE[state]
+    if note then return getText(note, s, getText("IGUI_MinidoracatWatch_Feature_" .. f)) end
+    if state ~= "module" or id == "light" then return s end
+    local kind, n = C.moduleReach(id)
+    if n == W.RANGE_UNLIMITED then return getText("IGUI_MinidoracatWatch_ShareRangeUnlimited", s) end
+    if kind == "share" then return getText("IGUI_MinidoracatWatch_ShareRange", s, tostring(n)) end
+    if kind == "radius" then return getText("IGUI_MinidoracatWatch_ModuleRange", s, tostring(n)) end
+    return s
+end
+local DESC_MS = 250
+local descCache = {}
+function C.moduleDesc(id)
+    local now = getTimestampMs()
+    local hit = descCache[id]
+    if hit and now >= hit.at and now - hit.at < DESC_MS then return hit.s end
+    local s = describe(id)
+    if hit then hit.at, hit.s = now, s else descCache[id] = { at = now, s = s } end
+    return s
+end
+
+-- 缺模組時的取得方式（面板功能清單「需要 X 模組」的滑過說明）：回句子陣列，或 nil（這台伺服器沒有開放從容器找到，也不能製作）。
+-- 只用客戶端本來就有的沙盒值與 shared 的戰利品表，不問伺服器；殭屍掉落規則在伺服器設定檔，不公開、不寫機率。
+function C.acquireLines(id)
+    local def = W.modules[id]
+    if not (def and W.BUILTIN[id] and W.enabled()) then return nil end
+    local out = {}
+    if W.nativeSandbox("LootModules", true) ~= false then
+        local places, seen = {}, {}
+        for _, e in ipairs(W.lootEntries()) do
+            if e[2] == def.item then
+                for i = 1, #e[3], 2 do
+                    local p = getText("IGUI_MinidoracatWatch_LootPlace_" .. e[3][i])
+                    if not seen[p] then
+                        seen[p] = true
+                        places[#places + 1] = p
+                    end
+                end
+            end
+        end
+        if #places > 0 then
+            out[#out + 1] = getText("IGUI_MinidoracatWatch_Acquire_Loot",
+                table.concat(places, getText("IGUI_MinidoracatWatch_ListSep")))
+        end
+    end
+    local R = MinidoracatWatch_Recipe -- shared 檔，遊戲裡一定比本檔先載入
+    if R and R.RECIPES[id] and R.canCraft() then
+        local lv = R.level()
+        out[#out + 1] = lv > 0 and getText("IGUI_MinidoracatWatch_Acquire_Craft", tostring(lv))
+            or getText("IGUI_MinidoracatWatch_Acquire_CraftAny")
+    end
+    if #out == 0 then return nil end
+    return out
 end
 
 -- 身上的地圖錶：戴著的那支排第一

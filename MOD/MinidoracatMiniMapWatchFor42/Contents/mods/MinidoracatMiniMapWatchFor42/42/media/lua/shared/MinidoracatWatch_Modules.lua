@@ -128,6 +128,13 @@ function W.radius(key, default)
     return r
 end
 
+-- 掃描、偵測、軍規偵測模組的半徑（格，沙盒值；只在「需要模組」規則套用）：閘門（W.featureDecision）與說明共用
+W.MODULE_RADIUS = { scan = { "ScanRadius", 60 }, detect = { "DetectRadius", 40 }, mildetect = { "MilDetectRadius", 80 } }
+function W.moduleRadius(id)
+    local k = W.MODULE_RADIUS[id]
+    return W.radius(k[1], k[2])
+end
+
 -- ===== 登記 =====
 W.modules, W.moduleList, W.moduleByItem, W.watchers = {}, {}, {}, {}
 W.slotList, W.slotById = {}, {}
@@ -504,17 +511,17 @@ function W.featureDecision(player, feature, surface)
     if c <= 0 then return false, W.REASON_DEAD end
     if rule == W.RULE_WATCH then return true end
     if feature == "zombie" then
-        if W.modState(e, "mildetect") == "active" then return true, nil, W.radius("MilDetectRadius", 80) end
+        if W.modState(e, "mildetect") == "active" then return true, nil, W.moduleRadius("mildetect") end
         if surface == "world" then
             if W.modState(e, "mildetect") == "paused" then return false, W.REASON_PAUSED end
             return false, "IGUI_MinidoracatWatch_Reason_Need_mildetect"
         end
-        if W.modState(e, "detect") == "active" then return true, nil, W.radius("DetectRadius", 40) end
+        if W.modState(e, "detect") == "active" then return true, nil, W.moduleRadius("detect") end
     else
         local list = W.PROVIDERS[feature]
         for i = 1, #list do
             if W.modState(e, list[i]) == "active" then
-                if feature == "scan" then return true, nil, W.radius("ScanRadius", 60) end
+                if feature == "scan" then return true, nil, W.moduleRadius("scan") end
                 return true
             end
         end
