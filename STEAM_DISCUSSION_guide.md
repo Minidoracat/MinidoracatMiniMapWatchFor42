@@ -5,6 +5,6 @@
 [b]完整說明已經搬到 Steam 指南[/b]，加上了截圖，之後只在指南更新：
 https://steamcommunity.com/sharedfiles/filedetails/?id=3816991041
 
-[b]English version:[/b] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3816991145]Map Watch Mod Guide[/url] ｜ [b]日本語版：[/b][url=https://steamcommunity.com/workshop/filedetails/discussion/3816406671/586188069723694582/]マップウォッチ 完全ガイド[/url]
+[b]English version:[/b] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3816991145]Map Watch Mod Guide[/url]
 
 有問題可以在這串留言，或到 [url=https://discord.gg/Gur2V67]Discord 社群[/url] 回報。

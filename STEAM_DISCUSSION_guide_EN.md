@@ -5,6 +5,6 @@
 [b]The full guide has moved to a Steam guide[/b], now with screenshots. It is only updated there:
 https://steamcommunity.com/sharedfiles/filedetails/?id=3816991145
 
-[b]繁體中文版：[/b][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3816991041]地圖手錶 Map Watch MOD 完整說明[/url] | [b]日本語版：[/b][url=https://steamcommunity.com/workshop/filedetails/discussion/3816406671/586188069723694582/]マップウォッチ 完全ガイド[/url]
+[b]繁體中文版：[/b][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3816991041]地圖手錶 Map Watch MOD 完整說明[/url]
 
 Questions? Post in this thread or report on [url=https://discord.gg/Gur2V67]Discord[/url].
