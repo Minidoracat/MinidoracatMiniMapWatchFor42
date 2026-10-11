@@ -7,10 +7,10 @@
     "preview_gif": "MOD/MinidoracatMiniMapWatchFor42/workshop/preview.gif",
     "changelog": "STEAM_CHANGELOG.md",
     "titles": {
-        "english": "[B42] Minidoracat MiniMap - Map Watch",
-        "tchinese": "[B42] Minidoracat 小地圖 - 地圖手錶 Map Watch",
-        "schinese": "[B42] Minidoracat 小地图 - 地图手表 Map Watch",
-        "japanese": "[B42] Minidoracat ミニマップ - マップウォッチ"
+        "english": "[B42] MiniMap - Map Watch by Minidoracat",
+        "tchinese": "[B42] 小地圖 - 地圖手錶 Map Watch by Minidoracat",
+        "schinese": "[B42] 小地图 - 地图手表 Map Watch by Minidoracat",
+        "japanese": "[B42] ミニマップ - マップウォッチ by Minidoracat"
     },
     "descriptions": {
         "english": "STEAM_DESCRIPTION_EN.md",
