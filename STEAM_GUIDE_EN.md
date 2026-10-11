@@ -490,8 +490,8 @@ Check that:
 [/list]
 [*] [b]Related[/b]:
 [list]
-[*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3763913359]Minidoracat MiniMap for B42[/url]
-[*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3789836701]Minidoracat UI for B42[/url]
+[*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3763913359]Minidoracat MiniMap[/url]
+[*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3789836701]Minidoracat UI[/url]
 [*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3801482125]Minidoracat Economy[/url]
 [*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3809297109]Full collection[/url]
 [/list]

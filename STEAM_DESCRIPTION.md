@@ -8,8 +8,8 @@
 
 [h2]📦 需要安裝[/h2]
 [list]
-[*] [b]必裝：[/b][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3763913359]Minidoracat MiniMap for B42[/url]
-[*] [b]必裝：[/b][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3789836701]Minidoracat UI for B42[/url]
+[*] [b]必裝：[/b][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3763913359]Minidoracat MiniMap[/url]
+[*] [b]必裝：[/b][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3789836701]Minidoracat UI[/url]
 [*] [b]選裝：[/b][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3801482125]Minidoracat Economy[/url]（多人伺服器用遊戲幣買斷或租用付費槽位）
 [*] [b]中途加入／移除：[/b]可加入，但地圖手錶只出現在還沒搜過的容器與屍體；移除後錶與模組會消失
 [*] [b]介面語言：[/b]繁體中文、简体中文、English、日本語、한국어、Русский、Español、Português、Türkçe、Français、Polski、Deutsch（翻譯有問題請回報）

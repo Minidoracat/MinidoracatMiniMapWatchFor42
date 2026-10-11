@@ -1,4 +1,4 @@
-[h1]⌚ Minidoracat MiniMap - Map Watch for B42[/h1]
+[h1]⌚ Minidoracat MiniMap - Map Watch[/h1]
 [h3]By Minidoracat[/h3]
 
 [hr][/hr]
@@ -8,8 +8,8 @@ Without this mod installed, the minimap stays fully available as before. Works i
 
 [h2]📦 Requirements[/h2]
 [list]
-[*] [b]Required:[/b] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3763913359]Minidoracat MiniMap for B42[/url]
-[*] [b]Required:[/b] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3789836701]Minidoracat UI for B42[/url]
+[*] [b]Required:[/b] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3763913359]Minidoracat MiniMap[/url]
+[*] [b]Required:[/b] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3789836701]Minidoracat UI[/url]
 [*] [b]Optional:[/b] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3801482125]Minidoracat Economy[/url] (buy or rent paid slots with in-game currency on multiplayer servers)
 [*] [b]Add/remove mid-save:[/b] safe to add, but watches only appear in containers and corpses not searched yet; removing it deletes watches and modules
 [*] [b]Languages:[/b] 繁體中文, 简体中文, English, 日本語, 한국어, Русский, Español, Português, Türkçe, Français, Polski, Deutsch (please report any translation issues)

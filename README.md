@@ -1,8 +1,8 @@
-# Minidoracat MiniMap - Map Watch for B42
+# Minidoracat MiniMap - Map Watch
 
 戴上地圖手錶才能用小地圖；裝模組解鎖導航、資源點、殭屍偵測與隊友分享，電池以現實時間計算，管理員可調整規則與付費槽位。
 
-Project Zomboid Build 42 MOD，[Minidoracat MiniMap for B42](https://steamcommunity.com/sharedfiles/filedetails/?id=3763913359) 的 addon。
+Project Zomboid Build 42 MOD，[Minidoracat MiniMap](https://steamcommunity.com/sharedfiles/filedetails/?id=3763913359) 的 addon。
 
 ## 發布狀態
 
@@ -94,8 +94,8 @@ Project Zomboid Build 42 MOD，[Minidoracat MiniMap for B42](https://steamcommun
 
 ## 需求
 
-- [Minidoracat MiniMap for B42](https://steamcommunity.com/sharedfiles/filedetails/?id=3763913359) `42.21.0-0.37.0` 以上（`0.38.0` 起「地圖手錶」與「地圖手錶管理」分類有自己的圖標，分別排在「擴充功能」與「管理員」組）
-- [Minidoracat UI for B42](https://steamcommunity.com/sharedfiles/filedetails/?id=3789836701)
+- [Minidoracat MiniMap](https://steamcommunity.com/sharedfiles/filedetails/?id=3763913359) `42.21.0-0.37.0` 以上（`0.38.0` 起「地圖手錶」與「地圖手錶管理」分類有自己的圖標，分別排在「擴充功能」與「管理員」組）
+- [Minidoracat UI](https://steamcommunity.com/sharedfiles/filedetails/?id=3789836701)
 - 選用：[Minidoracat Economy](https://steamcommunity.com/sharedfiles/filedetails/?id=3801482125) `42.21.0-0.8.0` 以上（付費槽位的買斷與租用；租約凍結與「到經濟中心上架」要 `42.21.0-0.11.0` 以上；見上方「經濟系統」）
 
 ## 安裝

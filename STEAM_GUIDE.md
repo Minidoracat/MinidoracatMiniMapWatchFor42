@@ -491,8 +491,8 @@ https://steamcommunity.com/sharedfiles/filedetails/?id=3816406671
 [/list]
 [*] [b]相關 MOD[/b]：
 [list]
-[*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3763913359]Minidoracat MiniMap for B42[/url]
-[*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3789836701]Minidoracat UI for B42[/url]
+[*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3763913359]Minidoracat MiniMap[/url]
+[*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3789836701]Minidoracat UI[/url]
 [*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3801482125]Minidoracat Economy[/url]
 [*] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3809297109]全系列收藏[/url]
 [/list]
