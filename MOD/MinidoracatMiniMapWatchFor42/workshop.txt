@@ -1,6 +1,6 @@
 version=1
 id=3816406671
-title=Minidoracat MiniMap - Map Watch for B42
+title=[B42] Minidoracat MiniMap - Map Watch
 description=[h1]⌚ Minidoracat MiniMap - Map Watch for B42[/h1]
 description=[h3]By Minidoracat[/h3]
 description=
