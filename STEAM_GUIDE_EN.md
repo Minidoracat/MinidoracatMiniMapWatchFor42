@@ -406,6 +406,7 @@ Each tier has its own currency, period and renewal, all defaulting to:
 [*] registerWatchModule: add your own map watch modules
 [*] registerWatchSlot: add slots
 [*] getWatchModuleState: read a player's module state
+[*] getWatchModuleData: read the data of a module on a player's worn watch (e.g. a serial number)
 [/list]
 [*] [b]Register in a shared file[/b]: dedicated servers don't run the client folder, so client-only registration shows in the panel but every install is rejected.
 [*] [b]Keep your feature open when Map Watch is missing, outdated or disabled[/b]; don't lock it just because the watch isn't there.

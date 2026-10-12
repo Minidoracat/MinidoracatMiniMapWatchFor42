@@ -1,4 +1,4 @@
--- 地圖錶模組與槽位（shared）：API 驗證、getWatchModuleState 優先序真值表、安裝／拆下伺服器驗證與模組守恆、
+-- 地圖錶模組與槽位（shared）：API 驗證、getWatchModuleState 優先序真值表、getWatchModuleData、安裝／拆下伺服器驗證與模組守恆、
 -- 解鎖卡（不能重複使用、帳號鍵、客戶端不能偽造）、耗電倍率（模組、節能核心、槽位失效）、onStateChanged。
 -- 用法（repo 根目錄）：lua scripts/test_watch_modules.lua
 local F = dofile("scripts/lib_watch_fakes.lua")
@@ -12,9 +12,9 @@ local H = 3600000
 local MOD = function(name) return "MinidoracatWatch.Module_" .. name end
 
 -- ===== API：版本、內建登記、驗證 =====
-check(type(API) == "table" and API.watchApiVersion == 1, "MinidoracatWatchAPI.watchApiVersion = 1")
+check(type(API) == "table" and API.watchApiVersion == 2, "MinidoracatWatchAPI.watchApiVersion = 2")
 check(type(API.registerWatchModule) == "function" and type(API.registerWatchSlot) == "function"
-    and type(API.getWatchModuleState) == "function", "三個 API 函式")
+    and type(API.getWatchModuleState) == "function" and type(API.getWatchModuleData) == "function", "四個 API 函式")
 check(#W.moduleList == 10 and W.modules.ledger and W.modules.eco and W.modules.light, "內建 10 個模組（含照明）")
 check(W.modules.mildetect.class == "advanced" and W.modules.relay.class == "core" and W.modules.gps.drain == 25,
     "內建模組的類別與耗電照設計稿")
@@ -47,10 +47,13 @@ rejects(API.registerWatchModule, with("drain", "15"), "drain 是字串")
 rejects(API.registerWatchModule, with("item", "NoModule"), "item 沒有 module 前綴")
 rejects(API.registerWatchModule, with("item", MOD("GPS")), "item 已被其他模組使用")
 rejects(API.registerWatchModule, with("onStateChanged", "yes"), "onStateChanged 不是函式")
+rejects(API.registerWatchModule, with("desc", 5), "desc 不是字串")
+rejects(API.registerWatchModule, with("desc", ""), "空 desc")
 check(W.modules.weather == nil and #W.moduleList == 10, "拒收的 def 沒有留下任何登記")
 local calls = {}
 local def = with("onStateChanged", function(p, s, old) calls[#calls + 1] = { s = s, old = old } end)
-check(API.registerWatchModule(def) == true, "合法的第三方模組登記成功")
+def.desc = "IGUI_X_WeatherDesc"
+check(API.registerWatchModule(def) == true and W.modules.weather.desc == "IGUI_X_WeatherDesc", "合法的第三方模組登記成功（帶 desc）")
 def.drain = 999
 check(W.modules.weather.drain == 15, "登記時複製欄位，呼叫端之後改 def 不影響")
 rejects(API.registerWatchModule, with("item", "MyWeather.Other"), "重複 id（第二次登記）")
@@ -522,6 +525,41 @@ check(API.getWatchModuleState(st, "radar") == "missing", "第三方模組沒裝�
 SB.Enabled = false
 check(API.getWatchModuleState(st, "radar") == "notRequired", "地圖錶系統關閉＝notRequired")
 SB.Enabled = true
+
+-- ===== getWatchModuleData（v2）：戴著的錶上模組的 modData；同 id 兩份時優先有效槽位，否則第一份 =====
+local mo = F.player("mona", 6)
+local mw = give(mo, F.RIGHT)
+give(mo, "Base.Screwdriver")
+F.wear(mo, mw)
+SB.SlotExt, SB.SlotAdv = 1, 1
+local rExt, rAdv = give(mo, "Other.Radar"), give(mo, "Other.Radar")
+rExt:getModData().serial = "EXT"
+rAdv:getModData().serial = "ADV"
+check(install(mo, mw, "ext", rExt) == true and install(mo, mw, "adv", rAdv) == true, "（mona：擴充槽、進階槽各裝一個雷達）")
+SB.SlotExt = 4 -- 擴充槽在進階槽前面：第一份是 paused 的那份
+W.invalidate()
+local md = API.getWatchModuleData(mo, "radar")
+check(md and md.serial == "ADV" and md == W.slotRecord(mw, "adv").md, "同 id 兩份：回有效槽位那份（錶上紀錄本身）")
+SB.SlotAdv = 4
+W.invalidate()
+md = API.getWatchModuleData(mo, "radar")
+check(md and md.serial == "EXT", "兩份都 paused：回第一份")
+SB.SlotExt, SB.SlotAdv = 1, 1
+W.invalidate()
+check(API.getWatchModuleData(mo, "ledger") == nil and API.getWatchModuleData(mo, "nope") == nil
+    and API.getWatchModuleData(mo, 5) == nil and API.getWatchModuleData(nil, "radar") == nil,
+    "沒裝、未登記的 id、id 不是字串、沒有玩家＝nil")
+collectgarbage("collect")
+collectgarbage("stop")
+local kbD = collectgarbage("count")
+for _ = 1, 20000 do API.getWatchModuleData(mo, "radar") end
+local grewD = collectgarbage("count") - kbD
+collectgarbage("restart")
+check(grewD < 1, "getWatchModuleData 20000 次：不配置（" .. string.format("%.2f", grewD) .. " KB）")
+mo.worn = {}
+W.invalidate()
+check(API.getWatchModuleData(mo, "radar") == nil, "沒戴錶＝nil")
+SB.SlotAdv = 3
 
 -- 快取：同一秒內連續查詢不翻穿戴清單、不配置
 st.worn = {}

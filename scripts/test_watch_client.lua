@@ -755,14 +755,24 @@ end
 local topOk, topLines = tipOk(coreMods[1], "core")
 check(topOk and topLines > 1 and tipOk(coreMods[#coreMods], "standard"),
     "模組按鈕的滑過說明：等級、耗電與模組說明（長說明斷成多行）")
-local wItem = give("MyWeather.WeatherModule")
+MinidoracatWatchAPI.registerWatchModule({ id = "radio", name = "IGUI_X_Radio", class = "standard", drain = 5,
+    item = "MyRadio.RadioModule", desc = "IGUI_X_RadioDesc" })
+check(C.moduleDesc("radio") == "IGUI_X_RadioDesc" and C.moduleDesc("weather") == nil,
+    "其他 MOD 的模組說明：登記時帶 desc 回翻譯後的文字，沒帶回 nil")
+local wItem, rItem = give("MyWeather.WeatherModule"), give("MyRadio.RadioModule")
 tick()
 panel:update()
-local wBtn
-for _, b in ipairs(modBtns()) do if b.def.id == "weather" then wBtn = b end end
+local wBtn, rBtn
+for _, b in ipairs(modBtns()) do
+    if b.def.id == "weather" then wBtn = b elseif b.def.id == "radio" then rBtn = b end
+end
 check(wBtn and wBtn.tooltip == "IGUI_MinidoracatWatch_KV_Class|IGUI_MinidoracatWatch_Class_standard <LINE> "
-    .. "IGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainPlus|15", "其他 MOD 的模組：只有等級與耗電（API 沒有說明欄位）")
+    .. "IGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainPlus|15", "其他 MOD 的模組沒帶 desc：只有等級與耗電")
+check(rBtn and rBtn.tooltip == "IGUI_MinidoracatWatch_KV_Class|IGUI_MinidoracatWatch_Class_standard <LINE> "
+    .. "IGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainPlus|5 <LINE> IGUI_X_RadioDesc",
+    "其他 MOD 的模組帶 desc：等級、耗電，再加說明")
 p.inv:DoRemoveItem(wItem)
+p.inv:DoRemoveItem(rItem)
 tick()
 panel:update()
 local bars = {}

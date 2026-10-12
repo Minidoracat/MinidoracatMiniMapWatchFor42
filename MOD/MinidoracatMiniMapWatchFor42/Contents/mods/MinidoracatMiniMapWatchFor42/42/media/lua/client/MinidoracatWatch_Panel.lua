@@ -114,15 +114,16 @@ local function drainText(def)
 end
 C.className, C.drainText = className, drainText -- 物品停留說明（MinidoracatWatch_Hud.lua）同一份文字
 
--- 模組按鈕的滑過說明：類別、耗電，內建模組再加說明（和檢視區同一份文字；第三方模組的 API 沒有說明欄位）。
+-- 模組按鈕的滑過說明：類別、耗電，有說明（C.moduleDesc；第三方模組要登記時帶 desc）再加說明，和檢視區同一份文字。
 -- 原版按鈕提示是 ISRichTextPanel，只在空格斷行，所以說明先用 wrap 斷好再以 <LINE> 接起來；
 -- 不能用 \n：ISButton 看到 \n 就把行寬放到 1000、不再換行（ISButton.lua:326-330）
 local TIP_W = 300 -- ISButton 給提示的行寬（ISButton.lua:329）
 local function moduleTip(def)
     local s = getText("IGUI_MinidoracatWatch_KV_Class", className(def.class)) .. " <LINE> "
         .. getText("IGUI_MinidoracatWatch_KV_Drain", drainText(def))
-    if not W.BUILTIN[def.id] then return s end
-    return s .. " <LINE> " .. table.concat(wrap(C.moduleDesc(def.id), TIP_W), " <LINE> ")
+    local desc = C.moduleDesc(def.id)
+    if not desc then return s end
+    return s .. " <LINE> " .. table.concat(wrap(desc, TIP_W), " <LINE> ")
 end
 
 -- 功能清單「需要 X 模組」膠囊的滑過說明：去哪裡找、能不能製作（C.acquireLines），每句各自斷成 TIP_W 再以 <LINE> 接起來。
@@ -1046,7 +1047,8 @@ function M:drawInspector(UI, player, watch, slot)
     local def = W.modules[rec.id]
     text(self, def and C.moduleName(def.id) or rec.item, x, y, colors.text, UIFont.Medium)
     y = y + mh + 6
-    if def and W.BUILTIN[def.id] then y = para(self, C.moduleDesc(def.id), x, y, width, colors.text) + 6 end
+    local desc = def and C.moduleDesc(def.id)
+    if desc then y = para(self, desc, x, y, width, colors.text) + 6 end
     -- 類別／耗電／槽位：三格資訊（未知模組只有槽位一格）
     local kw = math.floor((width - 12) / 3)
     local kSlot = getText("IGUI_MinidoracatWatch_KV_Slot", name)

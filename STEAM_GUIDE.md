@@ -407,6 +407,7 @@ https://steamcommunity.com/sharedfiles/filedetails/?id=3816406671
 [*] registerWatchModule：加入自己的地圖手錶模組
 [*] registerWatchSlot：加入槽位
 [*] getWatchModuleState：查詢某位玩家的模組狀態
+[*] getWatchModuleData：讀取玩家戴著的錶上某個模組的資料（例如序號）
 [/list]
 [*] [b]一定要在 shared 資料夾的檔案裡登記[/b]：專用伺服器不執行 client 資料夾。只在 client 登記的話，面板看得到，伺服器卻不認得，安裝一律被拒。
 [*] [b]沒裝地圖手錶、版本太舊或管理員關閉地圖手錶時，你的功能應該照常開放[/b]，不要因為少了地圖手錶就把功能鎖住。

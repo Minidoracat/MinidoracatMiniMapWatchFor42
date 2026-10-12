@@ -408,11 +408,16 @@ function C.moduleReach(id)
     return nil
 end
 
--- 內建模組的說明：基本說明接上這台伺服器的範圍或處境（句間空白依語言不同，所以前面的說明也當 %1 交給翻譯）。
+-- 模組說明（面板檢視區與模組按鈕提示共用；nil＝沒有說明）。第三方模組＝登記時的 desc 翻譯鍵，沒給就 nil。
+-- 內建模組：基本說明接上這台伺服器的範圍或處境（句間空白依語言不同，所以前面的說明也當 %1 交給翻譯）。
 -- 照明的半徑本來就在基本說明裡。面板檢視區每幀都畫：同一個模組 250ms 內沿用同一份文字
 local RULE_NOTE = { off = "IGUI_MinidoracatWatch_ModuleRuleOff", serverOff = "IGUI_MinidoracatWatch_ModuleServerOff",
     free = "IGUI_MinidoracatWatch_ModuleNotNeeded" }
 local function describe(id)
+    if not W.BUILTIN[id] then
+        local def = W.modules[id]
+        return def and def.desc and getText(def.desc) or nil
+    end
     local s = id == "light" and getText("IGUI_MinidoracatWatch_ModuleDesc_light", tostring(W.lightRadius()))
         or getText("IGUI_MinidoracatWatch_ModuleDesc_" .. id)
     local state, f = C.moduleRule(id)

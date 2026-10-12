@@ -109,10 +109,11 @@ Project Zomboid Build 42 MOD，[Minidoracat MiniMap](https://steamcommunity.com/
 
 | 成員 | 說明 |
 |---|---|
-| `watchApiVersion` | 目前是 `1`。一律用 `>=` 檢查（不要用 `==`，否則地圖手錶升版時你的 MOD 會被擋掉）；新增或改動成員時遞增 |
-| `registerWatchModule(def) --> boolean` | `def = { id, name, class, drain, item, onStateChanged }`：`id` 英數字與底線、不可重複；`name` 是翻譯鍵；`class` 是 `"standard"`／`"advanced"`／`"core"`（決定能裝在哪種槽位）；`drain` 是建議耗電百分比（0–1000）；`item` 是模組物品的完整類型（不可和其他模組共用）；`onStateChanged(player, newState, oldState)` 選用，狀態改變時呼叫（每秒比對一次，第一次的 `oldState` 是 `nil`）。驗證失敗整筆拒收、記一筆 log、回 `false` |
+| `watchApiVersion` | 目前是 `2`（`2` 起有 `getWatchModuleData` 與 `registerWatchModule` 的 `desc` 欄位）。一律用 `>=` 檢查（不要用 `==`，否則地圖手錶升版時你的 MOD 會被擋掉）；新增或改動成員時遞增 |
+| `registerWatchModule(def) --> boolean` | `def = { id, name, class, drain, item, desc, onStateChanged }`：`id` 英數字與底線、不可重複；`name` 是翻譯鍵；`class` 是 `"standard"`／`"advanced"`／`"core"`（決定能裝在哪種槽位）；`drain` 是建議耗電百分比（0–1000）；`item` 是模組物品的完整類型（不可和其他模組共用）；`desc` 選用（版本 `2` 起），說明的翻譯鍵，顯示在面板的檢視區與模組按鈕的滑過說明（沒給就不顯示說明；版本 `1` 的地圖手錶會忽略這個欄位）；`onStateChanged(player, newState, oldState)` 選用，狀態改變時呼叫（每秒比對一次，第一次的 `oldState` 是 `nil`）。驗證失敗整筆拒收、記一筆 log、回 `false` |
 | `registerWatchSlot(def) --> boolean` | `def = { id, name, accepts, price }`：`accepts` 是能裝的類別陣列；`price = { rent, days, buy }` 是建議價格（實際收費預設照沙盒「其他 MOD 的槽位」那一組設定，管理員可以逐槽調整）。開啟方式（免費／解鎖卡／經濟系統／不開放）與收費由地圖手錶處理；`name` 也是 Economy 管理台顯示的商品名（翻譯鍵，96 字元以內）；最多 6 個 |
 | `getWatchModuleState(player, id) --> string` | `"disabled"`（管理員關閉了對應功能）＞`"active"`（裝在戴著、有電的錶的有效槽位）＞`"notRequired"`（地圖手錶系統關閉，或規則是不需要錶／戴錶就能用而且條件成立）＞`"unpowered"`（戴著但沒電或沒電池）＞`"paused"`（所在槽位沒有開啟）＞`"missing"`（沒戴錶或沒裝）。可每幀呼叫（快取 1 秒、不配置記憶體） |
+| `getWatchModuleData(player, id) --> table｜nil` | 版本 `2` 起。玩家戴著的地圖手錶上這個模組的物品 modData（安裝時從模組物品複製進錶，拆下時寫回新建的物品，所以可以用來存序號之類跟著模組走的資料）。同一個 id 裝了好幾個時，回裝在有效槽位的那個，都沒有就回第一個；沒戴錶、沒裝、`id` 不是字串或 `player` 是 `nil` 時回 `nil`。**唯讀**：回傳的就是錶上的紀錄，不要修改。伺服器與客戶端都能用；和 `getWatchModuleState` 共用快取，可每幀呼叫、不配置記憶體 |
 
 **模組與槽位一定要在 `media/lua/shared/` 的檔案裡登記**，讓伺服器與客戶端各登記一次：專用伺服器不執行 `client` 資料夾（只算檢查碼），只在 client 登記的話面板看得到、伺服器卻不認得，安裝一律被拒（伺服器 log 會記一筆「is not registered on the server」）。只讀狀態的 UI 邏輯可以放在 client。
 
@@ -129,6 +130,7 @@ if type(API) == "table" and type(API.watchApiVersion) == "number" and API.watchA
         class = "standard",              -- standard / advanced / core
         drain = 15,                      -- suggested extra drain, percent
         item = "MyWeather.WeatherModule",
+        desc = "IGUI_MyWeather_ModuleDesc", -- optional (v2+): description translation key
     })
 end
 

@@ -166,8 +166,11 @@ local function registerModule(def)
     if def.onStateChanged ~= nil and type(def.onStateChanged) ~= "function" then
         return reject("registerWatchModule", def, "bad onStateChanged")
     end
+    if def.desc ~= nil and (type(def.desc) ~= "string" or def.desc == "") then
+        return reject("registerWatchModule", def, "bad desc")
+    end
     local m = { id = def.id, name = def.name, class = def.class, drain = def.drain, item = def.item,
-        onStateChanged = def.onStateChanged }
+        desc = def.desc, onStateChanged = def.onStateChanged }
     W.modules[m.id] = m
     W.moduleList[#W.moduleList + 1] = m
     W.moduleByItem[m.item] = m
@@ -398,7 +401,7 @@ end
 -- ===== 狀態快取（閘門與 getWatchModuleState 共用；熱路徑零配置）=====
 -- 每位玩家一筆：生效的錶、錶上已知模組與其所在槽位是否有效。期限 1 秒；W.invalidate() 讓所有快取失效
 -- （穿脫衣物、安裝／拆下、解鎖、登記槽位）。電量不快取：每次直接讀錶的 modData。
--- 模組清單用平行陣列（ids／states＋n）原地覆寫：不清表、不配置。
+-- 模組清單用平行陣列（ids／states／mds＋n）原地覆寫：不清表、不配置。mds＝安裝時複製進錶的模組物品 modData（或 nil）。
 -- 穿戴清單暫時被外觀 MOD 換掉時（W.wornDetached）不重算、也不記時間，沿用上一筆：換回來後第一次呼叫就重算。
 -- 我們的 OnTick 輪詢排在 Mirage Wardrobe 換上之後（它先載入；IngameState.java:1563），不擋就會把複製品
 -- （100%、沒有模組）或「沒戴錶」快取一秒。連續 DETACHED_MAX_MS 都對不回背包（例如身上只剩背包裡沒有的物品）
@@ -426,7 +429,7 @@ function W.status(player)
     local e = statusCache[player]
     if e and e.gen == statusGen and now >= e.at and now - e.at < STATUS_TTL_MS then return e end
     if not e then
-        e = { ids = {}, states = {}, n = 0, watch = false, count = 0 }
+        e = { ids = {}, states = {}, mds = {}, n = 0, watch = false, count = 0 }
         statusCache[player] = e
     end
     if W.wornDetached(player) then
@@ -447,6 +450,7 @@ function W.status(player)
                 n = n + 1
                 e.ids[n] = rec.id
                 e.states[n] = W.slotValid(player, slot) and "active" or "paused"
+                e.mds[n] = rec.md
             end
         end
         -- 孤立槽位裡的模組一律 paused（槽位凍結）
@@ -455,6 +459,7 @@ function W.status(player)
                 n = n + 1
                 e.ids[n] = rec.id
                 e.states[n] = "paused"
+                e.mds[n] = rec.md
             end
         end
     end
@@ -469,6 +474,21 @@ function W.modState(e, id)
         if e.ids[i] == id then
             if e.states[i] == "active" then return "active" end
             found = "paused"
+        end
+    end
+    return found
+end
+
+-- getWatchModuleData：戴著的錶上這個模組的物品 modData（唯讀）。同一 id 裝了多份時優先回有效槽位那份，否則第一份；
+-- 沒戴錶、沒裝、id 不是字串或沒有玩家回 nil。和 getWatchModuleState 共用 W.status 快取，不配置
+function W.moduleData(player, id)
+    if type(id) ~= "string" or player == nil then return nil end
+    local e = W.status(player)
+    local found = nil
+    for i = 1, e.n do
+        if e.ids[i] == id then
+            if e.states[i] == "active" then return e.mds[i] end
+            found = found or e.mds[i]
         end
     end
     return found
@@ -614,10 +634,11 @@ end
 -- ===== 對外 API（shared；契約見 README「給其他 MOD 的 API」）=====
 MinidoracatWatchAPI = MinidoracatWatchAPI or {}
 local API = MinidoracatWatchAPI
-API.watchApiVersion = 1
+API.watchApiVersion = 2
 API.registerWatchModule = registerModule
 API.registerWatchSlot = registerSlot
 API.getWatchModuleState = W.moduleState
+API.getWatchModuleData = W.moduleData
 
 -- ===== 安裝／拆下（伺服器／單機的唯一突變點）=====
 -- MP 由 server/MinidoracatWatch_Server.lua 在 OnClientCommand 內呼叫（player 是連線身分）；單機由計時動作直接呼叫。
