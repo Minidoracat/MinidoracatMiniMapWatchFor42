@@ -153,9 +153,10 @@ do
         if not M.FIELD[o.name] then bad[#bad + 1] = o.name .. " not in the admin window" end
     end
     check(#bad == 0, "admin field table matches sandbox-options.txt: " .. table.concat(bad, ", "))
-    -- 順序與分頁：M.FIELDS＝檔案順序；四頁照視窗分頁（總覽＋功能／槽位與價格／電池／取得方式＋殭屍掉落），每頁連續
+    -- 順序與分頁：M.FIELDS＝檔案順序；五頁照視窗分頁（總覽＋功能／槽位與價格／電池／核心／取得方式＋殭屍掉落），每頁連續
     local function tabOf(k)
         if k:find("^Slot") then return "Slots" end
+        if k:find("Weight") or k:find("^Eco") then return "Cores" end
         if k:find("^Drain") or k:find("^Charge") or k:find("Hours$") or k == "LightDrain" or k == "NeedBattery"
             or k == "DeadMode" then return "Battery" end
         if k:find("^Loot") or k:find("^Zombie") or k:find("Craft") or k == "NeedScrewdriver" then return "Acquire" end
@@ -169,8 +170,13 @@ do
     end
     check(#order == 0 and #M.FIELDS == #options, "admin field table follows the sandbox file order: " .. table.concat(order, ", "))
     check(#pages == 0, "every sandbox option sits on the page of its admin tab: " .. table.concat(pages, ", "))
-    check(table.concat(seq, ",") == "MinidoracatWatchFeatures,MinidoracatWatchSlots,MinidoracatWatchBattery,MinidoracatWatchAcquire",
-        "four sandbox pages, each contiguous, in admin tab order: " .. table.concat(seq, ","))
+    check(table.concat(seq, ",") == "MinidoracatWatchFeatures,MinidoracatWatchSlots,MinidoracatWatchBattery,"
+        .. "MinidoracatWatchCores,MinidoracatWatchAcquire",
+        "five sandbox pages, each contiguous, in admin tab order: " .. table.concat(seq, ","))
+    local wt = 0
+    for _, f in ipairs(M.FIELDS) do if f[1]:find("^SlotWt%d") then wt = wt + 1 end end
+    check(wt == 33 and #M.TIERS == 6 and M.TIERS[4].key == "SlotWt1" and M.TIERS[6].key == "SlotWt3",
+        "carry slots: 3 x 11 sandbox fields, three more tiers after the core slot")
 end
 
 -- ===== 2. 目前設定一覽（設計稿 summaryItems）=====
@@ -198,6 +204,25 @@ do
     s = M.summary(base, true)
     check(has(s, "擴充槽：租用每 7 天 60 倖存幣，或買斷 400 倖存幣"), "summary: rent and buy with Economy")
     check(has(s, "核心槽：租用每 7 天 300 倖存幣，或買斷 2,400 倖存幣"), "summary: thousands separator")
+    check(has(s, "負重槽 I：租用每 7 天 60 倖存幣，或買斷 400 倖存幣") and has(s, "負重槽 II：租用每 7 天 150 倖存幣，或買斷 1,200 倖存幣")
+        and has(s, "負重槽 III：租用每 7 天 300 倖存幣，或買斷 2,400 倖存幣"), "summary: one line per carry slot with its own price")
+    check(has(s, "負重核心：I／II／III 各 +1／2／3 格，上限 8 格（+100%）"), "summary: carry cores at defaults")
+    check(has(s, "節能核心：耐力消耗 -25%、恢復 +50%，沒電保留小地圖"), "summary: power-saver core at defaults")
+    local k = M.copy(base)
+    k.sb.WeightUnits2, k.sb.WeightCap, k.sb.EcoEnduranceDrain, k.sb.EcoKeepsMap = 4, 3, 0, false
+    k.sb.LootWeight1, k.sb.LootPaws = true, false
+    s = M.summary(k, true)
+    check(has(s, "負重核心：I／II／III 各 +1／4／3 格，上限 3 格（+37.5%）") and has(s, "節能核心：耐力恢復 +50%")
+        and not find(s, "沒電保留小地圖"), "summary: tuned carry units and cap (fractional %), regen only, no keep-minimap")
+    check(has(s, "戰利品：6 款地圖手錶會出現"), "summary: a carry-core loot switch does not count as a watch style")
+    k.sb.EcoEnduranceRegen, k.sb.EcoEnduranceDrain, k.sb.EcoKeepsMap = 0, 40, true
+    check(has(M.summary(k, true), "節能核心：耐力消耗 -40%，沒電保留小地圖"), "summary: drain only, keeps the minimap")
+    k.sb.EcoEnduranceDrain, k.sb.WeightEnabled = 0, false
+    s = M.summary(k, true)
+    check(has(s, "節能核心：只讓整支錶耗電減半，沒電保留小地圖") and has(s, "負重核心：關閉")
+        and not find(s, "格，上限"), "summary: both endurance bonuses off; carry cores off is one line")
+    k.sb.EcoKeepsMap = false
+    check(has(M.summary(k, true), "節能核心：只讓整支錶耗電減半"), "summary: power-saver core with every option off")
     local d = M.copy(base)
     d.sb.SlotAdvBuy, d.sb.SlotAdvRent = false, false
     d.sb.DrainLedger, d.sb.ZombieDrops, d.sb.LootPaws = 30, false, false
@@ -265,6 +290,31 @@ do
     lines = M.diff(base, c)
     check(has(lines, "需要電池：從 開 改成 關") and has(lines, "沒電時：從 所有功能停用 改成 只保留小地圖")
         and has(lines, "製作模組需要的電學等級：從 3 改成 5"), "diff: battery switch, dead mode and craft level")
+    -- 核心頁的欄位：照沙盒名稱寫「原本 → 改成」；負重槽的租金、幣別、天數也是條款，重試、提醒不是
+    local w = M.copy(base)
+    w.sb.WeightEnabled, w.sb.WeightUnits1, w.sb.WeightCap, w.sb.DrainWeight3 = false, 2, 12, 50
+    w.sb.LootWeight2, w.sb.EcoKeepsMap, w.sb.EcoEnduranceDrain, w.sb.EcoEnduranceRegen = true, false, 0, 120
+    lines, warn, n = M.diff(base, w)
+    check(n == 8 and not warn and has(lines, "啟用負重核心：從 開 改成 關") and has(lines, "負重核心 I 的加成（格）：從 1 改成 2")
+        and has(lines, "一支錶的負重加成上限（格）：從 8 改成 12") and has(lines, "負重核心 III 耗電（%）：從 300 改成 50")
+        and has(lines, "負重核心 II 出現在戰利品中：從 關 改成 開") and has(lines, "節能核心：沒電時保留小地圖：從 開 改成 關")
+        and has(lines, "節能核心：耐力消耗減少（%）：從 25 改成 0") and has(lines, "節能核心：耐力恢復增加（%）：從 50 改成 120"),
+        "diff: one line per changed core field, no re-consent warning")
+    t = M.copy(base)
+    t.sb.SlotWt1RetryHours = 48
+    lines, warn = M.diff(base, t)
+    check(has(lines, "負重槽 I：到期後續租重試時間（小時）：從 24 改成 48") and not warn, "diff: carry slot retry hours are not a term")
+    t.sb.SlotWt2RentPrice = 200
+    lines, warn = M.diff(base, t)
+    check(has(lines, "負重槽 II：每期租金：從 150 改成 200") and warn, "diff: carry slot rent is a term (re-consent warning)")
+    t = M.copy(base)
+    t.sb.SlotWt3Currency = 2
+    lines, warn = M.diff(base, t)
+    check(has(lines, "負重槽 III：幣別：從 倖存幣 改成 貓幣") and warn, "diff: carry slot currency is a term")
+    t = M.copy(base)
+    t.sb.SlotWt3RentDays = 14
+    _, warn = M.diff(base, t)
+    check(warn, "diff: carry slot period is a term")
     -- 同一條規則只改順序不算
     local e = M.copy(base)
     e.drops[1], e.drops[2] = e.drops[2], e.drops[1]
@@ -278,11 +328,12 @@ do
     local d = M.copy(base)
     M.applyPreset(d, "easy")
     check(d.sb.FullHours == 168 and d.sb.MinimapRule == 2 and d.sb.RuleNav == 1 and d.sb.SlotCore == 1
+        and d.sb.SlotWt1 == 1 and d.sb.SlotWt2 == 1 and d.sb.SlotWt3 == 1
         and d.sb.SlotAddon == 1 and d.sb.RuleLight == 1 and d.sb.DeadMode == 2,
-        "preset easy: 7 days, minimap needs a watch, rest free, slots free, minimap kept when dead")
+        "preset easy: 7 days, minimap needs a watch, rest free, slots (carry slots too) free, minimap kept when dead")
     check(M.T("Preset_easy_desc"):find("沒電時保留小地圖", 1, true) ~= nil, "preset easy text says the minimap stays")
     M.applyPreset(d, "hard")
-    check(d.sb.FullHours == 24 and d.sb.RuleNav == 3 and d.sb.SlotCore == 1 and d.sb.DeadMode == 1,
+    check(d.sb.FullHours == 24 and d.sb.RuleNav == 3 and d.sb.SlotCore == 1 and d.sb.SlotWt2 == 1 and d.sb.DeadMode == 1,
         "preset hard: 1 day, modules, keeps slot modes, everything off when dead")
     check(not M.applyPreset(d, "nope"), "unknown preset refused")
 end
@@ -304,6 +355,21 @@ do
     d.drops[2].chance = 101
     d.drops[3].group = "custom"
     check(M.problems(d) == 3, "problems: out-of-range hours, chance over 100, custom rule without outfits")
+    local c = M.copy(base)
+    c.sb.WeightCap, c.sb.WeightUnits2, c.sb.EcoEnduranceDrain, c.sb.EcoEnduranceRegen, c.sb.DrainWeight1 = 17, -1, 101, 2.5, 1001
+    c.sb.LootWeight3 = "yes"
+    check(M.problems(c) == 6, "problems: every out-of-range core value (cap 17, units -1, drain 101, regen 2.5, 1001%, loot not bool)")
+    c = M.copy(base)
+    c.sb.WeightCap, c.sb.WeightUnits2, c.sb.EcoEnduranceDrain, c.sb.EcoEnduranceRegen = 16, 0, 100, 300
+    check(M.problems(c) == 0, "problems: core values at their limits are fine")
+    c.sb.WeightEnabled, c.sb.SlotWt2RentPrice = false, 999
+    local ch = M.sandboxChanges(base, c)
+    local got = {}
+    for _, x in ipairs(ch) do got[x[1]] = x[2] end
+    args = M.payload(base, c, 7, "why", { "x" })
+    check(#ch == 6 and args.sandbox == 6 and got.WeightCap == 16 and got.WeightUnits2 == 0 and got.EcoEnduranceDrain == 100
+        and got.EcoEnduranceRegen == 300 and got.WeightEnabled == false and got.SlotWt2RentPrice == 999,
+        "payload: new sandbox values counted and carried (false included)")
     check(M.parseOutfits("HazardSuit, Bandit")[2] == "Bandit" and M.parseOutfits("bad name!") == nil
         and M.parseOutfits("  ") == nil, "outfit list parsing")
 end
@@ -499,7 +565,7 @@ do
     for name in pairs(L.TABLES) do list[name] = { items = { "Base.Spoon", 5 } } end
     resetSandbox()
     local sig = L.signature()
-    check(sig == "1111111111|331", "loot signature carries the three amounts (cards default to very few)")
+    check(sig == "1111111111000|331", "loot signature carries the three amounts (cards default to very few, carry cores off)")
     L.apply(list, sig)
     local function weight(tbl, item)
         local items = list[tbl].items
@@ -513,7 +579,7 @@ do
     NATIVE["MinidoracatWatch.LootWatchAmount"] = 2
     sig = L.signature()
     L.apply(list, sig)
-    check(sig == "1111111111|214", "signature follows the native options")
+    check(sig == "1111111111000|214", "signature follows the native options")
     check(weight("ElectronicStoreMisc", "MinidoracatWatch.Module_Ledger") == 0.25, "very few modules: x0.25")
     check(weight("ElectronicStoreMisc", W.CARD_TYPES.ext) == 0.2, "many cards: x2")
     check(weight("StoreDisplayWatches", W.watchType("ValuTech")) == 2, "few watches: x0.5")
@@ -523,10 +589,10 @@ do
     check(n == 1, "re-applying does not duplicate entries")
     -- 輪詢：數量變了就重排並 Parse
     ProceduralDistributions = { list = list }
-    L.applied = "1111111111|333"
+    L.applied = "1111111111000|333"
     parses = 0
     L.sync(true)
-    check(parses == 1 and L.applied == "1111111111|214", "amount change reparses the distributions")
+    check(parses == 1 and L.applied == "1111111111000|214", "amount change reparses the distributions")
     NATIVE["MinidoracatWatch.LootModuleAmount"], NATIVE["MinidoracatWatch.LootCardAmount"] = 3, 1
     NATIVE["MinidoracatWatch.LootWatchAmount"] = 3
 end
@@ -671,12 +737,31 @@ do
         local sp, c = S.panes.slots, S.ctrl
         local xs, ok, prevY = {}, true, nil
         for i, f in ipairs(COLS) do xs[i] = c["SlotExt" .. f].x end
-        for _, key in ipairs({ "SlotExt", "SlotAdv", "SlotCore", "SlotAddon" }) do
+        -- 列：內建六級（M.TIERS，含負重槽 I／II／III）＋其他 MOD 的預設；兩張表同順序、每列一個 ROW
+        local keys = {}
+        for _, t in ipairs(M.TIERS) do keys[#keys + 1] = t.key end
+        keys[#keys + 1] = "SlotAddon"
+        local PRICE = { "Buy", "BuyPrice", "Rent", "RentPrice", "Card" }
+        local names = {}
+        for _, t in ipairs(sp.texts) do if t.x == 0 then names[t.y] = t.text end end
+        local prevP, priceOk = nil, #keys == 7
+        for i, key in ipairs(keys) do
             local y0 = c[key .. "Currency"].y
-            for i, f in ipairs(COLS) do ok = ok and c[key .. f].x == xs[i] and c[key .. f].y == y0 end
+            for j, f in ipairs(COLS) do ok = ok and c[key .. f].x == xs[j] and c[key .. f].y == y0 end
             ok = ok and y0 > c.SlotAddonCard.y and (prevY == nil or y0 == prevY + ROW)
             prevY = y0
+            local p0 = c[key .. "Buy"].y
+            for _, f in ipairs(PRICE) do priceOk = priceOk and c[key .. f].x == c["SlotExt" .. f].x and c[key .. f].y == p0 end
+            priceOk = priceOk and (prevP == nil or p0 == prevP + ROW)
+            prevP = p0
+            local tier = M.TIERS[i]
+            if tier then
+                local label = getText("IGUI_MinidoracatWatch_Slot_" .. tier.id)
+                ok = ok and names[y0 + 5] == label
+                priceOk = priceOk and names[p0 + 5] == label
+            end
         end
+        S.priceOk = priceOk
         -- 欄名＝幣別那一欄（x 同幣別下拉）最上面一行起、到第一列之前的 textMuted 文字
         local top = math.huge
         for _, t in ipairs(sp.texts) do
@@ -699,6 +784,7 @@ do
     local oneLine = #heads == 6
     for _, t in ipairs(heads) do oneLine = oneLine and t.y == top end
     check(aligned, "renewal table: one row per tier, same order as the price table, five columns aligned")
+    check(S2.priceOk, "price table: carry slots I/II/III get their own rows after the core slot, columns aligned, named")
     check(inside and oneLine, "renewal table: six headers on one line, each inside its column, rows start below them")
     local savedRetry = TR["IGUI_MinidoracatWatch_Admin_Col_retryHours"]
     TR["IGUI_MinidoracatWatch_Admin_Col_retryHours"] = "Wiederholungsfenster nach Ablauf (Stunden)"
@@ -736,6 +822,114 @@ do
     local warnText = M.T("Diff_PriceWarn")
     check(n > AU.MAX_LINES and shownText and shownText:find(M.T("More", tostring(n - AU.MAX_LINES)), 1, true)
         and shownText:sub(-#warnText) == warnText, "confirm dialog: the re-consent warning survives truncation, last line")
+    -- ===== 核心頁（負重核心、節能核心）：每個 MinidoracatWatchCores 選項都在這頁、三欄對齊、壞值擋套用、
+    -- 負重核心關掉時加成與耗電欄停用並丟掉壞值、「＝+X%」跟著總上限、送出帶新的沙盒值 =====
+    check(table.concat(AU.TABS, ",") == "overview,features,slots,battery,cores,acquire,zombies",
+        "cores tab sits between battery and acquire")
+    check(getText("IGUI_MinidoracatWatch_Admin_Tab_cores") == "核心", "cores tab label")
+    local function coresPage()
+        AU.state = nil
+        local S = AU.build(0, F.player("admin"), st)
+        return S, S.panes.cores, S.ctrl
+    end
+    local S3, cp, c3 = coresPage()
+    local away, nCores = {}, 0
+    for _, o in ipairs(options) do
+        if o.page == "MinidoracatWatchCores" then
+            nCores = nCores + 1
+            if not (c3[o.name] and c3[o.name].parent == cp) then away[#away + 1] = o.name end
+        end
+    end
+    check(nCores == 14 and #away == 0, "every cores sandbox option has its control on the cores tab: " .. table.concat(away, ", "))
+    local function grid()
+        local u, d, l = c3.WeightUnits1, c3.DrainWeight1, c3.LootWeight1
+        local ok = c3.WeightCap.x == u.x and c3.WeightCap.y == u.y + ROW and d.y > c3.WeightCap.y and l.y > d.y
+            and c3.EcoKeepsMap.y > l.y and c3.EcoEnduranceDrain.y == c3.EcoKeepsMap.y + ROW
+            and c3.EcoEnduranceDrain.x == u.x and c3.EcoEnduranceRegen.x == c3.WeightUnits2.x
+            and c3.EcoEnduranceRegen.y == c3.EcoEnduranceDrain.y
+        for i = 2, 3 do
+            local ui, di, li = c3["WeightUnits" .. i], c3["DrainWeight" .. i], c3["LootWeight" .. i]
+            ok = ok and ui.y == u.y and di.y == d.y and li.y == l.y and di.x == ui.x and ui.x > c3["WeightUnits" .. (i - 1)].x
+                and li.x > c3["LootWeight" .. (i - 1)].x
+        end
+        -- 欄位＋單位收在自己那一欄（下一欄的標籤從 x＝下一格起點開始）；整頁文字不超出頁寬
+        local colW = c3.LootWeight2.x - c3.LootWeight1.x
+        for i = 1, 3 do
+            local tf = c3["WeightUnits" .. i]
+            ok = ok and tf.x + tf.width + 6 + mw(getText("IGUI_MinidoracatWatch_Admin_Unit_units")) <= i * colW
+        end
+        for _, t in ipairs(cp.texts) do ok = ok and t.x >= 0 and t.x + mw(t.text) <= cp.width end
+        return ok
+    end
+    check(grid(), "cores tab: three aligned columns (I/II/III), cap under I, endurance fields on the same grid, text inside")
+    check(S3.capPct.text == "＝+100%" and S3.capPct.x > c3.WeightCap.x + c3.WeightCap.width and S3.capPct.y == c3.WeightCap.y + 5,
+        "cap hint: '= +100%' right of the cap field")
+    check(c3.WeightEnabled.checked == true and c3.LootWeight1.checked == false and c3.EcoKeepsMap.checked == true
+        and c3.EcoEnduranceRegen.text == "50", "controls start at the sandbox defaults")
+    -- 壞值：紅框、擋套用、draft 不變
+    local bads = { { "WeightUnits1", "9" }, { "WeightUnits2", "-1" }, { "WeightUnits3", "1.5" }, { "WeightCap", "17" },
+        { "DrainWeight1", "1001" }, { "EcoEnduranceDrain", "101" }, { "EcoEnduranceRegen", "301" }, { "DrainWeight3", "x" } }
+    local allBad = true
+    for _, b in ipairs(bads) do
+        local before = S3.draft.sb[b[1]]
+        c3[b[1]].onChange(nil, b[2])
+        allBad = allBad and S3.bad[c3[b[1]]] == true and c3[b[1]].invalid == true and S3.draft.sb[b[1]] == before
+    end
+    check(allBad and S3.capPct.text == "", "cores tab: out-of-range values are marked and never reach the draft; cap hint hides")
+    AU.check(S3)
+    check(S3.msg == M.T("Invalid"), "cores tab: a bad value blocks apply")
+    -- 合法值（含上下限）寫進 draft；「＝+X%」跟著總上限
+    for _, g in ipairs({ { "WeightUnits1", "0", 0 }, { "WeightUnits2", "8", 8 }, { "WeightUnits3", "3", 3 }, { "WeightCap", "3", 3 },
+        { "DrainWeight1", "1000", 1000 }, { "DrainWeight3", "300", 300 }, { "EcoEnduranceDrain", "100", 100 },
+        { "EcoEnduranceRegen", "300", 300 } }) do
+        c3[g[1]].onChange(nil, g[2])
+        allBad = allBad and S3.bad[c3[g[1]]] == nil and S3.draft.sb[g[1]] == g[3]
+    end
+    check(allBad and S3.capPct.text == "＝+37.5%", "cores tab: valid values (limits included) reach the draft; cap 3 = +37.5%")
+    c3.LootWeight2:setChecked(true)
+    c3.EcoKeepsMap:setChecked(false)
+    check(S3.draft.sb.LootWeight2 == true and S3.draft.sb.EcoKeepsMap == false, "cores tab: switches write the draft")
+    -- 負重核心關掉：七個數字欄停用、打到一半的壞值丟掉；戰利品與節能核心不受影響
+    c3.WeightCap.onChange(nil, "99")
+    c3.WeightEnabled:setChecked(false)
+    local off = S3.bad[c3.WeightCap] == nil and c3.WeightCap.invalid == false and c3.WeightCap.text == "3"
+    for _, k in ipairs({ "WeightUnits1", "WeightUnits2", "WeightUnits3", "WeightCap", "DrainWeight1", "DrainWeight2", "DrainWeight3" }) do
+        off = off and c3[k].enabled == false
+    end
+    check(off and c3.LootWeight1.enabled ~= false and c3.EcoEnduranceDrain.enabled == true and c3.EcoKeepsMap.enabled ~= false,
+        "carry cores off: bonus and drain fields disabled, half-typed bad value dropped; loot and power-saver stay editable")
+    c3.WeightEnabled:setChecked(true)
+    check(c3.WeightCap.enabled == true and c3.DrainWeight2.enabled == true, "carry cores back on: fields enabled again")
+    c3.WeightEnabled:setChecked(false)
+    -- 一覽、這次會改變、送出（單機套用）都帶新的值
+    local sum = M.summary(S3.draft, false)
+    check(has(sum, "負重核心：關閉") and has(sum, "節能核心：耐力消耗 -100%、恢復 +300%"), "overview reflects the cores tab")
+    local ch = M.sandboxChanges(S3.base, S3.draft)
+    local got = {}
+    for _, x in ipairs(ch) do got[x[1]] = x[2] end
+    local lines3 = M.diff(S3.base, S3.draft)
+    check(#ch == 9 and M.payload(S3.base, S3.draft, 1, "r", {}).sandbox == 9 and got.WeightEnabled == false
+        and got.WeightCap == 3 and got.LootWeight2 == true and got.EcoKeepsMap == false and got.EcoEnduranceRegen == 300
+        and has(lines3, "一支錶的負重加成上限（格）：從 8 改成 3"), "cores tab edits become sandbox changes and diff lines")
+    M.applySandbox(ch)
+    check(NATIVE["MinidoracatWatch.WeightCap"] == 3 and SB.WeightEnabled == false and SB.EcoEnduranceRegen == 300
+        and SB.LootWeight2 == true, "single player: the new core values land in the native options and SandboxVars")
+    resetSandbox()
+    -- 德文等長字串：標籤截短、說明換行，欄位仍在格線上、文字不超出頁寬
+    local LONG = { "EcoDrain", "EcoRegen", "WeightCap", "WeightUnits_hint", "CoreDrain_hint", "CoreLoot_hint", "Eco_hint",
+        "Cores_note", "Weight_desc" }
+    local savedTr = {}
+    for _, k in ipairs(LONG) do
+        savedTr[k] = TR["IGUI_MinidoracatWatch_Admin_" .. k]
+        TR["IGUI_MinidoracatWatch_Admin_" .. k] = string.rep("Ausdauerverbrauch ", 8)
+    end
+    S3, cp, c3 = coresPage()
+    local fx = c3.EcoEnduranceDrain.x
+    local label
+    for _, t in ipairs(cp.texts) do if t.x == 0 and t.y == c3.EcoEnduranceDrain.y + 5 then label = t end end
+    check(grid() and label and mw(label.text) <= fx - 6 and fx == c3.WeightUnits1.x,
+        "long labels are fitted and hints wrap: grid unchanged, nothing past the page edge")
+    for _, k in ipairs(LONG) do TR["IGUI_MinidoracatWatch_Admin_" .. k] = savedTr[k] end
     AU.state = nil
     MinidoracatUI = nil
     F.mode = "server"

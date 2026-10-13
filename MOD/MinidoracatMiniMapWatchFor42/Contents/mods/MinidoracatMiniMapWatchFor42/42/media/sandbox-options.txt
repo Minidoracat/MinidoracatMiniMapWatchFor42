@@ -1,7 +1,7 @@
 VERSION = 1,
 
 /* 地圖錶。命名空間與 MOD ID 脫鉤，日後併回主 MOD 時設定可沿用。
-   分四頁、順序照管理員設定視窗的分頁與畫面順序（client/MinidoracatWatch_AdminModel.lua M.FIELDS 照本檔順序）；選項鍵不可改名 */
+   分五頁、順序照管理員設定視窗的分頁與畫面順序（client/MinidoracatWatch_AdminModel.lua M.FIELDS 照本檔順序）；選項鍵不可改名 */
 
 /* ===== MinidoracatWatchFeatures：設定視窗「總覽」與「功能」頁 ===== */
 
@@ -154,6 +154,106 @@ option MinidoracatWatch.SlotCoreReminderHours
 option MinidoracatWatch.SlotCoreAutoRenew
 {type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotCoreAutoRenew,}
 
+/* 負重槽（2026-10-14）：一階一格，每格各自一組開法、價格、幣別與續租（同擴充、進階、核心槽；預設價也照它們） */
+option MinidoracatWatch.SlotWt1
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt1,}
+
+option MinidoracatWatch.SlotWt1Buy
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt1Buy,}
+
+option MinidoracatWatch.SlotWt1BuyPrice
+{type = integer, min = 1, max = 1000000000, default = 400, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt1BuyPrice,}
+
+option MinidoracatWatch.SlotWt1Rent
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt1Rent,}
+
+option MinidoracatWatch.SlotWt1RentPrice
+{type = integer, min = 1, max = 1000000000, default = 60, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt1RentPrice,}
+
+option MinidoracatWatch.SlotWt1Card
+{type = boolean, default = false, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt1Card,}
+
+option MinidoracatWatch.SlotWt1Currency
+{type = enum, numValues = 2, default = 1, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt1Currency,}
+
+option MinidoracatWatch.SlotWt1RentDays
+{type = integer, min = 1, max = 365, default = 7, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt1RentDays,}
+
+option MinidoracatWatch.SlotWt1RetryHours
+{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt1RetryHours,}
+
+option MinidoracatWatch.SlotWt1ReminderHours
+{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt1ReminderHours,}
+
+option MinidoracatWatch.SlotWt1AutoRenew
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt1AutoRenew,}
+
+option MinidoracatWatch.SlotWt2
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt2,}
+
+option MinidoracatWatch.SlotWt2Buy
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt2Buy,}
+
+option MinidoracatWatch.SlotWt2BuyPrice
+{type = integer, min = 1, max = 1000000000, default = 1200, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt2BuyPrice,}
+
+option MinidoracatWatch.SlotWt2Rent
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt2Rent,}
+
+option MinidoracatWatch.SlotWt2RentPrice
+{type = integer, min = 1, max = 1000000000, default = 150, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt2RentPrice,}
+
+option MinidoracatWatch.SlotWt2Card
+{type = boolean, default = false, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt2Card,}
+
+option MinidoracatWatch.SlotWt2Currency
+{type = enum, numValues = 2, default = 1, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt2Currency,}
+
+option MinidoracatWatch.SlotWt2RentDays
+{type = integer, min = 1, max = 365, default = 7, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt2RentDays,}
+
+option MinidoracatWatch.SlotWt2RetryHours
+{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt2RetryHours,}
+
+option MinidoracatWatch.SlotWt2ReminderHours
+{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt2ReminderHours,}
+
+option MinidoracatWatch.SlotWt2AutoRenew
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt2AutoRenew,}
+
+option MinidoracatWatch.SlotWt3
+{type = enum, numValues = 4, default = 3, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt3,}
+
+option MinidoracatWatch.SlotWt3Buy
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt3Buy,}
+
+option MinidoracatWatch.SlotWt3BuyPrice
+{type = integer, min = 1, max = 1000000000, default = 2400, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt3BuyPrice,}
+
+option MinidoracatWatch.SlotWt3Rent
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt3Rent,}
+
+option MinidoracatWatch.SlotWt3RentPrice
+{type = integer, min = 1, max = 1000000000, default = 300, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt3RentPrice,}
+
+option MinidoracatWatch.SlotWt3Card
+{type = boolean, default = false, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt3Card,}
+
+option MinidoracatWatch.SlotWt3Currency
+{type = enum, numValues = 2, default = 1, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt3Currency,}
+
+option MinidoracatWatch.SlotWt3RentDays
+{type = integer, min = 1, max = 365, default = 7, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt3RentDays,}
+
+option MinidoracatWatch.SlotWt3RetryHours
+{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt3RetryHours,}
+
+option MinidoracatWatch.SlotWt3ReminderHours
+{type = integer, min = 0, max = 168, default = 24, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt3ReminderHours,}
+
+option MinidoracatWatch.SlotWt3AutoRenew
+{type = boolean, default = true, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotWt3AutoRenew,}
+
 option MinidoracatWatch.SlotAddon
 {type = enum, numValues = 4, default = 1, page = MinidoracatWatchSlots, translation = MinidoracatWatch_SlotAddon,}
 
@@ -245,6 +345,54 @@ option MinidoracatWatch.DrainRelay
 
 option MinidoracatWatch.LightDrain
 {type = integer, min = 0, max = 1000, default = 100, page = MinidoracatWatchBattery, translation = MinidoracatWatch_LightDrain,}
+
+/* ===== MinidoracatWatchCores：設定視窗「核心」頁（2026-10-14：負重核心與節能核心） ===== */
+
+/* 負重核心：總開關；每一階的加成（格；一格＝原版負重基數的八分之一）與一支錶的上限 */
+option MinidoracatWatch.WeightEnabled
+{type = boolean, default = true, page = MinidoracatWatchCores, translation = MinidoracatWatch_WeightEnabled,}
+
+option MinidoracatWatch.WeightUnits1
+{type = integer, min = 0, max = 8, default = 1, page = MinidoracatWatchCores, translation = MinidoracatWatch_WeightUnits1,}
+
+option MinidoracatWatch.WeightUnits2
+{type = integer, min = 0, max = 8, default = 2, page = MinidoracatWatchCores, translation = MinidoracatWatch_WeightUnits2,}
+
+option MinidoracatWatch.WeightUnits3
+{type = integer, min = 0, max = 8, default = 3, page = MinidoracatWatchCores, translation = MinidoracatWatch_WeightUnits3,}
+
+option MinidoracatWatch.WeightCap
+{type = integer, min = 0, max = 16, default = 8, page = MinidoracatWatchCores, translation = MinidoracatWatch_WeightCap,}
+
+/* 負重核心的耗電（%，同內建模組；W.moduleDrain 照 drainKey 讀） */
+option MinidoracatWatch.DrainWeight1
+{type = integer, min = 0, max = 1000, default = 100, page = MinidoracatWatchCores, translation = MinidoracatWatch_DrainWeight1,}
+
+option MinidoracatWatch.DrainWeight2
+{type = integer, min = 0, max = 1000, default = 200, page = MinidoracatWatchCores, translation = MinidoracatWatch_DrainWeight2,}
+
+option MinidoracatWatch.DrainWeight3
+{type = integer, min = 0, max = 1000, default = 300, page = MinidoracatWatchCores, translation = MinidoracatWatch_DrainWeight3,}
+
+/* 每顆一個戰利品開關，預設都不掉落（數量跟著「模組的數量」） */
+option MinidoracatWatch.LootWeight1
+{type = boolean, default = false, page = MinidoracatWatchCores, translation = MinidoracatWatch_LootWeight1,}
+
+option MinidoracatWatch.LootWeight2
+{type = boolean, default = false, page = MinidoracatWatchCores, translation = MinidoracatWatch_LootWeight2,}
+
+option MinidoracatWatch.LootWeight3
+{type = boolean, default = false, page = MinidoracatWatchCores, translation = MinidoracatWatch_LootWeight3,}
+
+/* 節能核心：沒電時保留小地圖；耐力消耗少幾 %、恢復多幾 %（0＝關；MinidoracatWatch_Cores.lua） */
+option MinidoracatWatch.EcoKeepsMap
+{type = boolean, default = true, page = MinidoracatWatchCores, translation = MinidoracatWatch_EcoKeepsMap,}
+
+option MinidoracatWatch.EcoEnduranceDrain
+{type = integer, min = 0, max = 100, default = 25, page = MinidoracatWatchCores, translation = MinidoracatWatch_EcoEnduranceDrain,}
+
+option MinidoracatWatch.EcoEnduranceRegen
+{type = integer, min = 0, max = 300, default = 50, page = MinidoracatWatchCores, translation = MinidoracatWatch_EcoEnduranceRegen,}
 
 /* ===== MinidoracatWatchAcquire：設定視窗「取得方式」與「殭屍掉落」頁 ===== */
 

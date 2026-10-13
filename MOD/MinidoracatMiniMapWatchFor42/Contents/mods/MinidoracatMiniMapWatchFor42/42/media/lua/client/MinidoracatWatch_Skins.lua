@@ -8,12 +8,13 @@ local W, C = MinidoracatWatchCore, MinidoracatWatchClient
 local S = {}
 C.Skins = S
 
--- 各款共用：警告／危險色（styles.mjs:292）、槽位等級色與等級標籤上的字（styles.mjs:6、:92）
+-- 各款共用：警告／危險色（styles.mjs:292）、槽位等級色與等級標籤上的字（styles.mjs:6、:92）；
+-- tierWeight＝負重槽與負重核心（銅色，和其他 MOD 的橘色 tierAddon 分得開；階級另寫 I／II／III，不只靠顏色）
 S.COMMON = {
     warnSurface = "#3D3112", warnText = "#FFD88A", warnLine = "#7E6322", warnStrong = "#FFC24D",
     errorSurface = "#46191A", errorText = "#FFBDB7", errorLine = "#8A3330",
     tierStd = "#A7B0BA", tierExt = "#3FB27F", tierAdv = "#4C8DF6", tierCore = "#A970F0", tierAddon = "#E39A3B",
-    tierOrphan = "#8A8F96", tagText = "#111111",
+    tierWeight = "#C9803A", tierOrphan = "#8A8F96", tagText = "#111111",
 }
 
 -- 每款：variant、圓角（設計稿 --r／--r-sm 換算到框架支援值）、版面（ring／hex／plates／row）、槽位外形（貼圖）、colors。

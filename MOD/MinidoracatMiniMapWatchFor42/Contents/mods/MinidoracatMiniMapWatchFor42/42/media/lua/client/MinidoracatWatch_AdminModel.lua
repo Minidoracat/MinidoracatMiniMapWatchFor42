@@ -12,7 +12,7 @@ MinidoracatWatchAdminModel = M -- 內部表（測試與 E2E 用），不是公�
 local function T(key, ...) return getText("IGUI_MinidoracatWatch_Admin_" .. key, ...) end
 M.T = T
 
--- ===== 沙盒欄位（順序＝sandbox-options.txt：四頁照視窗分頁與畫面順序；test_watch_admin.lua 逐項對照型別、範圍、預設、順序）=====
+-- ===== 沙盒欄位（順序＝sandbox-options.txt：五頁照視窗分頁與畫面順序；test_watch_admin.lua 逐項對照型別、範圍、預設、順序）=====
 local B, I, E = "bool", "int", "enum"
 M.FIELDS = {
     -- features
@@ -35,7 +35,23 @@ M.FIELDS = {
     { "SlotCoreRent", B, nil, nil, true }, { "SlotCoreRentPrice", I, 1, 1000000000, 300 },
     { "SlotCoreCard", B, nil, nil, false }, { "SlotCoreCurrency", E, 1, 2, 1 }, { "SlotCoreRentDays", I, 1, 365, 7 },
     { "SlotCoreRetryHours", I, 0, 168, 24 }, { "SlotCoreReminderHours", I, 0, 168, 24 },
-    { "SlotCoreAutoRenew", B, nil, nil, true }, { "SlotAddon", E, 1, 4, 1 }, { "SlotAddonBuy", B, nil, nil, true },
+    { "SlotCoreAutoRenew", B, nil, nil, true },
+    { "SlotWt1", E, 1, 4, 3 }, { "SlotWt1Buy", B, nil, nil, true }, { "SlotWt1BuyPrice", I, 1, 1000000000, 400 },
+    { "SlotWt1Rent", B, nil, nil, true }, { "SlotWt1RentPrice", I, 1, 1000000000, 60 },
+    { "SlotWt1Card", B, nil, nil, false }, { "SlotWt1Currency", E, 1, 2, 1 }, { "SlotWt1RentDays", I, 1, 365, 7 },
+    { "SlotWt1RetryHours", I, 0, 168, 24 }, { "SlotWt1ReminderHours", I, 0, 168, 24 },
+    { "SlotWt1AutoRenew", B, nil, nil, true },
+    { "SlotWt2", E, 1, 4, 3 }, { "SlotWt2Buy", B, nil, nil, true }, { "SlotWt2BuyPrice", I, 1, 1000000000, 1200 },
+    { "SlotWt2Rent", B, nil, nil, true }, { "SlotWt2RentPrice", I, 1, 1000000000, 150 },
+    { "SlotWt2Card", B, nil, nil, false }, { "SlotWt2Currency", E, 1, 2, 1 }, { "SlotWt2RentDays", I, 1, 365, 7 },
+    { "SlotWt2RetryHours", I, 0, 168, 24 }, { "SlotWt2ReminderHours", I, 0, 168, 24 },
+    { "SlotWt2AutoRenew", B, nil, nil, true },
+    { "SlotWt3", E, 1, 4, 3 }, { "SlotWt3Buy", B, nil, nil, true }, { "SlotWt3BuyPrice", I, 1, 1000000000, 2400 },
+    { "SlotWt3Rent", B, nil, nil, true }, { "SlotWt3RentPrice", I, 1, 1000000000, 300 },
+    { "SlotWt3Card", B, nil, nil, false }, { "SlotWt3Currency", E, 1, 2, 1 }, { "SlotWt3RentDays", I, 1, 365, 7 },
+    { "SlotWt3RetryHours", I, 0, 168, 24 }, { "SlotWt3ReminderHours", I, 0, 168, 24 },
+    { "SlotWt3AutoRenew", B, nil, nil, true },
+    { "SlotAddon", E, 1, 4, 1 }, { "SlotAddonBuy", B, nil, nil, true },
     { "SlotAddonBuyPrice", I, 1, 1000000000, 600 }, { "SlotAddonRent", B, nil, nil, true },
     { "SlotAddonRentPrice", I, 1, 1000000000, 80 }, { "SlotAddonCard", B, nil, nil, false },
     { "SlotAddonCurrency", E, 1, 2, 1 }, { "SlotAddonRentDays", I, 1, 365, 7 }, { "SlotAddonRetryHours", I, 0, 168, 24 },
@@ -48,6 +64,12 @@ M.FIELDS = {
     { "DrainGPS", I, 0, 1000, 25 }, { "DrainComm", I, 0, 1000, 25 }, { "DrainScan", I, 0, 1000, 25 },
     { "DrainDetect", I, 0, 1000, 50 }, { "DrainMilDetect", I, 0, 1000, 50 }, { "DrainLongComm", I, 0, 1000, 25 },
     { "DrainRelay", I, 0, 1000, 25 }, { "LightDrain", I, 0, 1000, 100 },
+    -- cores（負重核心、節能核心）
+    { "WeightEnabled", B, nil, nil, true }, { "WeightUnits1", I, 0, 8, 1 }, { "WeightUnits2", I, 0, 8, 2 },
+    { "WeightUnits3", I, 0, 8, 3 }, { "WeightCap", I, 0, 16, 8 }, { "DrainWeight1", I, 0, 1000, 100 },
+    { "DrainWeight2", I, 0, 1000, 200 }, { "DrainWeight3", I, 0, 1000, 300 }, { "LootWeight1", B, nil, nil, false },
+    { "LootWeight2", B, nil, nil, false }, { "LootWeight3", B, nil, nil, false }, { "EcoKeepsMap", B, nil, nil, true },
+    { "EcoEnduranceDrain", I, 0, 100, 25 }, { "EcoEnduranceRegen", I, 0, 300, 50 },
     -- acquire
     { "LootValuTech", B, nil, nil, true }, { "LootPaws", B, nil, nil, true }, { "LootNexus", B, nil, nil, true },
     { "LootSpiffo", B, nil, nil, true }, { "LootRanger", B, nil, nil, true }, { "LootLuthex", B, nil, nil, true },
@@ -71,8 +93,9 @@ M.FEATURES = {
 local RULE4 = { "free", "watch", "module", "off" }
 for _, f in ipairs(M.FEATURES) do f.values = f.values or RULE4 end
 
--- 付費槽位（內建三種＋其他 MOD 的預設）：沙盒鍵前綴
-M.TIERS = { { id = "ext", key = "SlotExt" }, { id = "adv", key = "SlotAdv" }, { id = "core", key = "SlotCore" } }
+-- 付費槽位（內建六種＋其他 MOD 的預設）：沙盒鍵前綴
+M.TIERS = { { id = "ext", key = "SlotExt" }, { id = "adv", key = "SlotAdv" }, { id = "core", key = "SlotCore" },
+    { id = "wt1", key = "SlotWt1" }, { id = "wt2", key = "SlotWt2" }, { id = "wt3", key = "SlotWt3" } }
 M.MODES = { "free", "card", "econ", "off" } -- 沙盒值 1..4
 -- 內建模組的耗電鍵（面板順序）；照明另外是 LightDrain（開燈時）
 M.DRAINS = { { "ledger", "DrainLedger" }, { "gps", "DrainGPS" }, { "comm", "DrainComm" },
@@ -292,6 +315,25 @@ function M.hoursText(h)
     return T("DaysHours", tostring(d), tostring(r))
 end
 
+-- 負重上限加成的百分比（格數 × 12.5，「＝+X%」與一覽共用）
+function M.weightPct(units) return M.chanceText(units * W.WEIGHT_UNIT_PCT) end
+-- 一覽：負重核心（每階格數與上限）；節能核心（耐力加成，設 0 的那項不寫；沒電保留小地圖）
+function M.weightText(s)
+    local sb = s.sb
+    if not sb.WeightEnabled then return T("Sum_WeightOff") end
+    return T("Sum_Weight", tostring(sb.WeightUnits1), tostring(sb.WeightUnits2), tostring(sb.WeightUnits3),
+        tostring(sb.WeightCap), M.weightPct(sb.WeightCap))
+end
+function M.ecoText(s)
+    local d, r = s.sb.EcoEnduranceDrain, s.sb.EcoEnduranceRegen
+    local what
+    if d > 0 and r > 0 then what = T("Eco_both", tostring(d), tostring(r))
+    elseif d > 0 then what = T("Eco_drain", tostring(d))
+    elseif r > 0 then what = T("Eco_regen", tostring(r))
+    else what = T("Eco_none") end
+    return T(s.sb.EcoKeepsMap and "Sum_EcoMap" or "Sum_Eco", what)
+end
+
 -- ===== 目前設定一覽（設計稿 summaryItems）=====
 -- econReady＝伺服器的 Economy 整合是 READY（W.econStatus）。
 function M.summary(s, econReady)
@@ -342,6 +384,8 @@ function M.summary(s, econReady)
     else
         out[#out + 1] = T("Sum_LootNone")
     end
+    out[#out + 1] = M.weightText(s)
+    out[#out + 1] = M.ecoText(s)
     if s.sb.ZombieDrops then
         out[#out + 1] = T("Sum_Drops", tostring(#s.drops), tostring(s.sb.ZombieDropCap))
     else
@@ -360,9 +404,10 @@ end
 
 -- 改了會讓自動續租暫停、要玩家重新同意的欄位（Economy 的設計，Phase 6 D3）：每一級的租金、幣別、天數
 local TERMS = {}
-for _, k in ipairs({ "SlotExt", "SlotAdv", "SlotCore", "SlotAddon" }) do
-    TERMS[k .. "RentPrice"], TERMS[k .. "Currency"], TERMS[k .. "RentDays"] = true, true, true
+for _, t in ipairs(M.TIERS) do
+    TERMS[t.key .. "RentPrice"], TERMS[t.key .. "Currency"], TERMS[t.key .. "RentDays"] = true, true, true
 end
+TERMS.SlotAddonRentPrice, TERMS.SlotAddonCurrency, TERMS.SlotAddonRentDays = true, true, true
 local RULE_KEYS = {}
 for _, f in ipairs(M.FEATURES) do RULE_KEYS[f.key] = f end
 

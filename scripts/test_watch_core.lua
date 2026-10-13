@@ -631,4 +631,151 @@ do
     MuleBodyLocations, SandboxVars.B42PackMule, getScriptManager = nil, nil, savedSM
 end
 
+-- ===== 負重核心：負重上限加成（MinidoracatWatch_Cores.lua，2026-10-14）=====
+-- 基數只在伺服器與單機改（每秒 visit）；改了下一秒才 sendDamage（引擎那時已重算上限）；只加減自己那一份
+F.mode = "server"
+F.reset()
+local sbx = SandboxVars.MinidoracatWatch
+local kp = F.player("kim", 0)
+F.players = { kp }
+local kw = F.item(F.RIGHT)
+kp.inv:AddItem(kw)
+F.wear(kp, kw)
+local function put(slotId, id)
+    local md = kw:getModData()
+    md[W.SLOTS_KEY] = md[W.SLOTS_KEY] or {}
+    md[W.SLOTS_KEY][slotId] = id and { id = id, item = W.modules[id].item } or nil
+    W.invalidate()
+end
+sbx.SlotWt1, sbx.SlotWt2, sbx.SlotWt3, sbx.SlotCore = 1, 1, 1, 1
+run(2000, 1000)
+check(kp:getMaxWeightBase() == 8 and #F.damages == 0, "沒有負重核心：基數照原版、不推")
+put("wt2", "weight2")
+run(1000, 1000)
+check(kp:getMaxWeightBase() == 10 and #F.damages == 0, "裝上負重核心 II：下一秒基數 8→10（+2 格）")
+run(1000, 1000)
+check(#F.damages == 1 and F.damages[1] == kp, "再下一秒 sendDamage 推給本人")
+run(3000, 1000)
+check(kp:getMaxWeightBase() == 10 and #F.damages == 1, "格數沒變：不寫、不推")
+put("wt1", "weight1")
+put("wt3", "weight3")
+run(1000, 1000)
+check(kp:getMaxWeightBase() == 14 and W.weightBonus(kp) == 6, "三顆：+1＋2＋3＝6 格")
+sbx.WeightUnits3 = 8
+run(1000, 1000)
+check(kp:getMaxWeightBase() == 16 and W.weightBonus(kp) == 8, "加總夾在一支錶的上限 8 格")
+sbx.WeightCap = 4
+run(1000, 1000)
+check(kp:getMaxWeightBase() == 12, "上限調成 4 格")
+sbx.WeightUnits3, sbx.WeightCap = nil, nil
+run(1000, 1000)
+check(kp:getMaxWeightBase() == 14, "改回預設：+6 格")
+-- 別的 MOD 用加減寫法（+2 再 -2）：兩邊都保留，反覆幾次也不會越疊越多（以前把現值當原值，每改一次多疊 6 格）
+for _ = 1, 3 do
+    kp:setMaxWeightBase(kp:getMaxWeightBase() + 2)
+    run(1000, 1000)
+    kp:setMaxWeightBase(kp:getMaxWeightBase() - 2)
+    run(1000, 1000)
+end
+check(kp:getMaxWeightBase() == 14, "別的 MOD 加減自己那一份三次：基數照樣是 8＋6")
+kp:setMaxWeightBase(kp:getMaxWeightBase() + 2)
+run(1000, 1000)
+check(kp:getMaxWeightBase() == 16, "別的 MOD 的 +2 留著：8＋2＋6")
+W.setCharge(kw, 0)
+run(1000, 1000)
+check(kp:getMaxWeightBase() == 10 and W.weightBonus(kp) == 0, "沒電：只扣回自己的 6 格，別的 MOD 的 +2 還在")
+W.setCharge(kw, 0.5)
+run(1000, 1000)
+check(kp:getMaxWeightBase() == 16, "換電池：加成回來")
+F.unwear(kp, kw)
+run(1000, 1000)
+check(kp:getMaxWeightBase() == 10, "錶不在手上：回到 8＋2")
+F.wear(kp, kw)
+sbx.SlotWt3 = 4
+run(1000, 1000)
+check(kp:getMaxWeightBase() == 13, "負重槽 III 不開放：只停那一格（8＋2＋1＋2）")
+sbx.SlotWt3 = 1
+sbx.WeightEnabled = false
+run(1000, 1000)
+check(kp:getMaxWeightBase() == 10 and near(W.drainFactor(kp, kw), 1), "負重核心整個關閉：回到 8＋2、核心不耗電")
+sbx.WeightEnabled = nil
+run(1000, 1000)
+check(kp:getMaxWeightBase() == 16, "再開啟：加成回來")
+run(1000, 1000) -- 上一秒改了基數，這一秒才 sendDamage：先送完再數
+-- 別的 MOD 直接寫固定值：以它的值為準（我們的 6 格算在裡面，不另外疊上去），也不每秒搶著寫
+local dmg = #F.damages
+kp:setMaxWeightBase(20)
+run(3000, 1000)
+check(kp:getMaxWeightBase() == 20 and #F.damages == dmg, "別的 MOD 把基數設成 20：以它為準，不寫、不推")
+-- 重登、重生是新的玩家物件：基數從引擎的原值（8，不入存檔）重新加
+local kp2 = F.player("kim", 0)
+kp.inv:DoRemoveItem(kw)
+kp2.inv:AddItem(kw)
+F.wear(kp2, kw)
+F.players = { kp2 }
+run(1000, 1000)
+check(kp2:getMaxWeightBase() == 14, "新的玩家物件：從 8 加 6 格")
+F.mode = "sp"
+put("wt1", nil)
+run(1000, 1000)
+local pushed = #F.damages
+run(1000, 1000)
+check(kp2:getMaxWeightBase() == 13 and #F.damages == pushed, "單機：照樣改基數，不送封包")
+
+-- ===== 節能核心：耐力消耗少 25%、恢復多 50%（實測 en-*-1014a～c）；沒電時保住小地圖 =====
+kp = kp2
+put("core", "eco")
+local stats = kp:getStats()
+local END = CharacterStat.ENDURANCE
+-- 模擬引擎在這一秒改了耐力：每次都從目前值加減（直接設成某個值也算一次變化，會被加成）
+local function change(delta)
+    local raw = stats:get(END) + delta
+    stats:set(END, raw)
+    run(1000, 1000)
+    return stats:get(END), raw
+end
+stats:set(END, 0.8)
+run(1000, 1000)
+local after, raw = change(-0.1)
+check(near(after, raw + 0.025), "消耗 0.1：退回 25%")
+after, raw = change(0.1)
+check(near(after, raw + 0.05), "恢復 0.1：多給 50%")
+run(1000, 1000)
+check(near(stats:get(END), after), "沒變化：不動")
+sbx.EcoEnduranceDrain, sbx.EcoEnduranceRegen = 0, 100
+after, raw = change(-0.1)
+check(near(after, raw), "消耗設 0：不退回")
+after, raw = change(0.05)
+check(near(after, raw + 0.05), "恢復設 100：多給一倍")
+change(0.2)
+check(stats:get(END) == 1, "加成後夾在 1")
+sbx.EcoEnduranceDrain, sbx.EcoEnduranceRegen = 999, -5
+check(W.ecoEnduranceDrain() == 100 and W.ecoEnduranceRegen() == 0, "沙盒壞值夾在範圍內")
+sbx.EcoEnduranceDrain, sbx.EcoEnduranceRegen = nil, nil
+sbx.SlotCore = 4
+stats:set(END, 0.6)
+run(1000, 1000)
+stats:set(END, 0.5)
+run(1000, 1000)
+check(near(stats:get(END), 0.5), "核心槽失效：不加成")
+sbx.SlotCore = 1
+W.setCharge(kw, 0)
+stats:set(END, 0.4)
+run(1000, 1000)
+check(near(stats:get(END), 0.4), "沒電：不加成")
+check(W.deadKeepsMinimap(kp) == true and W.deadKeepsMinimap() == false, "裝著有效的節能核心：沒電也保留小地圖；不傳玩家只看 DeadMode")
+sbx.EcoKeepsMap = false
+check(W.deadKeepsMinimap(kp) == false, "EcoKeepsMap 關閉：照 DeadMode")
+sbx.EcoKeepsMap = nil
+sbx.SlotCore = 4
+W.invalidate()
+check(W.deadKeepsMinimap(kp) == false, "核心槽失效：不保留")
+sbx.SlotCore = 1
+put("core", nil)
+check(W.deadKeepsMinimap(kp) == false, "沒裝節能核心：照 DeadMode")
+sbx.DeadMode = 2
+check(W.deadKeepsMinimap(kp) == true and W.deadKeepsMinimap() == true, "DeadMode 2：所有錶都保留")
+sbx.DeadMode = nil
+sbx.SlotWt1, sbx.SlotWt2, sbx.SlotWt3, sbx.SlotCore = nil, nil, nil, nil
+
 F.finish("test_watch_core")

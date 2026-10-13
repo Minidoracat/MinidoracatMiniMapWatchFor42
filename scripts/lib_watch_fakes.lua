@@ -12,7 +12,7 @@ F.logs, F.halos, F.synced, F.added, F.removed, F.clientCmds, F.serverCmds = {}, 
 
 function F.reset()
     F.logs, F.halos, F.synced, F.added, F.removed, F.clientCmds, F.serverCmds = {}, {}, {}, {}, {}, {}, {}
-    F.sounds = {}
+    F.sounds, F.damages = {}, {}
 end
 
 function getTimestampMs() return F.now end
@@ -288,6 +288,30 @@ function Player:getEmitter()
     return self.emitter
 end
 
+-- 負重基數（IsoGameCharacter.maxWeightBase，預設 8；引擎下一次更新才重算 maxWeight）與 sendDamage（伺服器立即推
+-- PlayerDamagePacket，LuaManager.java:4320-4326）：測試看基數與推送次數
+F.damages = {}
+function Player:getMaxWeightBase() return self.maxWeightBase or 8 end
+function Player:setMaxWeightBase(v)
+    assert(v == math.floor(v), "setMaxWeightBase needs an int")
+    self.maxWeightBase = v
+end
+-- 引擎同步來的負重上限（客戶端讀這個；測試直接設 maxWeight，故意不從基數推，擋「客戶端拿不同步的基數算」）
+function Player:getMaxWeight() return self.maxWeight or 12 end
+function sendDamage(player)
+    if F.mode == "server" then F.damages[#F.damages + 1] = player end
+end
+-- 角色數值（Stats.get／set，set 夾在 CharacterStat 的範圍：Stats.java、CharacterStat.java:14 耐力 0..1、預設 1）
+CharacterStat = { ENDURANCE = "Endurance" }
+local Stats = {}
+Stats.__index = Stats
+function Stats:get(stat) return self.v[stat] or 1 end
+function Stats:set(stat, value) self.v[stat] = math.max(0, math.min(1, value)) end
+function Player:getStats()
+    self.stats = self.stats or setmetatable({ v = {} }, Stats)
+    return self.stats
+end
+
 F.players = {}
 function F.player(name, pn)
     local p = setmetatable({ inv = F.container(), worn = {}, md = {}, pn = pn or 0, name = name or "alice",
@@ -406,6 +430,7 @@ local MODULES = {
     MinidoracatWatch = F.MEDIA .. "/shared/MinidoracatWatch.lua",
     MinidoracatWatch_Modules = F.MEDIA .. "/shared/MinidoracatWatch_Modules.lua",
     MinidoracatWatch_Light = F.MEDIA .. "/shared/MinidoracatWatch_Light.lua",
+    MinidoracatWatch_Cores = F.MEDIA .. "/shared/MinidoracatWatch_Cores.lua",
     MinidoracatWatch_Action = F.MEDIA .. "/client/MinidoracatWatch_Action.lua",
     MinidoracatWatch_Client = F.MEDIA .. "/client/MinidoracatWatch_Client.lua",
     MinidoracatWatch_Sound = F.MEDIA .. "/client/MinidoracatWatch_Sound.lua",

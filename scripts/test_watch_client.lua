@@ -175,7 +175,15 @@ SB.RuleZombie, SB.RuleLight = nil, nil
 SB.NeedBattery = false
 check(drainOf("scan") == "IGUI_MinidoracatWatch_DrainNoBattery" and drainOf("eco") == "IGUI_MinidoracatWatch_DrainNoBattery",
     "不需要電池：每個模組都寫不耗電")
+check(drainOf("weight1") == "IGUI_MinidoracatWatch_DrainNoBattery", "不需要電池：負重核心也不耗電")
 SB.NeedBattery = nil
+SB.DrainWeight1 = 150
+check(drainOf("weight1") == "IGUI_MinidoracatWatch_DrainPlus|150" and drainOf("weight3") == "IGUI_MinidoracatWatch_DrainPlus|300",
+    "負重核心耗電照沙盒（I 改成 150%、III 預設 300%）")
+SB.WeightEnabled = false
+check(drainOf("weight1") == "IGUI_MinidoracatWatch_DrainNone" and drainOf("weight3") == "IGUI_MinidoracatWatch_DrainNone"
+    and drainOf("scan") == "IGUI_MinidoracatWatch_DrainPlus|25", "負重核心整個關閉：寫不耗電（W.moduleOff），其他模組照舊")
+SB.WeightEnabled, SB.DrainWeight1 = nil, nil
 
 -- 缺模組時的取得方式：只用客戶端有的沙盒值與 shared 的戰利品表（殭屍掉落不公開）
 F.load("shared/MinidoracatWatch_Recipe.lua")
@@ -194,6 +202,15 @@ check(acquire("ledger") == "IGUI_MinidoracatWatch_Acquire_CraftAny" and acquire(
 SB.LootModules, SB.CraftLevel, SB.AllowCraft = nil, nil, false
 check(acquire("comm") == LOOT .. PLACE .. "ElectronicStoreMisc" .. SEP .. PLACE .. "PoliceLockers", "關閉製作：不寫可以製作")
 SB.AllowCraft = nil
+-- 負重核心：每顆自己的戰利品開關（LootWeight1..3，預設關、不看 LootModules）
+local function lootOf(id) return ((acquire(id) or ""):match("Acquire_Loot|([^\n]*)")) end
+check(lootOf("weight1") == nil and lootOf("weight3") == nil and lootOf("gps") ~= nil,
+    "負重核心的戰利品開關預設關：不寫地點；其他模組照舊")
+SB.LootWeight1 = true
+check(lootOf("weight1") == PLACE .. "ArmyStorageElectronics" and lootOf("weight2") == nil, "打開負重核心 I：只寫它的地點")
+SB.LootModules = false
+check(lootOf("weight1") ~= nil and lootOf("gps") == nil, "關掉模組戰利品：負重核心 I 照自己的開關，其他模組不寫")
+SB.LootModules, SB.LootWeight1 = nil, nil
 
 -- ===== 小地圖閘門 =====
 local gate = registered.fn
@@ -699,7 +716,14 @@ check(sk:onFocusKey(Keyboard.KEY_RIGHT) and sk.cur == slotIndex("std2") and pane
 local fx, fy, fw = sk:focusRect()
 local rx, ry, rs = sk:socketRect(sk.cur)
 check(fx == rx and fy == ry and fw == rs, "焦點框只框游標那格")
-check(sk.layout == "row" and sk:onFocusKey(Keyboard.KEY_DOWN) == false, "ValuTech 一列排開：↓ 不處理（交給 Focus 移到下一個目標）")
+-- ValuTech 一列排開：↓ 到下面的負重列（三格對齊錶面三欄，照座標找最近那格）；負重列是最後一列時再 ↓ 交給 Focus
+check(sk.layout == "row" and sk:onFocusKey(Keyboard.KEY_DOWN) and sk.cur == slotIndex("wt1"),
+    "ValuTech：↓ 從六格那列移到負重列（標準槽 2 下面是負重槽 I）")
+check(sk:onFocusKey(Keyboard.KEY_RIGHT) and sk.cur == slotIndex("wt2") and sk:onFocusKey(Keyboard.KEY_RIGHT)
+    and sk.cur == slotIndex("wt3"), "負重列 →：I → II → III")
+check(sk:onFocusKey(Keyboard.KEY_DOWN) == false and sk.cur == slotIndex("wt3"),
+    "負重列下面沒有其他 MOD 的槽位：↓ 不處理（交給 Focus 移到下一個目標）")
+check(sk:onFocusKey(Keyboard.KEY_UP) and sk.cur <= 6 and panel.sel == slotIndex("std3"), "負重列 ↑：回到六格那列，選取不變")
 sk.cur = slotIndex("std1")
 check(sk:onFocusKey(Keyboard.KEY_LEFT) == false and sk.cur == slotIndex("std1"), "最左邊再 ←：不處理、游標不動")
 sk.cur = slotIndex("std2")
@@ -817,6 +841,142 @@ local tb = panel.actTop + 40
 panel.textBottom = tb
 panel:update()
 check(panel.actTop >= tb + 6 and panel.filterBtns[1].y >= tb + 6, "文字壓到按鈕時檢視區長高，篩選列與按鈕移到文字下方")
+-- ===== 負重列（設計稿 claim 2–3）：錶面下方自己一列、三格對齊錶面三欄、44px 畫得出等級標籤；只列同一階的核心；
+-- 檢視區兩列三格；沒電的格子畫電池徽章、停用的畫暫停 =====
+local function drew(want) return table.concat(F.texts):find(want, 1, true) ~= nil end
+local function iconCount(name)
+    local n = 0
+    for _, k in ipairs(F.icons) do if k == name then n = n + 1 end end
+    return n
+end
+local rowOk = true
+local _, wy0 = sk:socketRect(slotIndex("wt1"))
+for t = 1, 3 do
+    local x, y, s = sk:socketRect(slotIndex("wt" .. t))
+    if not (s == 44 and y == wy0 and y > sk:faceH() + 16 and math.abs(x + s / 2 - (t - 0.5) * sk.width / 3) <= 1) then
+        rowOk = false
+    end
+end
+check(rowOk and sk.height >= wy0 + 44 + 16 + 2,
+    "負重列：錶面與標題下方一列、三格 44px 對齊錶面三欄（不是其他 MOD 的 40px 排法），槽位區包得住等級標籤")
+-- 字型放大（字高 30）：槽位區照樣包得住負重格底下的等級標籤（標籤底緣＝格底＋1＋字高＋2）
+do
+    local tm = getTextManager
+    getTextManager = function() return { MeasureStringX = function(_, _, s) return #s * 7 end, getFontHeight = function() return 30 end } end
+    local _, wy, ws = sk:socketRect(slotIndex("wt3"))
+    local ok = sk:areaH() >= wy + ws + 1 + 30 + 2
+    getTextManager = tm
+    check(ok, "字型放大：槽位區高度算進負重格的等級標籤")
+end
+SB.SlotWt1, SB.SlotWt2, SB.SlotWt3 = 1, 1, 1
+W.setCharge(watch, 0.5)
+local w1a, w1b, w2a, w3a = give(MOD("Weight1")), give(MOD("Weight1")), give(MOD("Weight2")), give(MOD("Weight3"))
+tick()
+selectSlot("wt1")
+local wmods = modBtns()
+check(#wmods == 1 and wmods[1].def.id == "weight1" and filters() == "",
+    "選負重槽 I：模組按鈕只列負重核心 I（不列 II、III 與其他模組），沒有篩選列")
+local wbar
+wmods[1].drawRect = function(_, x, y, w, h, a, r, g, bl) wbar = { r = r, g = g, b = bl } end
+wmods[1]:render()
+wmods[1].drawRect = nil
+local cW = panel.inspTheme.colors.tierWeight
+check(wbar and cW and wbar.r == cW.r and wbar.g == cW.g and wbar.b == cW.b, "負重核心按鈕的左緣色條＝負重槽色 tierWeight")
+local wtip = wmods[1].tooltip or ""
+check(wtip:find("^IGUI_MinidoracatWatch_KV_ClassWeight <LINE> IGUI_MinidoracatWatch_KV_Tier|I <LINE> ") ~= nil
+    and wtip:find("IGUI_MinidoracatWatch_WeightNeeds <LINE> IGUI_MinidoracatWatch_ModuleDesc_weight1", 1, true) ~= nil
+    and not wtip:find("\n", 1, true), "負重核心按鈕的滑過說明：類別、階級、加成、耗電、生效條件，再接說明")
+selectSlot("std3")
+local noWeight = true
+for _, b in ipairs(modBtns()) do if W.WEIGHT_CLASSES[b.def.class] then noWeight = false end end
+check(noWeight, "標準槽不列負重核心")
+SB.WeightUnits2 = 3
+sp(W.applyModuleChange, p, watch:getID(), "wt1", true, w1a:getID())
+sp(W.applyModuleChange, p, watch:getID(), "wt2", true, w2a:getID())
+tick()
+selectSlot("wt2")
+check(panel.weightText == "IGUI_MinidoracatWatch_WeightRowSum|IGUI_MinidoracatWatch_WeightUnits|4|50|8",
+    "負重列標題：這支錶 +4 格（+50%）／上限 8 格（負重核心 II 照沙盒 3 格）")
+F.texts = {}
+sk:prerender()
+check(drew("IGUI_MinidoracatWatch_Tag_wt1") and drew("IGUI_MinidoracatWatch_Tag_wt2") and drew("IGUI_MinidoracatWatch_Tag_wt3")
+    and drew("IGUI_MinidoracatWatch_WeightCores") and drew(panel.weightText) and not drew("IGUI_MinidoracatWatch_OtherMods"),
+    "負重列：自己的標題與總加成、三格都畫等級標籤；沒有其他 MOD 的槽位就不畫「其他 MOD」")
+-- 標題和總加成一行放不下（假字寬 7px／字：鍵名一定放不下）就把總加成換到第二行、負重列往下一行；放得下就同一行
+do
+    local function sumY()
+        local got
+        sk.drawText = function(_, t, _, y) if t == panel.weightText then got = y end end
+        sk:prerender()
+        sk.drawText = nil
+        return got
+    end
+    local wrapY = sumY()
+    local _, wrapTop = sk:socketRect(slotIndex("wt1"))
+    local realTM = getTextManager
+    getTextManager = function() return { MeasureStringX = function() return 10 end, getFontHeight = function() return 16 end } end
+    panel.scanAt = nil
+    panel:update()
+    local fits, oneY = panel.weightWrap, sumY()
+    local _, oneTop = sk:socketRect(slotIndex("wt1"))
+    getTextManager = realTM
+    panel.scanAt = nil
+    panel:update()
+    check(panel.weightWrap == true and fits == false and wrapY == oneY + 16 and wrapTop == oneTop + 16,
+        "負重列標題放不下一行：總加成換到第二行、三格往下一行；放得下就同一行")
+end
+p.maxWeight, p.maxWeightBase = 17.5, 99
+F.texts = {}
+panel:prerender()
+check(drew("IGUI_MinidoracatWatch_KV_Tier|II") and drew("IGUI_MinidoracatWatch_KV_Bonus|IGUI_MinidoracatWatch_WeightUnits|3|37.5")
+    and drew("IGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainPlus|200")
+    and drew("IGUI_MinidoracatWatch_KV_Slot|IGUI_MinidoracatWatch_St_active")
+    and drew("IGUI_MinidoracatWatch_KV_WatchTotal|IGUI_MinidoracatWatch_WeightUnitsShort|4") and drew("IGUI_MinidoracatWatch_KV_Cap|8"),
+    "檢視區（負重核心 II）：階級、加成、耗電、槽位、這支錶合計、總上限六格")
+check(drew("IGUI_MinidoracatWatch_WeightNow|17.5") and not drew("|99"), "角色現在的負重上限讀 getMaxWeight（不從不同步的基數算）")
+SB.WeightCap = 3
+panel.scanAt = nil
+panel:update()
+F.texts = {}
+panel:prerender()
+check(panel.weightText:find("WeightUnits|3|37.5|3", 1, true) and drew("IGUI_MinidoracatWatch_KV_WatchTotal|IGUI_MinidoracatWatch_WeightUnitsShort|3")
+    and drew("IGUI_MinidoracatWatch_KV_Cap|3"), "總上限 3 格：合計夾在上限")
+SB.WeightCap, SB.WeightEnabled = nil, false
+panel.scanAt = nil
+panel:update()
+F.texts = {}
+panel:prerender()
+check(panel.weightText:find("WeightUnits|0|0|", 1, true) and drew("IGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainNone"),
+    "負重核心整個關閉：合計 0 格、不耗電")
+SB.WeightEnabled = nil
+W.setCharge(watch, 0)
+tick()
+panel.scanAt = nil
+panel:update()
+F.icons, F.texts = {}, {}
+sk:prerender() -- 只算槽位區的圖示（面板的電量膠囊、功能清單另有電池與暫停圖示）
+local deadBatt, deadPause = iconCount("battery"), iconCount("pause")
+panel:prerender()
+check(deadBatt == 3 and deadPause == 0 and panel.weightText == "IGUI_MinidoracatWatch_WeightRowDead"
+    and drew("IGUI_MinidoracatWatch_St_dead"),
+    "沒電：有模組的三格（標準槽 1、負重槽 I、II）畫電池徽章（不是暫停）、負重列寫 +0 格（沒電）、狀態寫沒電")
+W.setCharge(watch, 0.5)
+SB.SlotWt2 = 4
+tick()
+panel.scanAt = nil
+panel:update()
+F.icons = {}
+sk:prerender()
+check(iconCount("pause") == 1 and iconCount("battery") == 0 and panel.weightText:find("WeightUnits|1|12.5|8", 1, true),
+    "負重槽 II 不開放：那一格畫暫停徽章、合計只剩 I 的 1 格")
+sk.cur = slotIndex("wt1")
+check(sk:onFocusKey(Keyboard.KEY_UP) and sk.cur <= 6, "負重列 ↑ 回到六格")
+watch:getModData()[W.SLOTS_KEY].wt1, watch:getModData()[W.SLOTS_KEY].wt2 = nil, nil
+for _, it in ipairs({ w1b, w3a }) do p.inv:DoRemoveItem(it) end
+SB.SlotWt1, SB.SlotWt2, SB.SlotWt3, SB.WeightUnits2, p.maxWeight, p.maxWeightBase = nil, nil, nil, nil, nil, nil
+W.invalidate()
+tick()
+selectSlot("core")
 selectSlot("std3")
 selectSlot("ext")
 local cardBtn = act("card")
@@ -847,7 +1007,23 @@ check(hasText("IGUI_MinidoracatWatch_Desc_Card|item:MinidoracatWatch.UnlockCard_
     and hasText("IGUI_MinidoracatWatch_CardNone|item:MinidoracatWatch.UnlockCard_Ext"),
     "其他 MOD 的槽位：說明與「背包裡沒有…」用卡的物品名，槽位名另外傳")
 local fsx, fsy, fss = panel.sockets:socketRect(slotIndex("forecast"))
-check(fss == 40 and fsy > panel.sockets:faceH() and panel.sockets.height >= fsy + fss, "其他 MOD 的槽位排在錶面下方（40px），槽位區跟著長高")
+local _, wty, wts = panel.sockets:socketRect(slotIndex("wt1"))
+F.texts = {}
+panel.sockets:prerender()
+check(fss == 40 and fsx == 0 and fsy >= wty + wts + 16 + 2 and panel.sockets.height >= fsy + fss
+    and hasText("IGUI_MinidoracatWatch_OtherMods"),
+    "其他 MOD 的槽位排在負重列與等級標籤下面（40px、有「其他 MOD」標題），槽位區跟著長高")
+sk.cur = slotIndex("wt1")
+check(sk:onFocusKey(Keyboard.KEY_DOWN) and sk.cur == slotIndex("forecast"), "負重列 ↓：到其他 MOD 的槽位")
+-- C.toast 把 holdMs 交給框架的 Toast（負重相關的停 8 秒）；沒給＝框架預設
+local shown = {}
+local realShow = C.ui().Toast.show
+C.ui().Toast.show = function(o) shown[#shown + 1] = o end
+C.toast(p, "msg", "title", 8000)
+C.toast(p, "msg2")
+C.ui().Toast.show = realShow
+check(shown[1] and shown[1].holdMs == 8000 and shown[1].title == "title" and shown[1].message == "msg" and shown[1].maxLines == 3
+    and shown[2] and shown[2].holdMs == nil, "C.toast：holdMs 交給 UI.Toast（沒給就不帶）")
 for _, c in ipairs(savedCards) do p.inv:AddItem(c) end
 SB.SlotAddon = 1
 for i = #W.slotList, 1, -1 do if W.slotList[i].id == "forecast" then table.remove(W.slotList, i) end end
@@ -896,6 +1072,15 @@ SB.SlotCore = 4
 check(C.slotStatus(p, watch, W.slotById.core) == "paused", "核心槽改成不開放：模組 paused")
 selectSlot("core")
 check(acts() == "remove", "失效槽位裡的模組隨時能拆")
+-- 節能核心的檢視區：說明下面接耐力與保留小地圖（照沙盒，和物品停留說明同一份；scan 每 250ms 重算，畫的時候只讀）
+SB.EcoEnduranceDrain, SB.EcoEnduranceRegen = 10, 0
+panel.scanAt = nil
+panel:update()
+F.texts = {}
+panel:prerender()
+check(hasText("IGUI_MinidoracatWatch_EcoEndurance|IGUI_MinidoracatWatch_EcoEnduranceDrain|10") and not hasText("EcoEnduranceRegen")
+    and hasText("IGUI_MinidoracatWatch_EcoKeepsMap"), "節能核心的檢視區：耐力消耗 −10%（恢復設 0 不寫）、沒電時保留小地圖")
+SB.EcoEnduranceDrain, SB.EcoEnduranceRegen = nil, nil
 W.setCharge(watch, 0)
 check(C.slotStatus(p, watch, W.slotById.std1) == "dead", "沒電：模組 dead")
 -- 橫幅狀態在 update 與 prerender 之間變了（伺服器推送剛到）：這一幀不畫，不拿還沒算過的寬度折行
@@ -1080,12 +1265,19 @@ for _, o in ipairs(opts[1].sub and opts[1].sub.options or {}) do targets[#target
 check(#targets == 0 and opts[1].notAvailable, "進階模組沒有能裝的槽位（進階、核心槽都不開放）：選項停用")
 SB.SlotCore = 1
 opts = context({ card })
-check(opts[1].name == "IGUI_MinidoracatWatch_UseCard" and opts[1].sub and #opts[1].sub.options == 1
-    and opts[1].sub.options[1].name == "IGUI_MinidoracatWatch_OpenSlot|IGUI_MinidoracatWatch_Slot_ext", "解鎖卡右鍵：開啟擴充槽")
+check(opts[1].name == "IGUI_MinidoracatWatch_UseCard" and opts[1].sub and #opts[1].sub.options == 2
+    and opts[1].sub.options[1].name == "IGUI_MinidoracatWatch_OpenSlot|IGUI_MinidoracatWatch_Slot_ext"
+    and opts[1].sub.options[2].name == "IGUI_MinidoracatWatch_OpenSlot|IGUI_MinidoracatWatch_Slot_wt1",
+    "擴充槽解鎖卡右鍵：開啟擴充槽、負重槽 I（同一張卡）")
 W.clientUnlocks.alice = { ext = true }
 W.invalidate()
 opts = context({ card })
-check(opts[1].notAvailable, "已開啟：選項停用")
+check(not opts[1].notAvailable and #opts[1].sub.options == 1
+    and opts[1].sub.options[1].name == "IGUI_MinidoracatWatch_OpenSlot|IGUI_MinidoracatWatch_Slot_wt1", "擴充槽已開啟：只剩負重槽 I")
+W.clientUnlocks.alice = { ext = true, wt1 = true }
+W.invalidate()
+opts = context({ card })
+check(opts[1].notAvailable, "兩格都已開啟：選項停用")
 check(#context({ F.item(F.LEFT) }) == 0, "不在身上的錶不加選項")
 check(#context({ F.item("Base.Battery") }) == 0, "其他物品不加選項")
 

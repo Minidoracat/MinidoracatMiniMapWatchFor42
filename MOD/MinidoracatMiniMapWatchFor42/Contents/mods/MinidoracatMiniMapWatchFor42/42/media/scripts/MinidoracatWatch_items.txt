@@ -403,6 +403,40 @@ module MinidoracatWatch
         Tags = base:hasmetal,
     }
 
+    /* 負重核心 I／II／III：裝在負重槽 wt1..3，提高負重上限（shared/MinidoracatWatch_Cores.lua）；不能製作 */
+    item Module_Weight1
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Module_Weight1,
+        MetalValue = 3.0,
+        WorldStaticModel = Amplifier,
+        Tags = base:hasmetal,
+    }
+
+    item Module_Weight2
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Module_Weight2,
+        MetalValue = 3.0,
+        WorldStaticModel = Amplifier,
+        Tags = base:hasmetal,
+    }
+
+    item Module_Weight3
+    {
+        DisplayCategory = Electronics,
+        ItemType = base:normal,
+        Weight = 0.1,
+        Icon = MinidoracatWatch_Module_Weight3,
+        MetalValue = 3.0,
+        WorldStaticModel = Amplifier,
+        Tags = base:hasmetal,
+    }
+
     /*
         照明模組（Phase 8）：裝在一般槽位，開燈時由伺服器在玩家主背包放一個 LightEmitter 並掛在自訂位置
         （shared/MinidoracatWatch_Light.lua）。

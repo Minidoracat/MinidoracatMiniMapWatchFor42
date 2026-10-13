@@ -15,11 +15,17 @@ local MOD = function(name) return "MinidoracatWatch.Module_" .. name end
 check(type(API) == "table" and API.watchApiVersion == 2, "MinidoracatWatchAPI.watchApiVersion = 2")
 check(type(API.registerWatchModule) == "function" and type(API.registerWatchSlot) == "function"
     and type(API.getWatchModuleState) == "function" and type(API.getWatchModuleData) == "function", "四個 API 函式")
-check(#W.moduleList == 10 and W.modules.ledger and W.modules.eco and W.modules.light, "內建 10 個模組（含照明）")
+check(#W.moduleList == 13 and W.modules.ledger and W.modules.eco and W.modules.light and W.modules.weight3,
+    "內建 13 個模組（含照明與三階負重核心）")
 check(W.modules.mildetect.class == "advanced" and W.modules.relay.class == "core" and W.modules.gps.drain == 25,
     "內建模組的類別與耗電照設計稿")
-check(#W.slotList == 6 and W.slotById.adv.accepts.advanced and not W.slotById.ext.accepts.advanced
-    and W.slotById.core.accepts.core, "內建 6 個槽位，可裝類別照 ACCEPTS")
+check(W.modules.weight1.class == "weight1" and W.modules.weight2.drain == 200 and W.modules.weight3.drain == 300
+    and W.modules.weight1.item == MOD("Weight1"), "負重核心：類別＝階、耗電預設 +100／200／300%")
+check(#W.slotList == 9 and W.slotById.adv.accepts.advanced and not W.slotById.ext.accepts.advanced
+    and W.slotById.core.accepts.core, "內建 9 個槽位，可裝類別照 ACCEPTS")
+check(W.slotById.wt1.accepts.weight1 and not W.slotById.wt1.accepts.weight2 and not W.slotById.wt2.accepts.core
+    and not W.slotById.core.accepts.weight3 and W.slotById.wt3.group == "weight" and W.slotById.core.group == nil,
+    "負重槽一階一格、只收同一階；核心槽不收負重核心")
 
 local function rejects(fn, def, label)
     F.reset()
@@ -40,6 +46,7 @@ rejects(API.registerWatchModule, with("id", 5), "id 不是字串")
 rejects(API.registerWatchModule, with("id", "gps"), "id 和內建重複")
 rejects(API.registerWatchModule, with("name", ""), "空 name")
 rejects(API.registerWatchModule, with("class", "legendary"), "未知 class")
+rejects(API.registerWatchModule, with("class", "weight1"), "第三方不能用負重核心的類別")
 rejects(API.registerWatchModule, with("drain", 0 / 0), "drain 是 NaN")
 rejects(API.registerWatchModule, with("drain", -1), "drain 是負數")
 rejects(API.registerWatchModule, with("drain", 1 / 0), "drain 是無限大")
@@ -49,7 +56,7 @@ rejects(API.registerWatchModule, with("item", MOD("GPS")), "item 已被其他模
 rejects(API.registerWatchModule, with("onStateChanged", "yes"), "onStateChanged 不是函式")
 rejects(API.registerWatchModule, with("desc", 5), "desc 不是字串")
 rejects(API.registerWatchModule, with("desc", ""), "空 desc")
-check(W.modules.weather == nil and #W.moduleList == 10, "拒收的 def 沒有留下任何登記")
+check(W.modules.weather == nil and #W.moduleList == 13, "拒收的 def 沒有留下任何登記")
 local calls = {}
 local def = with("onStateChanged", function(p, s, old) calls[#calls + 1] = { s = s, old = old } end)
 def.desc = "IGUI_X_WeatherDesc"
@@ -68,18 +75,19 @@ end
 rejects(API.registerWatchSlot, slotWith("id", "ext"), "槽位 id 和內建重複")
 rejects(API.registerWatchSlot, slotWith("accepts", {}), "accepts 空的")
 rejects(API.registerWatchSlot, slotWith("accepts", { "standard", "mythic" }), "accepts 有未知類別")
+rejects(API.registerWatchSlot, slotWith("accepts", { "weight2" }), "第三方槽位不能收負重核心")
 rejects(API.registerWatchSlot, slotWith("accepts", "standard"), "accepts 不是陣列")
 rejects(API.registerWatchSlot, slotWith("price", nil), "沒有 price")
 rejects(API.registerWatchSlot, slotWith("price", { rent = -1, days = 7, buy = 0 }), "price 負數")
 rejects(API.registerWatchSlot, slotWith("price", { rent = 1, days = 0, buy = 0 }), "price 天數 0")
 rejects(API.registerWatchSlot, slotWith("name", nil), "槽位沒有 name")
 check(API.registerWatchSlot(slotGood) == true and W.slotById.forecast.tier == "addon"
-    and W.slotList[7] == W.slotById.forecast, "第三方槽位登記在內建之後")
+    and W.slotList[10] == W.slotById.forecast, "第三方槽位登記在內建之後")
 rejects(API.registerWatchSlot, slotGood, "重複的槽位 id")
 for i = 1, 5 do API.registerWatchSlot(slotWith("id", "extra" .. i)) end
 rejects(API.registerWatchSlot, slotWith("id", "extra6"), "超過 6 個第三方槽位")
 -- 後面的測試只要一個第三方槽位：移除多出來的（登記表是內部資料，測試直接整理）
-for i = #W.slotList, 8, -1 do W.slotById[W.slotList[i].id] = nil; W.slotList[i] = nil end
+for i = #W.slotList, 11, -1 do W.slotById[W.slotList[i].id] = nil; W.slotList[i] = nil end
 
 -- ===== 共用場景 =====
 F.reset()
@@ -599,5 +607,49 @@ run(1500, 500)
 local errLogs = 0
 for _, l in ipairs(F.logs) do if l:find("onStateChanged", 1, true) then errLogs = errLogs + 1 end end
 check(errLogs == 1, "callback 拋錯：只 log 一次、不中斷扣電")
+
+-- ===== 負重槽與負重核心（2026-10-14）：一階一格、只收同一階；解鎖卡照階級；耗電照階、節能減半、整個關閉時不耗電 =====
+F.mode = "server"
+F.reset()
+local wp = F.player("wendy", 0) -- 座位 0：解鎖卡要能驗證帳號（W.account）
+local ww = give(wp, F.RIGHT)
+F.wear(wp, ww)
+give(wp, "Base.Screwdriver")
+local wc1, wc2, wc3 = give(wp, MOD("Weight1")), give(wp, MOD("Weight2")), give(wp, MOD("Weight3"))
+local wEco = give(wp, MOD("Eco"))
+check(W.slotMode(W.slotById.wt1) == "card" and W.BUILTIN.weight2.drainKey == "DrainWeight2" and W.BUILTIN.weight2.feature == nil,
+    "預設：負重槽是經濟系統（沒有 Economy 時用解鎖卡）；耗電鍵 DrainWeight1..3、不對應小地圖功能")
+SB.SlotWt1, SB.SlotWt2, SB.SlotWt3, SB.SlotCore = 1, 1, 1, 1
+local okW, whyW = install(wp, ww, "wt1", wc2)
+check(okW == false and whyW == W.FAIL_CLASS and wc2.container == wp.inv, "負重槽 I 不收負重核心 II、物品不動")
+okW, whyW = install(wp, ww, "core", wc1)
+check(okW == false and whyW == W.FAIL_CLASS, "核心槽不收負重核心")
+okW, whyW = install(wp, ww, "wt3", wEco)
+check(okW == false and whyW == W.FAIL_CLASS, "負重槽不收節能核心")
+check(install(wp, ww, "wt1", wc1) and install(wp, ww, "wt2", wc2) and install(wp, ww, "wt3", wc3),
+    "三階各自裝進自己的負重槽")
+check(near(W.drainFactor(wp, ww), 7) and API.getWatchModuleState(wp, "weight2") == "active", "耗電 +100＋200＋300%＝7 倍；active")
+SB.DrainWeight3 = 0
+check(near(W.drainFactor(wp, ww), 4), "沙盒調整負重核心耗電（DrainWeight3＝0）")
+SB.DrainWeight3 = nil
+install(wp, ww, "core", wEco)
+check(near(W.drainFactor(wp, ww), 3.5), "節能核心：負重核心的耗電也減半")
+SB.WeightEnabled = false
+check(near(W.drainFactor(wp, ww), 0.5) and API.getWatchModuleState(wp, "weight2") == "disabled"
+    and API.getWatchModuleState(wp, "eco") == "active", "負重核心整個關閉：不耗電、狀態 disabled，其他模組不受影響")
+SB.WeightEnabled = nil
+SB.SlotWt2 = 4
+W.invalidate()
+check(near(W.drainFactor(wp, ww), 2.5) and API.getWatchModuleState(wp, "weight2") == "paused",
+    "負重槽 II 不開放：那一顆 paused、不耗電")
+check(W.cardType(W.slotById.wt1) == "MinidoracatWatch.UnlockCard_Ext"
+    and W.cardType(W.slotById.wt2) == "MinidoracatWatch.UnlockCard_Adv"
+    and W.cardType(W.slotById.wt3) == "MinidoracatWatch.UnlockCard_Core", "負重槽 I／II／III 照階級用擴充、進階、核心槽卡")
+SB.SlotWt2 = 2
+local wrongCard = give(wp, "MinidoracatWatch.UnlockCard_Ext")
+check(W.applyUnlock(wp, "wt2", wrongCard:getID()) == false and wrongCard.container == wp.inv, "負重槽 II 不收擴充槽卡、卡不被吃")
+check(W.applyUnlock(wp, "wt2", give(wp, "MinidoracatWatch.UnlockCard_Adv"):getID()) == true
+    and W.slotValid(wp, W.slotById.wt2) and API.getWatchModuleState(wp, "weight2") == "active", "負重槽 II 用進階槽卡開啟")
+SB.SlotWt1, SB.SlotWt2, SB.SlotWt3, SB.SlotCore = nil, nil, nil, nil
 
 F.finish("test_watch_modules")

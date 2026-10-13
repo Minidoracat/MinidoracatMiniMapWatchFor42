@@ -42,14 +42,29 @@ SIDES = {"L": "Left", "R": "Right"}
 STRAP_CROP = {"Paws": 42, "BB3000": 46}
 
 # 模組：設計稿 data.mjs MODULES 的類別（一般／進階／核心）→ TIERS 顏色；圖示顏色沿用目前物品腳本的 ColorRed/Green/Blue。
+# 負重核心（負重槽 wt）：設計稿 temp/weight-core-design/plan.html 的琥珀色；三階同色，靠圖示下方 1／2／3 顆點分（不單靠顏色）。
 MODULES = [
     ("Ledger", "ledger", "std", "#D7823C"), ("GPS", "gps", "std", "#5AC86E"),
     ("Comm", "comm", "std", "#508CE6"), ("Scan", "scan", "std", "#3CC8C8"), ("Detect", "detect", "std", "#E15050"),
     ("Light", "light", "std", "#FFD36E"), ("MilDetect", "mildetect", "adv", "#96AA50"), ("LongComm", "longcomm", "adv", "#508CE6"),
     ("Relay", "relay", "core", "#AA6EF0"), ("Eco", "eco", "core", "#6EDC8C"),
+    ("Weight1", "weight1", "wt", "#F3C27A"), ("Weight2", "weight2", "wt", "#F3C27A"), ("Weight3", "weight3", "wt", "#F3C27A"),
 ]
-TIER_COL = {"std": "#A7B0BA", "ext": "#3FB27F", "adv": "#4C8DF6", "core": "#A970F0"}
+TIER_COL = {"std": "#A7B0BA", "ext": "#3FB27F", "adv": "#4C8DF6", "core": "#A970F0", "wt": "#D08A2C"}
 CARDS = [("Ext", "ext", 1), ("Adv", "adv", 2), ("Core", "core", 3)]
+
+
+def carry_glyph(pips):
+    """負重核心的圖示（24×24、currentColor，同設計稿 ICON_PATHS 的畫法）：側看的啞鈴（橫桿＋兩端各兩片槓片）＋下方 pips 顆點。
+    不用壺鈴：32 px 下像鎖頭，會跟槽位的上鎖圖示混淆。設計稿 watch_svg.mjs 是主 MOD 設計稿的原樣複本，所以這個圖示放這裡、不加進複本。"""
+    dots = "".join(f'<circle cx="{12 + (i - (pips - 1) / 2) * 6:g}" cy="21.6" r="1.8" fill="currentColor" stroke="none"/>'
+                   for i in range(pips))
+    plates = "".join(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx=".7" fill="currentColor" stroke="none"/>'
+                     for x, y, w, h in ((2.6, 7.5, 2.4, 8), (5.4, 5.5, 3.2, 12), (15.4, 5.5, 3.2, 12), (19, 7.5, 2.4, 8)))
+    return '<path d="M3 11.5H21" stroke-width="2.2"/>' + plates + dots
+
+
+GLYPHS = {f"weight{n}": carry_glyph(n) for n in (1, 2, 3)}
 
 
 def svg_doc(inner, vb, w, h, bg=None):
@@ -120,9 +135,11 @@ def to_icon(im, tilt=0.0):
 
 
 def module_svg(design, glyph, tier, color):
-    """模組晶片：深色電路板＋上緣金手指＋等級色邊框，中間是設計稿的模組圖示。"""
-    g = design["icons"][glyph]
-    g = g[g.index(">") + 1:g.rindex("</svg>")]
+    """模組晶片：深色電路板＋上緣金手指＋等級色邊框，中間是設計稿的模組圖示（GLYPHS 是本檔自帶的圖示）。"""
+    g = GLYPHS.get(glyph)
+    if g is None:
+        g = design["icons"][glyph]
+        g = g[g.index(">") + 1:g.rindex("</svg>")]
     pins = "".join(f'<rect x="{11 + i * 6}" y="6" width="3.2" height="7" rx="1" fill="#D9B45A"/>' for i in range(8))
     return (f'<g transform="rotate(-12 32 32)">{pins}'
             f'<rect x="8" y="11" width="48" height="44" rx="5" fill="#23282E" stroke="{TIER_COL[tier]}" stroke-width="4"/>'

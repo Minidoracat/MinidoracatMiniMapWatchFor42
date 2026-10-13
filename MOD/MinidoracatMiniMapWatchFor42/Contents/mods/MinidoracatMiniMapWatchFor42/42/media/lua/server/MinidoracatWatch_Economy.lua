@@ -25,8 +25,9 @@ Econ.RETRY_MS = 10000
 Econ.TICK_MS = 1000
 Econ.PLAN_MS = 5000
 Econ.REASON_CODES = { "entitlement_purchase", "entitlement_renewal", "entitlement_refund" }
--- 沙盒預設價（照設計稿 data.mjs PRICES）；只在沙盒讀不到時用
-Econ.PRICE = { ext = { 60, 400 }, adv = { 150, 1200 }, core = { 300, 2400 }, addon = { 80, 600 } }
+-- 沙盒預設價（照設計稿 data.mjs PRICES；負重槽照擴充、進階、核心槽）；只在沙盒讀不到時用
+Econ.PRICE = { ext = { 60, 400 }, adv = { 150, 1200 }, core = { 300, 2400 }, addon = { 80, 600 },
+    wt1 = { 60, 400 }, wt2 = { 150, 1200 }, wt3 = { 300, 2400 } }
 -- Economy 第一次看到產品時用的方案：兩種販售都關，開服立刻用沙盒覆蓋
 Econ.DEFAULTS = {
     permanentEnabled = false, permanentCurrency = "survivor", permanentPrice = 400, permanentLimit = 1,

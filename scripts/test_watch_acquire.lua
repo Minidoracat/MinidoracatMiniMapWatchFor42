@@ -1,6 +1,6 @@
 -- 地圖錶取得方式（Phase 5，伺服器／單機）：殭屍掉落的機率與上限（固定種子）、服裝分組對應原版 clothing.xml、
 -- 伺服器設定檔（缺檔寫預設、壞檔保留上一份、逐條驗證、區段各自獨立）、戰利品開關（開局與改沙盒後重排、不重複、
--- 照明模組在表上、表名都在原版 ProceduralDistributions）、配方 OnTest、嗶嗶腕機螢幕（伺服器廣播、單機重建模型）。
+-- 照明模組在表上、負重核心每顆一個開關且預設關、表名都在原版 ProceduralDistributions）、配方 OnTest、嗶嗶腕機螢幕（伺服器廣播、單機重建模型）。
 -- 原版檔案（PZ_PATH，預設 D:/SteamLibrary/steamapps/common/ProjectZomboid）不在時，對照原版的檢查改用假資料並註明。
 -- 用法（repo 根目錄）：lua scripts/test_watch_acquire.lua
 local F = dofile("scripts/lib_watch_fakes.lua")
@@ -303,14 +303,31 @@ local function ours()
     end
     return n
 end
+-- 負重核心（LootWeight1..3）預設關：不算在「預設」的筆數裡
+local WEIGHTS = { "MinidoracatWatch.Module_Weight1", "MinidoracatWatch.Module_Weight2", "MinidoracatWatch.Module_Weight3" }
 local total = 0
-for _, e in ipairs(Lt.ENTRIES) do total = total + #e[3] / 2 end
+for _, e in ipairs(Lt.ENTRIES) do
+    if not e[1]:find("^LootWeight") then total = total + #e[3] / 2 end
+end
+local function weightsAnywhere()
+    local n = 0
+    for name in pairs(Lt.TABLES) do
+        for _, w in ipairs(WEIGHTS) do n = n + count(name, w) end
+    end
+    return n
+end
+local function weightOf(name, item)
+    local items = list[name].items
+    for i = 1, #items, 2 do if items[i] == item then return items[i + 1] end end
+    return nil
+end
 local before = #list.ElectronicStoreMisc.items
 F.reset()
 Lt.tick()
 check(ours() == 0 and parses == 0, "還沒 merge：輪詢不動分佈表")
 F.fire("OnPostDistributionMerge")
-check(ours() == total and parses == 0 and logged("loot tables prepared"), "開局 merge：加入全部 " .. total .. " 筆、不自己 Parse")
+check(ours() == total and parses == 0 and logged("loot tables prepared"), "開局 merge：加入預設開的 " .. total .. " 筆、不自己 Parse")
+check(weightsAnywhere() == 0 and logged("switches 1111111111000|"), "負重核心三顆預設關：哪張表都沒有、簽章後三位是 0")
 check(count("JewelryWrist", W.watchType("Luthex")) == 1 and count("ArmyBunkerStorage", W.watchType("BB3000")) == 1
     and count("GiftStoreToys", W.watchType("Paws")) == 1, "盧瑟斯在珠寶店、嗶嗶腕機在地堡、貓爪在禮品店")
 check(count("ElectronicStoreMisc", "MinidoracatWatch.Module_Light") == 1 and count("CrateElectronics", "MinidoracatWatch.Module_Light") == 1
@@ -334,6 +351,53 @@ check(parses == 1, "沒變：不再 Parse")
 NATIVE["MinidoracatWatch.LootBB3000"] = true
 for _ = 1, 3 do F.now = F.now + Lt.POLL_MS; Lt.tick() end
 check(parses == 2 and count("ArmyBunkerStorage", W.watchType("BB3000")) == 1 and ours() == total, "打開回來：每筆只有一份（不重複）")
+-- 負重核心：每顆一個開關，開哪顆只加那顆、加在對的表、機率乘「模組的數量」；關掉移除；反覆切換不重複
+NATIVE["MinidoracatWatch.LootWeight2"] = true
+F.now = F.now + Lt.POLL_MS
+Lt.tick()
+check(parses == 3 and count("ArmyBunkerStorage", WEIGHTS[2]) == 1 and weightOf("ArmyBunkerStorage", WEIGHTS[2]) == 0.03
+    and weightsAnywhere() == 1 and ours() == total + 1, "開負重核心 II：只加進軍事地堡 0.03、I 與 III 照樣沒有、Parse")
+NATIVE["MinidoracatWatch.LootWeight1"], NATIVE["MinidoracatWatch.LootWeight3"] = true, true
+NATIVE["MinidoracatWatch.LootModuleAmount"] = 1
+F.now = F.now + Lt.POLL_MS
+Lt.tick()
+check(count("ArmyStorageElectronics", WEIGHTS[1]) == 1 and count("ArmyBunkerStorage", WEIGHTS[3]) == 1
+    and math.abs(weightOf("ArmyStorageElectronics", WEIGHTS[1]) - 0.0125) < 1e-12
+    and math.abs(weightOf("ArmyBunkerStorage", WEIGHTS[3]) - 0.0025) < 1e-12
+    and math.abs(weightOf("ArmyBunkerStorage", WEIGHTS[2]) - 0.0075) < 1e-12
+    and weightOf("StoreDisplayWatches", W.watchType("ValuTech")) == 4 and weightsAnywhere() == 3,
+    "三顆全開＋模組數量「很少」：I 軍事電子 0.05、III 地堡 0.01 都乘 0.25，錶的數量不受影響")
+NATIVE["MinidoracatWatch.LootModules"] = false
+F.now = F.now + Lt.POLL_MS
+Lt.tick()
+check(weightsAnywhere() == 3 and count("ArmyStorageElectronics", "MinidoracatWatch.Module_Relay") == 0,
+    "關掉一般的「模組」開關：負重核心照自己的開關留著")
+NATIVE["MinidoracatWatch.LootModules"], NATIVE["MinidoracatWatch.LootModuleAmount"] = nil, nil
+for _ = 1, 3 do
+    NATIVE["MinidoracatWatch.LootWeight2"] = false
+    F.now = F.now + Lt.POLL_MS
+    Lt.tick()
+    NATIVE["MinidoracatWatch.LootWeight2"] = true
+    F.now = F.now + Lt.POLL_MS
+    Lt.tick()
+end
+check(count("ArmyBunkerStorage", WEIGHTS[2]) == 1 and weightsAnywhere() == 3 and ours() == total + 3,
+    "負重核心 II 反覆開關三次：每筆只有一份")
+NATIVE["MinidoracatWatch.LootWeight1"], NATIVE["MinidoracatWatch.LootWeight2"], NATIVE["MinidoracatWatch.LootWeight3"] =
+    false, false, false
+F.now = F.now + Lt.POLL_MS
+Lt.tick()
+check(weightsAnywhere() == 0 and ours() == total, "三顆關回去：從所有表移除、其他照舊")
+NATIVE["MinidoracatWatch.LootWeight1"], NATIVE["MinidoracatWatch.LootWeight2"], NATIVE["MinidoracatWatch.LootWeight3"] =
+    nil, nil, nil
+F.now = F.now + Lt.POLL_MS
+Lt.tick()
+check(weightsAnywhere() == 0, "原生選項拿不到負重核心開關：退回 SandboxVars，沒設＝預設關（不是預設開）")
+SB.LootWeight3 = true
+F.now = F.now + Lt.POLL_MS
+Lt.tick()
+check(count("ArmyBunkerStorage", WEIGHTS[3]) == 1 and weightsAnywhere() == 1, "原生拿不到、SandboxVars 開負重核心 III：照 SandboxVars 加")
+SB.LootWeight3 = nil
 NATIVE["MinidoracatWatch.LootModules"], NATIVE["MinidoracatWatch.LootCards"] = false, false
 F.now = F.now + Lt.POLL_MS
 Lt.tick()
@@ -347,7 +411,7 @@ check(#list.ElectronicStoreMisc.items == before, "原版的筆數不變（只動
 NATIVE = {}
 F.now = F.now + Lt.POLL_MS
 Lt.tick()
-check(ours() == total, "原生選項拿不到：退回 SandboxVars（預設全開）")
+check(ours() == total and weightsAnywhere() == 0, "原生選項拿不到：退回 SandboxVars（預設全開，負重核心預設關）")
 -- 面板的取得方式照模組在表上的地點寫（C.acquireLines）：模組用到的每張表都要有地點名稱，不然畫面上出現翻譯鍵。
 -- 各語言鍵集一致由 verify 擋，這裡只對照英文
 do
@@ -358,7 +422,7 @@ do
     end
     local missing = {}
     for _, e in ipairs(Lt.ENTRIES) do
-        if e[1] == "LootModules" then
+        if W.moduleByItem[e[2]] then
             for i = 1, #e[3], 2 do
                 local k = "IGUI_MinidoracatWatch_LootPlace_" .. e[3][i]
                 if not keys[k] then missing[#missing + 1] = k end

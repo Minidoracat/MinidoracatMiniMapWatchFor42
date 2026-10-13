@@ -151,6 +151,20 @@ check(pe and pe.permanentEnabled == true and pe.permanentPrice == 400 and pe.ren
     and pe.rentalLimit == 1 and pe.permanentLimit == 1 and pe.graceHours == 24 and pe.autoRenewAllowed == true
     and pe.permanentCurrency == "survivor", "擴充槽方案：12 欄、設計稿價格、上限 1、重試 24 小時")
 check(opts.origin == "source" and opts.actor == "watch" and opts.expectedRevision == nil, "setPlan 不帶 expectedRevision（沙盒唯一來源）")
+local p3 = planOf("watch_wt3")
+check(E.products.watch_wt1 and E.products.watch_wt2 and E.products.watch_wt3
+    and E.products.watch_wt2.nameKey == "IGUI_MinidoracatWatch_Product_wt2" and E.products.watch_wt1.freezeWhenAbsent == nil,
+    "負重槽 I～III 各一個內建產品（watch_wt1..3，名稱用 Product_wt*）")
+check(p3 and p3.permanentEnabled == true and p3.permanentPrice == 2400 and p3.rentalPrice == 300 and p3.rentalDays == 7,
+    "負重槽 III 方案：預設照核心槽價格（2400／300）")
+SB.SlotWt1RentPrice, SB.SlotWt1Currency = 75, 2
+Econ.pushPlans()
+local p1 = planOf("watch_wt1")
+check(p1.rentalPrice == 75 and p1.rentalCurrency == "cat" and planOf("watch_ext").rentalPrice == 60,
+    "負重槽 I 讀自己的沙盒（SlotWt1*），擴充槽不受影響")
+SB.SlotWt1RentPrice, SB.SlotWt1Currency = nil, nil
+Econ.pushPlans() -- 改回預設再推一次，後面的「沙盒沒變：不重送」才是穩定狀態
+F.reset()
 local pa = planOf("w_acme_slot")
 check(pa.permanentEnabled == false and pa.rentalEnabled == false and pa.autoRenewAllowed == false,
     "第三方槽位預設免費開放：Economy 方案全關")

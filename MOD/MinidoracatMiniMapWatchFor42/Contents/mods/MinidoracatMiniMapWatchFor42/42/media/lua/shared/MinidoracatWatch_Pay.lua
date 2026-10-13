@@ -14,9 +14,11 @@ W.econStatus = nil
 W.clientPay = {} -- MP 客戶端：[username] = { [slotId] = true }（伺服器判定有效的 Economy 槽位）
 
 -- ===== 產品命名 =====
--- 標準三槽是常數；第三方槽位 w_＋槽位 id（符合 Economy 產品 id 規則 ^[a-z0-9_]{1,32}$ 時），否則 w_＋8 位十六進位雜湊
+-- 內建付費槽（擴充、進階、核心、負重 I～III）是常數；第三方槽位 w_＋槽位 id（符合 Economy 產品 id 規則 ^[a-z0-9_]{1,32}$ 時），否則 w_＋8 位十六進位雜湊
 -- （不做字元替換，免得兩個 id 撞成同一個）。純函式：重啟、兩端都算得出同一個；撞名由伺服器註冊時擋。
-local STD_PRODUCT = { ext = "watch_ext", adv = "watch_adv", core = "watch_core" }
+-- 產品 id 上線後不能改：Economy 的權益紀錄用它當鍵
+local STD_PRODUCT = { ext = "watch_ext", adv = "watch_adv", core = "watch_core",
+    wt1 = "watch_wt1", wt2 = "watch_wt2", wt3 = "watch_wt3" }
 local HEX = "0123456789abcdef"
 local function hash8(s)
     local h = 5381

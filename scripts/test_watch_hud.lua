@@ -19,7 +19,7 @@ ISContextMenu = { getNew = function() return {} end }
 local UI = F.installUI(16)
 UI.CAPABILITIES.focusLabel = true
 local toasts = {}
-UI.Toast.show = function(o) toasts[#toasts + 1] = { title = o.title, message = o.message } end
+UI.Toast.show = function(o) toasts[#toasts + 1] = { title = o.title, message = o.message, holdMs = o.holdMs } end
 
 -- 原版 ISToolTipInv：render 畫框（drawRect＋drawRectBorder）再畫內容；另一個 MOD 在檔案頂層包一層、把自己的框畫在下面
 local drawn
@@ -193,7 +193,73 @@ local ledger = alice.inv:AddItem(MOD("Ledger"))
 s = texts(H.tipLines(alice, ledger))
 check(s == "IGUI_MinidoracatWatch_KV_Class|IGUI_MinidoracatWatch_Class_standard\nIGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainPlus|10\n"
     .. "IGUI_MinidoracatWatch_Tip_Feature|IGUI_MinidoracatWatch_Feature_poi", "模組：類別、耗電、功能")
-check(#H.tipLines(alice, alice.inv:AddItem(MOD("Eco"))) == 2, "節能核心：沒有對應功能，不寫功能列")
+-- 節能核心：類別、耗電，再接耐力與保留小地圖（照沙盒），最後一列次要色寫生效條件；沒有功能列
+local function coreTip(t) step(300); return H.tipLines(alice, alice.inv:AddItem(MOD(t))) end
+local ENDUR, DRAIN_E, REGEN_E = "IGUI_MinidoracatWatch_EcoEndurance|", "IGUI_MinidoracatWatch_EcoEnduranceDrain|",
+    "IGUI_MinidoracatWatch_EcoEnduranceRegen|"
+lines = coreTip("Eco")
+check(texts(lines) == "IGUI_MinidoracatWatch_KV_Class|IGUI_MinidoracatWatch_Class_core\n"
+    .. "IGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainHalf\n"
+    .. ENDUR .. DRAIN_E .. "25IGUI_MinidoracatWatch_ListSep" .. REGEN_E .. "50\n"
+    .. "IGUI_MinidoracatWatch_EcoKeepsMap\nIGUI_MinidoracatWatch_EcoNeeds" and lines[5][2] == "dim" and lines[3][2] == false,
+    "節能核心：耐力（預設消耗 −25%、恢復 +50%）、沒電保留小地圖、生效條件（次要色）；沒有功能列")
+SB.EcoEnduranceDrain, SB.EcoEnduranceRegen = 40, 0
+s = texts(coreTip("Eco"))
+check(s:find("\n" .. ENDUR .. DRAIN_E .. "40\n", 1, true) and not s:find(REGEN_E, 1, true),
+    "耐力照沙盒：消耗 −40%；恢復設 0 不寫")
+SB.EcoEnduranceDrain = 0
+s = texts(coreTip("Eco"))
+check(not s:find(ENDUR, 1, true) and s:find("EcoKeepsMap", 1, true), "兩項都 0：整行不寫，保留小地圖照寫")
+SB.EcoEnduranceDrain, SB.EcoEnduranceRegen = nil, nil
+for _, case in ipairs({ { "DeadMode", 2, "沒電本來就保留小地圖（DeadMode 2）" }, { "EcoKeepsMap", false, "管理員關掉保留小地圖" },
+    { "MinimapRule", W.RULE_FREE, "小地圖不需要錶" }, { "NeedBattery", false, "不需要電池（不會沒電）" } }) do
+    SB[case[1]] = case[2]
+    check(not texts(coreTip("Eco")):find("EcoKeepsMap", 1, true), "用不到時不寫保留小地圖：" .. case[3])
+    SB[case[1]] = nil
+end
+-- 負重核心：類別、階級、加成與耗電都照這台伺服器的沙盒，最後一列次要色寫生效條件
+SB.WeightUnits2, SB.DrainWeight2 = 3, 250
+lines = coreTip("Weight2")
+check(texts(lines) == "IGUI_MinidoracatWatch_KV_ClassWeight\nIGUI_MinidoracatWatch_KV_Tier|II\n"
+    .. "IGUI_MinidoracatWatch_KV_Bonus|IGUI_MinidoracatWatch_WeightUnits|3|37.5\n"
+    .. "IGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainPlus|250\nIGUI_MinidoracatWatch_WeightNeeds"
+    and lines[3][2] == false and lines[5][2] == "dim", "負重核心 II：負重上限 +3 格（+37.5%）、耗電 +250%（沙盒改過的值）")
+SB.WeightEnabled = false
+lines = coreTip("Weight2")
+check(lines[3][1] == "IGUI_MinidoracatWatch_Tip_FeatureOff|IGUI_MinidoracatWatch_WeightCores" and lines[3][2] == true
+    and lines[4][1] == "IGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainNone", "負重核心整個關閉：警示色寫伺服器已關閉、不耗電")
+SB.WeightEnabled, SB.WeightUnits2, SB.DrainWeight2 = nil, nil, nil
+-- 錶的說明：負重核心另列一行（階級＋格數、租用中、空槽／未開啟），不混進「模組：」
+SB.SlotWt1, SB.SlotWt2 = 1, 3
+put(wa, "wt1", "weight1", "Weight1")
+put(wa, "wt2", "weight2", "Weight2")
+states.watch_wt2 = { ok = true, available = true, balances = { survivor = { available = 0 } },
+    plan = { rentalEnabled = true, rentalPrice = 150, rentalCurrency = "survivor", rentalDays = 7, autoRenewAllowed = true },
+    entitlement = { permanent = 0, rentals = { rental("w2", F.now + 86400000) } } }
+W.clientPay.alice.wt2 = true
+step(300)
+s = texts(H.tipLines(alice, wa))
+check(s:find("\nIGUI_MinidoracatWatch_Tip_WeightCores|I IGUI_MinidoracatWatch_WeightUnitsShort|1IGUI_MinidoracatWatch_ListSep"
+    .. "II IGUI_MinidoracatWatch_Tip_ModuleRent|IGUI_MinidoracatWatch_WeightUnitsShort|2IGUI_MinidoracatWatch_ListSep"
+    .. "III IGUI_MinidoracatWatch_St_locked\n", 1, true) and not s:find("Module_weight", 1, true),
+    "錶的說明：負重核心：I +1 格、II +2 格（租用中）、III 未開啟；模組那一行不列核心")
+local c0 = W.charge(wa)
+W.setCharge(wa, 0)
+step(300)
+s = texts(H.tipLines(alice, wa))
+check(s:find("Tip_WeightCores|I IGUI_MinidoracatWatch_WeightUnitsShort|0", 1, true) and not s:find("WeightUnitsShort|1", 1, true),
+    "錶的說明，沒電：負重核心寫 +0 格（和面板一致），不寫裝著時的格數")
+W.setCharge(wa, c0)
+SB.WeightEnabled = false
+step(300)
+s = texts(H.tipLines(alice, wa))
+check(s:find("Tip_WeightCores|I IGUI_MinidoracatWatch_WeightUnitsShort|0", 1, true) ~= nil, "負重核心整個關閉：錶的說明也寫 +0 格")
+SB.WeightEnabled = nil
+SB.SlotWt1, SB.SlotWt2, states.watch_wt2, W.clientPay.alice.wt2 = nil, nil, nil, nil
+wa:getModData()[W.SLOTS_KEY].wt1, wa:getModData()[W.SLOTS_KEY].wt2 = nil, nil
+step(300)
+s = texts(H.tipLines(alice, wa))
+check(s:find("Tip_WeightCores|I IGUI_MinidoracatWatch_St_locked", 1, true) ~= nil, "沒裝核心：寫各格的狀態")
 -- 需要模組時再加範圍（沙盒值）；功能關閉、不需要模組或小地圖設定沒開放時，功能列用警示色註明、不寫範圍
 local function modTip(t)
     step(300)
@@ -471,6 +537,81 @@ check(table.concat(heard, ",") == "MinidoracatWatch_BatteryLow@0.7,MinidoracatWa
     .. "MinidoracatWatch_BatteryDead@0.7,MinidoracatWatch_SlotLapsed@0.7,MinidoracatWatch_SlotLapsed@0.7,"
     .. "MinidoracatWatch_SlotLapsed@0.7,MinidoracatWatch_SlotLapsed@0.7",
     "音效：低電量／沒電／租約到期跟著 Toast 響一次（預設音量 70%）：" .. table.concat(heard, ","))
+check(toasts[1].holdMs == nil and toasts[16].holdMs == nil, "一般的 Toast 不帶 holdMs（框架預設 3 秒）")
+
+-- ===== 負重核心的 Toast（停 8 秒，寫出恢復方法；同一件事只報一次）=====
+local bw = wear(bob, 0.8)
+SB.SlotWt1 = 1
+put(bw, "wt1", "weight1", "Weight1")
+step()
+H.check(1, bob, F.now)
+step()
+H.check(1, bob, F.now)
+local n0 = #toasts
+check(n0 == 16 and H.state[1].wt == 1, "戴著有電、負重槽 I 有核心：加成 1 格，不報")
+F.unwear(bob, bw)
+F.fire("OnClothingUpdated", bob)
+step()
+H.check(1, bob, F.now)
+local t = toasts[n0 + 1]
+check(#toasts == n0 + 1 and t.title == "IGUI_MinidoracatWatch_Toast_WeightOff" and t.message == "IGUI_MinidoracatWatch_Toast_WeightOff_msg"
+    and t.holdMs == 8000, "拿下錶：一則「負重核心暫停」、寫戴回去就恢復，停 8 秒")
+step()
+H.check(1, bob, F.now)
+check(#toasts == n0 + 1, "沒戴錶的下一秒：不重報")
+F.wear(bob, bw)
+F.fire("OnClothingUpdated", bob)
+step()
+H.check(1, bob, F.now)
+step()
+H.check(1, bob, F.now)
+check(#toasts == n0 + 1, "戴回去：只記基準")
+bw:getModData()[W.KEY] = 0
+step()
+H.check(1, bob, F.now)
+t = toasts[n0 + 2]
+check(#toasts == n0 + 2 and t.title == "IGUI_MinidoracatWatch_Toast_Dead"
+    and t.message == "IGUI_MinidoracatWatch_Toast_Dead_weight|IGUI_MinidoracatWatch_Toast_Dead_msg" and t.holdMs == 8000,
+    "加成中沒電：併進沒電那一則（負重核心也停止），不另報，停 8 秒")
+F.unwear(bob, bw)
+F.fire("OnClothingUpdated", bob)
+step()
+H.check(1, bob, F.now)
+check(#toasts == n0 + 2, "沒電後再拿下錶：加成早就停了，不報暫停")
+-- 沒有核心的錶沒電：照舊的沒電，不提負重、不停 8 秒
+local bw2 = wear(bob, 0.5)
+step()
+H.check(1, bob, F.now)
+bw2:getModData()[W.KEY] = 0
+step(61000)
+H.check(1, bob, F.now)
+t = toasts[n0 + 3]
+check(#toasts == n0 + 3 and t.message == "IGUI_MinidoracatWatch_Toast_Dead_msg" and t.holdMs == nil, "沒有負重加成時沒電：照舊")
+-- 經濟系統租用的負重槽到期：照現有的到期那一則（槽位名＋核心停用），停 8 秒；不另報暫停
+local bw3 = wear(bob, 0.8)
+SB.SlotWt2 = 3
+put(bw3, "wt2", "weight2", "Weight2")
+W.clientPay.bob = { wt2 = true }
+states.watch_wt2 = { ok = true, available = true, balances = { survivor = { available = 0 } },
+    plan = { rentalEnabled = true, rentalPrice = 150, rentalCurrency = "survivor", rentalDays = 7, autoRenewAllowed = true },
+    entitlement = { permanent = 0, rentals = { rental("w9", F.now + 5000) } } }
+step()
+H.check(1, bob, F.now)
+step()
+H.check(1, bob, F.now)
+check(#toasts == n0 + 3 and H.state[1].wt == 2, "租用中的負重槽 II：加成 2 格，只記基準")
+W.clientPay.bob = {}
+states.watch_wt2.entitlement.rentals = { rental("w9", F.now - 1000, { state = "grace" }) }
+step(6000)
+H.check(1, bob, F.now)
+t = toasts[n0 + 4]
+check(#toasts == n0 + 4 and t.title == "IGUI_MinidoracatWatch_Toast_Lapsed|IGUI_MinidoracatWatch_Slot_wt2"
+    and t.message == "IGUI_MinidoracatWatch_Toast_Lapsed_msg|IGUI_MinidoracatWatch_Module_weight2" and t.holdMs == 8000,
+    "負重槽租約到期：一則（負重槽 II：租約到期了／負重核心 II 已停用、續租後恢復），停 8 秒")
+step()
+H.check(1, bob, F.now)
+check(#toasts == n0 + 4, "到期只報一次")
+SB.SlotWt1, SB.SlotWt2, states.watch_wt2, W.clientPay.bob = nil, nil, nil, nil
 
 -- ===== 管理員視窗：到經濟中心上架（Economy 客戶端 rev 4＋shopAdd）=====
 F.load("client/MinidoracatWatch_AdminUI.lua")
@@ -493,15 +634,16 @@ check(AU.shopApi() == CL, "rev 4＋shopAdd：可以上架")
 local items = AU.shopItems()
 local want = { [W.BATTERY_TYPE] = true }
 for _, st in ipairs(W.STYLES) do want[W.watchType(st)] = true end
-for _, b in ipairs({ "Ledger", "GPS", "Comm", "Scan", "Detect", "MilDetect", "LongComm", "Relay", "Eco", "Light" }) do
+for _, b in ipairs({ "Ledger", "GPS", "Comm", "Scan", "Detect", "MilDetect", "LongComm", "Relay", "Eco", "Light",
+    "Weight1", "Weight2", "Weight3" }) do
     want[MOD(b)] = true
 end
-local all = #items == 18
+local all = #items == 21
 for _, t in ipairs(items) do all = all and want[t] == true and not t:find("UnlockCard", 1, true) and not t:find("_Right", 1, true) end
-check(all, "上架清單：七款地圖錶（左手款）、十個模組（含照明）、電池；沒有解鎖卡")
+check(all, "上架清單：七款地圖錶（左手款）、十三個模組（含照明與三顆負重核心）、電池；沒有解鎖卡")
 F.reset()
 AU.openShop({ player = alice })
-check(#shopCalls == 1 and shopCalls[1].src == W.MOD_ID and #shopCalls[1].items == 18 and #F.halos == 0, "按下：交給 Economy、成功不提示")
+check(#shopCalls == 1 and shopCalls[1].src == W.MOD_ID and #shopCalls[1].items == 21 and #F.halos == 0, "按下：交給 Economy、成功不提示")
 shopReply = { false, "forbidden" }
 AU.openShop({ player = alice })
 check(F.halos[1] and F.halos[1].text == "IGUI_MinidoracatWatch_Admin_ShopForbidden", "沒有經濟中心的管理權限：提示")

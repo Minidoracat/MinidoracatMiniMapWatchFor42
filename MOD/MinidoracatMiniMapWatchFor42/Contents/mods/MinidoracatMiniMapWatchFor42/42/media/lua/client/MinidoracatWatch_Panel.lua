@@ -24,6 +24,8 @@ local PANEL_W, LEFT_W = 740, 290
 local INSP_X = PAD + LEFT_W + 18
 local INSP_MIN_H = 300
 local SOCK, ADDON, ADDON_GAP = 56, 40, 8
+-- 負重列：三格對齊錶面三欄；44px 才畫得出 I／II／III 等級標籤。wt1..wt3 固定在 W.slotList 第 7..9 格，其他 MOD 的槽位接在後面
+local WEIGHT_SOCK, WEIGHT_SLOTS = 44, 3
 local DIAL = 64
 local SCAN_MS = 250
 local MAX_ACTIONS = 16 -- 付費按鈕（最多 3 顆）＋全部內建模組（10 種），其他 MOD 的模組還有餘裕
@@ -31,16 +33,18 @@ local BUSY_TYPE = "ISMinidoracatWatchAction"
 local FEATURES = { "minimap", "poi", "nav", "share", "scan", "zombie", "light" } -- 方向箭頭跟著導航，不另列
 local function volText(v) return string.format("%d%%", v) end
 local TIER_TOKEN = { std = "tierStd", ext = "tierExt", adv = "tierAdv", core = "tierCore", addon = "tierAddon",
-    orphan = "tierOrphan" }
--- 模組按鈕由高等級排到低等級（槽位自己的等級在前），左緣色條用和槽位外框同色的等級色
-local CLASS_ORDER = { "core", "advanced", "standard" }
-local CLASS_TOKEN = { standard = "tierStd", advanced = "tierAdv", core = "tierCore" }
+    orphan = "tierOrphan", wt1 = "tierWeight", wt2 = "tierWeight", wt3 = "tierWeight" }
+-- 模組按鈕由高等級排到低等級（槽位自己的等級在前），左緣色條用和槽位外框同色的等級色。負重槽只收自己那一階，排在哪都一樣
+local CLASS_ORDER = { "core", "advanced", "standard", "weight3", "weight2", "weight1" }
+local CLASS_TOKEN = { standard = "tierStd", advanced = "tierAdv", core = "tierCore", weight1 = "tierWeight",
+    weight2 = "tierWeight", weight3 = "tierWeight" }
 -- 篩選列：全部＋由低到高的等級；只列出選取的槽位收的等級
 local FILTERS = { "all", "standard", "advanced", "core" }
 -- 付費按鈕的圖示（C.Pay.ui 的 id → UI.Icons key）
 local PAY_ICON = { rent = "clock", renew = "clock", buy = "infinity", pay = "check", agree = "check", autoOn = "clock",
     autoOff = "pause", check = "reload", remove = "screwdriver", card = "card" }
-local STATUS_ICON = { active = "check", rent = "clock", paused = "pause", dead = "pause", locked = "lock", empty = "plus",
+-- 沒電畫電池：恢復方法是換電池，不是換槽位（和停用的暫停分開）
+local STATUS_ICON = { active = "check", rent = "clock", paused = "pause", dead = "battery", locked = "lock", empty = "plus",
     lapsed = "clock", off = "close", Installing = "screwdriver", Removing = "screwdriver" }
 local PAUSE_REASONS = { [W.REASON_PAUSED] = true, [W.REASON_DEAD] = true, [W.REASON_NO_BATTERY] = true }
 local TEX_DIR = "media/ui/MinidoracatWatch/"
@@ -101,26 +105,63 @@ local function acceptsText(slot)
     for i, c in ipairs(slot.acceptsList) do parts[i] = className(c) end
     return table.concat(parts, getText("IGUI_MinidoracatWatch_ListSep"))
 end
--- 耗電照伺服器現在的設定：不需要電池＝整支錶不耗電；功能規則關閉＝這個模組不計耗電（W.drainFactor）
+-- 耗電照伺服器現在的設定：不需要電池＝整支錶不耗電；作用被關掉（功能規則關閉、負重核心整個關閉，W.moduleOff）＝
+-- 這個模組不計耗電（W.drainFactor 同一套）
 local function drainText(def)
     if not W.needBattery() then return getText("IGUI_MinidoracatWatch_DrainNoBattery") end
-    local b = W.BUILTIN[def.id]
-    if b and b.feature and W.featureRule(b.feature) == W.RULE_OFF then return getText("IGUI_MinidoracatWatch_DrainNone") end
+    if W.moduleOff(def) then return getText("IGUI_MinidoracatWatch_DrainNone") end
     if def.id == "eco" then return getText("IGUI_MinidoracatWatch_DrainHalf") end
     if def.id == "light" then return getText("IGUI_MinidoracatWatch_DrainLight", tostring(W.lightDrain())) end
     local d = W.moduleDrain(def)
     if d <= 0 then return getText("IGUI_MinidoracatWatch_DrainNone") end
     return getText("IGUI_MinidoracatWatch_DrainPlus", tostring(d))
 end
-C.className, C.drainText = className, drainText -- 物品停留說明（MinidoracatWatch_Hud.lua）同一份文字
+-- 「類別：…」：負重核心寫「負重核心」（階級另一列），其他照等級
+local function classLine(def)
+    if W.WEIGHT_CLASSES[def.class] then return getText("IGUI_MinidoracatWatch_KV_ClassWeight") end
+    return getText("IGUI_MinidoracatWatch_KV_Class", className(def.class))
+end
 
--- 模組按鈕的滑過說明：類別、耗電，有說明（C.moduleDesc；第三方模組要登記時帶 desc）再加說明，和檢視區同一份文字。
--- 原版按鈕提示是 ISRichTextPanel，只在空格斷行，所以說明先用 wrap 斷好再以 <LINE> 接起來；
+-- 核心的說明列（物品停留說明與模組按鈕提示共用）：{ { 文字, 樣式 }... }，樣式 false＝一般、true＝警示、"dim"＝次要；
+-- 不是核心回 nil。負重核心：類別、階級、加成（照沙盒；負重核心關閉時改寫伺服器已關閉）、耗電；節能核心：類別、耗電、
+-- 耐力與保留小地圖（C.ecoLines）。最後一列寫要什麼條件才有作用
+local function coreLines(def)
+    local tier = W.WEIGHT_CLASSES[def.class]
+    if not tier and def.id ~= "eco" then return nil end
+    local out = { { classLine(def), false } }
+    if tier then
+        out[2] = { getText("IGUI_MinidoracatWatch_KV_Tier", C.ROMAN[tier]), false }
+        if W.moduleOff(def) then
+            out[3] = { getText("IGUI_MinidoracatWatch_Tip_FeatureOff", getText("IGUI_MinidoracatWatch_WeightCores")), true }
+        else
+            out[3] = { getText("IGUI_MinidoracatWatch_KV_Bonus", C.unitsText(W.weightUnits(tier))), false }
+        end
+    end
+    out[#out + 1] = { getText("IGUI_MinidoracatWatch_KV_Drain", drainText(def)), false }
+    if not tier then
+        for _, s in ipairs(C.ecoLines()) do out[#out + 1] = { s, false } end
+    end
+    out[#out + 1] = { getText(tier and "IGUI_MinidoracatWatch_WeightNeeds" or "IGUI_MinidoracatWatch_EcoNeeds"), "dim" }
+    return out
+end
+C.className, C.drainText, C.classLine, C.coreLines = className, drainText, classLine, coreLines -- 物品停留說明（_Hud.lua）同一份文字
+
+-- 模組按鈕的滑過說明：類別、耗電（核心照 coreLines），有說明（C.moduleDesc；第三方模組要登記時帶 desc）再加說明，
+-- 和檢視區同一份文字。原版按鈕提示是 ISRichTextPanel，只在空格斷行，所以中日文先用 wrap 斷好再以 <LINE> 接起來；
 -- 不能用 \n：ISButton 看到 \n 就把行寬放到 1000、不再換行（ISButton.lua:326-330）
 local TIP_W = 300 -- ISButton 給提示的行寬（ISButton.lua:329）
 local function moduleTip(def)
-    local s = getText("IGUI_MinidoracatWatch_KV_Class", className(def.class)) .. " <LINE> "
-        .. getText("IGUI_MinidoracatWatch_KV_Drain", drainText(def))
+    local core = coreLines(def)
+    local s
+    if core then
+        local parts = {}
+        for _, l in ipairs(core) do
+            for _, w in ipairs(wrap(l[1], TIP_W)) do parts[#parts + 1] = w end
+        end
+        s = table.concat(parts, " <LINE> ")
+    else
+        s = classLine(def) .. " <LINE> " .. getText("IGUI_MinidoracatWatch_KV_Drain", drainText(def))
+    end
     local desc = C.moduleDesc(def.id)
     if not desc then return s end
     return s .. " <LINE> " .. table.concat(wrap(desc, TIP_W), " <LINE> ")
@@ -247,7 +288,8 @@ end
 -- ===== 槽位區（Focus 目標＋拖放）=====
 local Sockets = ISUIElement:derive("MinidoracatWatchSockets")
 
--- 槽位外框（i＝所屬面板 slots() 的索引；Sockets 的元素座標）：內建 6 格依皮膚版面，其他 MOD 的槽位在錶面下方一列一列排。
+-- 槽位外框（i＝所屬面板 slots() 的索引；Sockets 的元素座標）：內建 6 格依皮膚版面；錶面下方先是負重列（自己的標題、
+-- 三格對齊錶面三欄），再下面是其他 MOD 的槽位一列一列排（「其他 MOD」標題）。方向鍵照座標找格子（move），兩列自動加入。
 -- 所屬面板一律用 self.parent（addChild 設的，ISUIElement.lua:1476），不用模組的單例 panel：關面板只是排進下一幀才移除
 -- （UIManager.java:119-123、:497-501），關掉的那一幀引擎照樣呼叫它的 update（UIElement.java:1661-1676），單例那時已是 nil。
 local RING = {}
@@ -258,14 +300,23 @@ local HEX = { { 1, 0 }, { 3, 0 }, { 5, 0 }, { 2, 1 }, { 4, 1 }, { 6, 1 } }
 local FACE_H = { ring = 280, hex = 218, plates = 232, row = 146 }
 
 function Sockets:faceH() return FACE_H[self.layout] or FACE_H.plates end
+-- 負重列：標題列（分隔線＋「負重核心」與這支錶的總加成）在錶面底下，格子下面還有等級標籤。
+-- 標題和總加成一行放不下（weightWrap，scan 判斷）時總加成換到第二行
+function Sockets:weightTop() return self:faceH() + fontH() * (self.parent.weightWrap and 2 or 1) + 10 end
+function Sockets:addonHead() return self:weightTop() + WEIGHT_SOCK + fontH() + 2 + 8 end
 
 function Sockets:socketRect(i)
     local L = self.layout
     if i > 6 then
-        local j = i - 7
+        local slot = self.parent:slots()[i]
+        if slot and slot.group == "weight" then
+            local col = tonumber(slot.tier:sub(3)) -- wt1..wt3 → 1..3
+            return math.floor((col - 0.5) * LEFT_W / 3 - WEIGHT_SOCK / 2), self:weightTop(), WEIGHT_SOCK
+        end
+        local j = i - 7 - WEIGHT_SLOTS
         local per = math.floor((LEFT_W + ADDON_GAP) / (ADDON + ADDON_GAP))
         local col, row = j % per, math.floor(j / per)
-        return col * (ADDON + ADDON_GAP), self:faceH() + fontH() + 10 + row * (ADDON + ADDON_GAP + 4), ADDON
+        return col * (ADDON + ADDON_GAP), self:addonHead() + fontH() + 6 + row * (ADDON + ADDON_GAP + 4), ADDON
     end
     if L == "ring" then
         local r, cx, cy = 104, LEFT_W / 2, 130
@@ -290,9 +341,12 @@ function Sockets:socketAt(x, y)
 end
 
 function Sockets:areaH()
-    local n = #self.parent:slots()
+    local list = self.parent:slots()
+    local n = #list
     if n <= 6 then return self:faceH() end
     local _, y, s = self:socketRect(n)
+    -- 負重格底下還有等級標籤（字高＋2），留白和 addonHead 一樣；字型放大時才包得住
+    if list[n].group == "weight" then return y + s + fontH() + 2 + 8 end
     return y + s + 20
 end
 
@@ -338,12 +392,12 @@ function Sockets:drawSocket(i, player, watch, colors, drop)
     elseif st == "empty" then
         UI.Icons.draw(self, "plus", gx, gy, g, colors.glyph, a)
     end
-    -- 狀態徽章（右下角）：停用／沒電＝暫停、租約到期＝時鐘
+    -- 狀態徽章（右下角）：停用＝暫停、沒電＝電池（恢復方法是換電池，不是換槽位）
     if st == "paused" or st == "dead" then
         local b = math.floor(20 * k)
         UI.Skin.dot(self, x + s - b + 1, y + s - b + 1, b, colors.surface, colors.textMuted)
-        UI.Icons.draw(self, "pause", x + s - b + 1 + math.floor(b / 5), y + s - b + 1 + math.floor(b / 5), b - 2 * math.floor(b / 5),
-            colors.textMuted)
+        UI.Icons.draw(self, STATUS_ICON[st], x + s - b + 1 + math.floor(b / 5), y + s - b + 1 + math.floor(b / 5),
+            b - 2 * math.floor(b / 5), colors.textMuted)
     end
     -- 計時動作中：底部進度條
     local busy = p:busyAction(player, watch, slot)
@@ -389,8 +443,14 @@ function Sockets:prerender()
         end
         self:drawSocket(i, player, watch, colors, drop)
     end
-    if #list > 6 then
-        local y = self:faceH() + 4
+    -- 負重列的標題：分隔線＋「負重核心」，右邊是這支錶的總加成（scan 每 250ms 算好）；其他 MOD 的槽位另起一段
+    local y = self:faceH() + 4
+    rect(self, 0, y, LEFT_W, 1, colors.border)
+    text(self, getText("IGUI_MinidoracatWatch_WeightCores"), 0, y + 4, colors.text)
+    local sum = p.weightText
+    if sum then text(self, sum, LEFT_W - measure(sum), y + 4 + (p.weightWrap and fontH() or 0), colors.textMuted) end
+    if #list > 6 + WEIGHT_SLOTS then
+        y = self:addonHead()
         rect(self, 0, y, LEFT_W, 1, colors.border)
         text(self, getText("IGUI_MinidoracatWatch_OtherMods"), 0, y + 4, colors.textMuted)
     end
@@ -552,6 +612,8 @@ function M:build()
         self.filterBtns[i] = b
     end
     self.filterRow = {} -- placeActions 每幀重填這一格要顯示的篩選鈕，不另配置
+    self.kvCells = {} -- drawInspector 每幀重填的資訊格文字
+    self.ecoLines = {} -- 節能核心的附加效果（scan 換成 C.ecoLines 的結果）；第一次 scan 前檢視區照樣能畫
     -- 檢視區的動作按鈕池：模組清單、解鎖卡、拆下模組、付費按鈕（標題、圖示、樣式由 scan 的 actions 決定）
     self.actBtns = {}
     for i = 1, MAX_ACTIONS do
@@ -616,6 +678,20 @@ function M:scan(player, watch, slot)
     self.payUi = C.Pay.ui(player, watch, slot)
     self.actions = self:buildActions(player, watch, slot)
     self.feats = self:buildFeatures()
+    -- 負重列標題右邊（與檢視區「這支錶合計」）：這支錶的總加成；沒電寫「+0 格（沒電）」
+    local c = watch and W.power(watch)
+    self.weightUnits = C.watchWeight(player, watch)
+    self.weightText = nil
+    if watch then
+        self.weightText = (c and c > 0) and getText("IGUI_MinidoracatWatch_WeightRowSum", C.unitsText(self.weightUnits),
+            tostring(W.weightCap())) or getText("IGUI_MinidoracatWatch_WeightRowDead")
+    end
+    -- 一行放不下就把總加成換到第二行（ES、PTBR 的「負重核心」很長）。用最寬的情況判斷（加到上限、或沒電），數字變了版面不跳
+    local cap = W.weightCap()
+    local widest = math.max(measure(getText("IGUI_MinidoracatWatch_WeightRowSum", C.unitsText(cap), tostring(cap))),
+        measure(getText("IGUI_MinidoracatWatch_WeightRowDead")))
+    self.weightWrap = measure(getText("IGUI_MinidoracatWatch_WeightCores")) + 8 + widest > LEFT_W
+    self.ecoLines = C.ecoLines() -- 檢視區每幀畫，這裡先算好
     self:refreshFocusLabel()
 end
 
@@ -694,9 +770,9 @@ function M:banner(player, watch)
     end
     local c = W.power(watch)
     if c == nil or c <= 0 then
-        -- 沒電時保留小地圖（沙盒 DeadMode 2）：文案不寫「無訊號」
+        -- 沒電時保留小地圖（沙盒 DeadMode 2，或裝著有效的節能核心）：文案不寫「無訊號」
         local key = c == nil and "IGUI_MinidoracatWatch_Banner_NoBattery" or "IGUI_MinidoracatWatch_Banner_Dead"
-        if W.deadKeepsMinimap() then key = key .. "_Map" end
+        if W.deadKeepsMinimap(player) then key = key .. "_Map" end
         return getText(key), "errorSurface", "errorText", "errorLine", "battery", "primary"
     end
     if c <= W.LOW_CHARGE then
@@ -1049,20 +1125,52 @@ function M:drawInspector(UI, player, watch, slot)
     y = y + mh + 6
     local desc = def and C.moduleDesc(def.id)
     if desc then y = para(self, desc, x, y, width, colors.text) + 6 end
-    -- 類別／耗電／槽位：三格資訊（未知模組只有槽位一格）
-    local kw = math.floor((width - 12) / 3)
-    local kSlot = getText("IGUI_MinidoracatWatch_KV_Slot", name)
-    local kh = #wrap(kSlot, kw - 12) * fh + 10
-    local kx, shape = x, shapeOf(UI, theme, "control")
-    if def then
-        local kClass = getText("IGUI_MinidoracatWatch_KV_Class", className(def.class))
-        local kDrain = getText("IGUI_MinidoracatWatch_KV_Drain", drainText(def))
-        kh = math.max(kh, #wrap(kClass, kw - 12) * fh + 10, #wrap(kDrain, kw - 12) * fh + 10)
-        kx = kvBox(self, theme, kx, y, kw, kh, kClass, shape)
-        kx = kvBox(self, theme, kx, y, kw, kh, kDrain, shape)
+    -- 節能核心：耐力與保留小地圖（照沙盒，和物品停留說明同一份 C.ecoLines；scan 每 250ms 算好，這裡每幀只讀）
+    if def and def.id == "eco" then
+        for _, s in ipairs(self.ecoLines) do y = para(self, s, x, y, width, colors.text) + 4 end
+        y = y + 2
     end
-    kvBox(self, theme, kx, y, kw, kh, kSlot, shape)
-    y = y + kh + 8
+    -- 資訊格，每列三格：一般模組＝類別／耗電／槽位（未知模組只有槽位）；負重核心兩列＝階級／加成／耗電、
+    -- 槽位狀態（租用剩多久）／這支錶合計／總上限，下面再寫這個角色現在的負重上限
+    local kw = math.floor((width - 12) / 3)
+    local tier = def and W.WEIGHT_CLASSES[def.class]
+    local cells, n = self.kvCells, 0 -- 每幀重填同一個表（build 建的），不建 closure
+    if tier then
+        local v = W.slotMode(slot) == "econ" and C.Pay.view(slot) or nil
+        local word = (v and v.rental and not v.perm and st == "active") and getText("IGUI_MinidoracatWatch_RentLeft",
+            C.Pay.leftText(v.left)) or getText("IGUI_MinidoracatWatch_St_" .. st)
+        cells[1] = getText("IGUI_MinidoracatWatch_KV_Tier", C.ROMAN[tier])
+        cells[2] = getText("IGUI_MinidoracatWatch_KV_Bonus", C.unitsText(W.moduleOff(def) and 0 or W.weightUnits(tier)))
+        cells[3] = getText("IGUI_MinidoracatWatch_KV_Drain", drainText(def))
+        cells[4] = getText("IGUI_MinidoracatWatch_KV_Slot", word)
+        cells[5] = getText("IGUI_MinidoracatWatch_KV_WatchTotal", getText("IGUI_MinidoracatWatch_WeightUnitsShort",
+            tostring(self.weightUnits or 0)))
+        cells[6] = getText("IGUI_MinidoracatWatch_KV_Cap", tostring(W.weightCap()))
+        n = 6
+    else
+        if def then
+            cells[1] = classLine(def)
+            cells[2] = getText("IGUI_MinidoracatWatch_KV_Drain", drainText(def))
+            n = 2
+        end
+        n = n + 1
+        cells[n] = getText("IGUI_MinidoracatWatch_KV_Slot", name)
+    end
+    local shape = shapeOf(UI, theme, "control")
+    for r = 1, n, 3 do
+        local kh = 0
+        for i = r, math.min(n, r + 2) do kh = math.max(kh, #wrap(cells[i], kw - 12) * fh + 10) end
+        local kx = x
+        for i = r, math.min(n, r + 2) do kx = kvBox(self, theme, kx, y, kw, kh, cells[i], shape) end
+        y = y + kh + 6
+    end
+    y = y + 2
+    -- 角色現在的負重上限：引擎同步來的 getMaxWeight（客戶端的 maxWeightBase 不同步，不拿它算）
+    if tier then
+        local mw = player:getMaxWeight()
+        local s = mw == math.floor(mw) and tostring(math.floor(mw)) or string.format("%.1f", mw)
+        y = para(self, getText("IGUI_MinidoracatWatch_WeightNow", s), x, y, width, colors.textMuted) + 6
+    end
     if slot.orphan then
         y = box(self, theme, x, y, width, getText("IGUI_MinidoracatWatch_Desc_Orphan"), "warning", "warn")
     elseif st == "dead" then

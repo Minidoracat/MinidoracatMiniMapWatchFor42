@@ -91,10 +91,22 @@ function W.lootEntries()
         { "LootModules", mod("LongComm"), { "ArmyStorageElectronics", 0.3, "PoliceLockers", 0.2 } },
         { "LootModules", mod("Relay"), { "ArmyStorageElectronics", 0.05, "ArmyBunkerStorage", 0.05 } },
         { "LootModules", mod("Eco"), { "ElectronicStoreMisc", 0.05, "ArmyStorageElectronics", 0.05 } },
+        -- 負重核心：每顆一個開關（LootWeight1..3，預設關、不受 LootModules 影響）；數量跟著「模組的數量」
+        { "LootWeight1", mod("Weight1"), { "ArmyStorageElectronics", 0.05 } },
+        { "LootWeight2", mod("Weight2"), { "ArmyBunkerStorage", 0.03 } },
+        { "LootWeight3", mod("Weight3"), { "ArmyBunkerStorage", 0.01 } },
         -- 解鎖卡（很少）：擴充＝電器行、進階＝軍警、核心＝軍事地堡
         { "LootCards", card("ext"), { "ElectronicStoreMisc", 0.1, "CrateElectronics", 0.1 } },
         { "LootCards", card("adv"), { "ArmyStorageElectronics", 0.1, "PoliceLockers", 0.05 } },
         { "LootCards", card("core"), { "ArmyBunkerStorage", 0.05, "ArmyStorageElectronics", 0.03 } },
     }
     return lootEntries
+end
+
+-- 戰利品沙盒開關（e[1]）現在開著沒：原生值優先、拿不到退回 SandboxVars；負重核心預設關，其餘預設開。
+-- 伺服器排分佈表（L.option）與面板的取得方式共用
+local LOOT_DEFAULT_OFF = { LootWeight1 = true, LootWeight2 = true, LootWeight3 = true }
+function W.lootOn(key)
+    if LOOT_DEFAULT_OFF[key] then return W.nativeSandbox(key, false) == true end
+    return W.nativeSandbox(key, true) ~= false
 end

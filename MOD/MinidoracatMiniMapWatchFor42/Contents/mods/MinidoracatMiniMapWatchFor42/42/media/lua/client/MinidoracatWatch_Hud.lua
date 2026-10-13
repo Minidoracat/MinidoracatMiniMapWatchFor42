@@ -1,7 +1,7 @@
 -- MinidoracatWatch_Hud.lua：畫面上的地圖錶狀態（Phase 9，規劃書 §0「畫面狀態」、設計稿「遊戲裡的入口」「畫面上的手錶狀態」）——
 -- 小地圖標題列的電量（主 MOD registerTitleStatus）、物品停留說明、重要事件的 Toast（每件事提示一次）。
 -- 只讀狀態：電量、槽位、租約都是伺服器推來的（MinidoracatWatch_Client／_PayClient），這裡不送任何指令。
--- 用到的面板與付款函式（C.slotStatus、C.className、C.drainText、C.Pay）在呼叫時才取：那些檔可能排在本檔之後載入。
+-- 用到的面板與付款函式（C.slotStatus、C.classLine、C.coreLines、C.drainText、C.Pay）在呼叫時才取：那些檔可能排在本檔之後載入。
 require "ISUI/ISToolTipInv"
 require "MinidoracatWatch_Client"
 local W, C = MinidoracatWatchCore, MinidoracatWatchClient
@@ -72,7 +72,8 @@ local function listLines(out, key, items, sep)
     end
 end
 
--- 回 { { 文字, 警示 }... } 或 nil（不是地圖錶或模組、系統關閉）。player＝看說明的玩家（槽位有效、租約都是他的帳號）。
+-- 回 { { 文字, 樣式 }... } 或 nil（不是地圖錶或模組、系統關閉）；樣式 false＝一般、true＝警示、"dim"＝次要。
+-- player＝看說明的玩家（槽位有效、租約都是他的帳號）。
 local function watchLines(player, watch)
     local out = {}
     local c = W.charge(watch)
@@ -84,16 +85,30 @@ local function watchLines(player, watch)
     else
         out[1] = { C.statusText(watch, player), W.needBattery() and (c == nil or c <= W.LOW_CHARGE) }
     end
-    local sep, mods, paid = getText("IGUI_MinidoracatWatch_ListSep"), {}, {}
+    local sep, mods, paid, cores = getText("IGUI_MinidoracatWatch_ListSep"), {}, {}, {}
+    local anyCore = false
     for _, slot in ipairs(W.slotList) do
         local st, rec = C.slotStatus(player, watch, slot)
         local mode = W.slotMode(slot)
         local v = mode == "econ" and C.Pay.view(slot) or nil
         local rented = v and v.rental and not v.perm and W.slotValid(player, slot)
+        local name = rec and C.moduleName(rec.id)
         if rec then
-            local name = C.moduleName(rec.id)
+            local def = W.modules[rec.id]
+            local tier = def and W.WEIGHT_CLASSES[def.class]
+            if tier then
+                -- 沒電、負重核心整個關閉時沒有加成：寫 +0（和面板的負重列一致）
+                local units = (st == "dead" or W.moduleOff(def)) and 0 or W.weightUnits(tier)
+                name = getText("IGUI_MinidoracatWatch_WeightUnitsShort", tostring(units))
+            end
             if st == "paused" then name = T("Tip_ModulePaused", name)
             elseif rented then name = T("Tip_ModuleRent", name) end
+        end
+        if slot.group == "weight" then
+            -- 負重核心另列一行：「I +1 格、II +2 格（租用中）、III 空槽」，不混進「模組：」
+            anyCore = anyCore or rec ~= nil or st ~= "off"
+            cores[#cores + 1] = C.ROMAN[tonumber(slot.tier:sub(3))] .. " " .. (name or T("St_" .. st))
+        elseif rec then
             mods[#mods + 1] = name
         end
         if mode == "card" or mode == "econ" then
@@ -110,16 +125,20 @@ local function watchLines(player, watch)
         mods[#mods + 1] = T("Tip_ModulePaused", C.moduleName(W.slotRecord(watch, slot.id).id))
     end
     if #mods == 0 then out[#out + 1] = { T("Tip_ModulesNone"), false } else listLines(out, "Tip_Modules", mods, sep) end
+    if anyCore then listLines(out, "Tip_WeightCores", cores, sep) end -- 三格都不開放、也沒裝：不寫
     if #paid > 0 then listLines(out, "Tip_Paid", paid, sep) end
     return out
 end
 
--- 模組：類別、耗電、功能（這台伺服器關了、不需要模組或小地圖設定沒開放時用警示色註明），需要模組時再加範圍
+-- 模組：類別、耗電、功能（這台伺服器關了、不需要模組或小地圖設定沒開放時用警示色註明），需要模組時再加範圍。
+-- 負重核心與節能核心照面板的 C.coreLines（階級、加成、耐力、保留小地圖都照沙盒，最後一列次要色寫生效條件）
 local FEATURE_TIP = { module = "Tip_Feature", off = "Tip_FeatureOff", serverOff = "Tip_FeatureServerOff",
     free = "Tip_FeatureFree" }
 local function moduleLines(def)
+    local core = C.coreLines(def)
+    if core then return core end
     local out = {
-        { getText("IGUI_MinidoracatWatch_KV_Class", C.className(def.class)), false },
+        { C.classLine(def), false },
         { getText("IGUI_MinidoracatWatch_KV_Drain", C.drainText(def)), false },
     }
     local state, f = C.moduleRule(def.id)
@@ -204,7 +223,9 @@ local function appendBox(self, lines, bottom)
     self:drawRect(0, y, w, h, math.min(1, bg.a + 0.4), bg.r, bg.g, bg.b)
     self:drawRectBorder(0, y, w, h, bd.a, bd.r, bd.g, bd.b)
     for i, line in ipairs(lines) do
-        if line[2] then
+        if line[2] == "dim" then
+            self:drawText(line[1], PAD, y + PAD + (i - 1) * lineH, 0.6, 0.6, 0.6, 1, font)
+        elseif line[2] then
             self:drawText(line[1], PAD, y + PAD + (i - 1) * lineH, 1, 0.65, 0.3, 1, font)
         else
             self:drawText(line[1], PAD, y + PAD + (i - 1) * lineH, 0.8, 0.8, 0.8, 1, font)
@@ -236,20 +257,24 @@ Events.OnGameStart.Add(H.installTooltip)
 -- ===== 重要事件的 Toast（每件事提示一次）=====
 -- 每秒比對每位本機玩家的上一次狀態：戴的錶換了（或剛上線）只記基準、不提示。玩家看到的清單在 README「功能」的狀態顯示：
 -- 低電量（往下跨過 W.LOW_CHARGE 一次，回到門檻＋5% 以上才重新武裝）、沒電（燈同時被熄就併成一則）、開始充電／充飽、
--- 經濟系統槽位的租約到期／自動續租沒扣到款／自動續租成功（面板自己付的不報：檢視區已經說了）、其他原因的槽位失效讓模組停用。
+-- 經濟系統槽位的租約到期／自動續租沒扣到款／自動續租成功（面板自己付的不報：檢視區已經說了）、其他原因的槽位失效讓模組停用、
+-- 負重核心的加成停止（錶拿下來；沒電時併進沒電那一則，不另報）。
 -- 同一件事 60 秒內不重報（車子反覆熄火發動、門檻上下跳）。低電量、沒電、租約到期另播音效（MinidoracatWatch_Sound.lua），跟著 Toast 一起不重報。
-local POLL_MS, REPEAT_MS, LIGHT_MS, REARM, PAID_MS = 1000, 60000, 5000, 0.05, 10000
+-- 負重相關的 Toast 停 WEIGHT_HOLD_MS（要讀完恢復方法；框架預設 3 秒）
+local POLL_MS, REPEAT_MS, LIGHT_MS, REARM, PAID_MS, WEIGHT_HOLD_MS = 1000, 60000, 5000, 0.05, 10000, 8000
 H.state = {}
 local lastPoll = nil
 local Snd = MinidoracatWatchSound
 
-local function say(s, player, id, now, title, msg, sound)
+local function say(s, player, id, now, title, msg, sound, holdMs)
     local last = s.said[id]
     if last and now >= last and now - last < REPEAT_MS then return end
     s.said[id] = now
-    C.toast(player, msg, title)
+    C.toast(player, msg, title, holdMs)
     if sound then Snd.play(player, sound) end
 end
+-- 這格失效會讓負重加成少掉（負重槽裡有核心）：Toast 停久一點
+local function weightHold(slot, rec) return slot.group == "weight" and rec ~= nil and WEIGHT_HOLD_MS or nil end
 
 local function failText(v)
     local why = v.fail == "insufficient_funds" and T("PayFailFunds", C.Pay.currencyName(v.cur), tostring(v.short))
@@ -280,7 +305,7 @@ local function leaseEvents(s, player, watch, slot, now, valid)
     if lapsed then
         -- 到期那一步自動續租就沒扣到款：併成一則（原因＋重試期限）
         local msg = v.fail and failText(v) or (rec and T("Toast_Lapsed_msg", C.moduleName(rec.id)) or T("Toast_Lapsed_empty"))
-        say(s, player, "lapse:" .. slot.id, now, T("Toast_Lapsed", name), msg, Snd.LAPSED)
+        say(s, player, "lapse:" .. slot.id, now, T("Toast_Lapsed", name), msg, Snd.LAPSED, weightHold(slot, rec))
     elseif v.fail and not e.fail and not valid then
         -- 槽位還有效＝Economy 的失敗通知比伺服器的停用推播先到（1009rc2）：不先報，停用那則會帶原因；
         -- e.fail 照樣記下，停用後的每小時重試再失敗也不重報
@@ -306,10 +331,18 @@ function H.check(pn, player, now)
     local watch = C.watchOf(pn)
     local s = H.state[pn]
     if not s or s.obj ~= player or s.watch ~= watch then
+        local wasBoosted = s and s.obj == player and s.watch and not watch and (s.wt or 0) > 0
         s = { obj = player, watch = watch, said = s and s.obj == player and s.said or {}, valid = {}, rent = {} }
         H.state[pn] = s
+        -- 錶拿下來（不是換一支）而上一秒還有負重加成：負重上限回到原樣，戴回去就恢復
+        if wasBoosted then
+            say(s, player, "weightOff", now, T("Toast_WeightOff"), T("Toast_WeightOff_msg"), nil, WEIGHT_HOLD_MS)
+        end
     end
-    if not watch or not W.enabled() then return end
+    if not watch or not W.enabled() then
+        s.wt = nil -- 系統關閉時不留舊的加成，之後拿下錶不誤報
+        return
+    end
     local c = 1 -- 不需要電池＝永遠滿電（W.power）；需要時 nil＝沒有電池
     if W.needBattery() then c = W.charge(watch) end
     local kind = W.chargeState(player)
@@ -320,10 +353,13 @@ function H.check(pn, player, now)
             T("Toast_Low_msg", C.timeText(c, C.fullRuntime(player, watch))), Snd.LOW)
     end
     if c == 0 and s.c and s.c > 0 then
-        -- 伺服器沒電當下就同步電量、同一秒熄燈（MinidoracatWatch.lua accrue、_Light.lua lightCheck）：5 秒內亮過燈就併成一則
-        local msg = T(W.deadKeepsMinimap() and "Toast_Dead_map" or "Toast_Dead_msg")
+        -- 伺服器沒電當下就同步電量、同一秒熄燈（MinidoracatWatch.lua accrue、_Light.lua lightCheck）：5 秒內亮過燈就併成一則；
+        -- 上一秒還有負重加成也併進來（加成和電量同一份資料，同時停）
+        local msg = T(W.deadKeepsMinimap(player) and "Toast_Dead_map" or "Toast_Dead_msg")
         if s.litAt and now - s.litAt <= LIGHT_MS then msg = T("Toast_Dead_light", msg) end
-        say(s, player, "dead", now, T("Toast_Dead"), msg, Snd.DEAD)
+        local hold = nil
+        if (s.wt or 0) > 0 then msg, hold = T("Toast_Dead_weight", msg), WEIGHT_HOLD_MS end
+        say(s, player, "dead", now, T("Toast_Dead"), msg, Snd.DEAD, hold)
     end
     if kind and not s.kind then
         say(s, player, "charge:" .. kind, now, T("Toast_Charging"),
@@ -332,7 +368,7 @@ function H.check(pn, player, now)
         say(s, player, "full", now, T("Toast_Full"), T("Toast_Full_msg"))
     end
     if c and c > W.LOW_CHARGE + REARM then s.lowSaid = false end
-    s.c, s.kind = c, kind
+    s.c, s.kind, s.wt = c, kind, W.weightBonus(player)
     for _, slot in ipairs(W.slotList) do
         local valid = W.slotValid(player, slot)
         local handled = W.slotMode(slot) == "econ" and leaseEvents(s, player, watch, slot, now, valid)
@@ -340,7 +376,7 @@ function H.check(pn, player, now)
             local rec = W.slotRecord(watch, slot.id)
             if rec then
                 say(s, player, "paused:" .. slot.id, now, T("Toast_Paused", C.moduleName(rec.id)),
-                    T("Toast_Paused_msg", C.slotName(slot)))
+                    T("Toast_Paused_msg", C.slotName(slot)), nil, weightHold(slot, rec))
             end
         end
         s.valid[slot.id] = valid

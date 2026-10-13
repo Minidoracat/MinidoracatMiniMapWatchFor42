@@ -1,6 +1,6 @@
 -- MinidoracatWatch_Loot.lua：戰利品分佈（伺服器／單機；MP 客戶端不填容器，ItemPickerJava.java:556-562）。
 -- 分佈表本身（地點、稀有度、機率基數）在 shared/MinidoracatWatch_DropData.lua 的 W.lootEntries()，面板的取得方式也讀它。
--- 沙盒開關（每款錶、模組、解鎖卡）怎麼在「開局」與「改沙盒後」都生效：
+-- 沙盒開關（每款錶、模組、解鎖卡、每顆負重核心）怎麼在「開局」與「改沙盒後」都生效：
 --   - 開局：IsoWorld.init 依序派 OnPre／OnDistributionMerge／OnPostDistributionMerge 後才 ItemPickerJava.Parse
 --     （IsoWorld.java:1886-1901），所以在 OnPostDistributionMerge 照當下的沙盒改 ProceduralDistributions.list。
 --     但單機讀舊檔時，存檔的沙盒（map_sand.bin）在這之後才載入（IsoWorld.java:1894-1896），當下讀到的可能不是最終值。
@@ -21,10 +21,11 @@ L.PREFIX = "MinidoracatWatch."
 
 L.ENTRIES = W.lootEntries()
 L.KEYS = { "Enabled", "LootValuTech", "LootPaws", "LootNexus", "LootSpiffo", "LootRanger", "LootLuthex", "LootBB3000",
-    "LootModules", "LootCards" }
+    "LootModules", "LootCards", "LootWeight1", "LootWeight2", "LootWeight3" }
 -- 數量（Phase 4，設計稿取得方式的「很少／少／一般／多」）：每類一個 enum 沙盒，乘上 ENTRIES 的機率；一般＝建議值
 L.AMOUNT_KEYS = { "LootWatchAmount", "LootModuleAmount", "LootCardAmount" }
-L.AMOUNT_OF = { LootModules = "LootModuleAmount", LootCards = "LootCardAmount" } -- 其餘（七款錶）＝LootWatchAmount
+L.AMOUNT_OF = { LootModules = "LootModuleAmount", LootCards = "LootCardAmount", LootWeight1 = "LootModuleAmount",
+    LootWeight2 = "LootModuleAmount", LootWeight3 = "LootModuleAmount" } -- 其餘（七款錶）＝LootWatchAmount
 L.FACTORS = { 0.25, 0.5, 1, 2 }
 L.AMOUNT_DEFAULT = { LootCardAmount = 1 } -- 解鎖卡預設「很少」（設計稿預設）；其餘「一般」
 L.TABLES = {} -- 本 MOD 碰到的分佈表
@@ -32,8 +33,8 @@ for _, e in ipairs(L.ENTRIES) do
     for i = 1, #e[3], 2 do L.TABLES[e[3][i]] = true end
 end
 
--- 原生沙盒值優先（W.nativeSandbox）：單機的原版沙盒介面只改原生選項
-function L.option(key) return W.nativeSandbox(key, true) ~= false end
+-- 開關預設與原生值優先在 shared W.lootOn（面板的取得方式也用）
+L.option = W.lootOn
 function L.amount(key)
     local default = L.AMOUNT_DEFAULT[key] or 3
     local v = tonumber(W.nativeSandbox(key, default))
@@ -41,7 +42,7 @@ function L.amount(key)
     return default
 end
 
--- 目前開關與數量的簽章（字串比對；每 POLL_MS 一次、13 個選項）：開關一字一位、"|"、數量一字一位
+-- 目前開關與數量的簽章（字串比對；每 POLL_MS 一次、16 個選項）：開關一字一位、"|"、數量一字一位
 function L.signature()
     local s = ""
     for _, k in ipairs(L.KEYS) do s = s .. (L.option(k) and "1" or "0") end

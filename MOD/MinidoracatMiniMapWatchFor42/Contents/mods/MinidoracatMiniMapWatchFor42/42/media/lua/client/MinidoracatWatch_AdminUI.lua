@@ -1,5 +1,5 @@
 -- MinidoracatWatch_AdminUI.lua（client）：管理員設定視窗（Phase 4）與齒輪設定的「地圖錶管理」分類，以及伺服器清單的同步。
--- 版面照設計稿 admin.mjs：總覽、功能、槽位與價格、電池、取得方式、殭屍掉落六個分類＋快速方案＋「檢查並套用」。
+-- 版面照設計稿 admin.mjs：總覽、功能、槽位與價格、電池、核心、取得方式、殭屍掉落七個分類＋快速方案＋「檢查並套用」。
 -- 控制項一律用 UI 框架（規劃書 §0）：UI.Window／Tabs／Checkbox／Dropdown／TextField／Button／Dialog／Table／Toast；
 -- 框架缺席或版本不足時分類照樣出現，按「開啟地圖錶設定」只提示，不退回原版外觀。
 -- 資料與文字在 MinidoracatWatch_AdminModel.lua；伺服器端（權限、版本、設定檔、審計）在 server/MinidoracatWatch_Admin.lua。
@@ -210,7 +210,7 @@ local PAD = 14
 local GAP = 8
 local WIN_W, WIN_H = 880, 680
 local FOOT_H = CH + 16
-AU.TABS = { "overview", "features", "slots", "battery", "acquire", "zombies" }
+AU.TABS = { "overview", "features", "slots", "battery", "cores", "acquire", "zombies" }
 
 local function measure(s) return getTextManager():MeasureStringX(FONT, s) end
 
@@ -396,7 +396,7 @@ local function buildFeatures(S, p)
 end
 
 -- ===== 分類：槽位與價格 =====
--- 兩張表、列相同（三級＋其他 MOD 的預設＋每個第三方槽位）：上表是開啟方式與價格，下表「續租與提醒」是每個槽位
+-- 兩張表、列相同（內建六級 M.TIERS＋其他 MOD 的預設＋每個第三方槽位）：上表是開啟方式與價格，下表「續租與提醒」是每個槽位
 -- 自己的幣別、每期天數、重試、提醒、自動續租。
 local function buildSlots(S, p)
     local w = p.width
@@ -560,6 +560,48 @@ local function buildBattery(S, p)
     y = y + ROW + 4
     text(p, T("Calc"), 0, y, "text")
     S.calcTop, S.calcPane = y + FH + 4, p
+end
+
+-- ===== 分類：核心（負重核心、節能核心；2026-10-14）=====
+-- 三欄格線同電池頁的耗電格（標籤寬 cw-96、欄位 64、單位在欄位右邊）。負重核心的開關關掉時加成與耗電欄停用（AU.refresh），
+-- 總上限後面的「＝+X%」也在 refresh 照 draft 重算。槽位的開法與價格在「槽位與價格」頁，上架在「取得方式」頁。
+local TIER_LABELS = { "I", "II", "III" }
+local function buildCores(S, p)
+    local w = p.width
+    local cw = math.floor((w - GAP * 4) / 3)
+    local unit = T("Unit_units")
+    -- 小標＋同一列的說明（說明在剩下的寬度內換行），回下一列的 y
+    local function heading(y, title, hint)
+        text(p, title, 0, y, "text")
+        local hx = measure(title) + GAP
+        return math.max(y + FH, para(p, hint, hx, y, w - hx)) + 4
+    end
+    -- 一格：標籤｜欄位｜單位；回欄位的 x
+    local function cell(i, y, label, key, u, plus)
+        local x = (i - 1) * (cw + GAP * 2)
+        local fx = labeled(p, label, x, y, cw - 96)
+        if plus then text(p, "+", fx - 10, y + (CH - FH) / 2, "textMuted") end
+        sbField(S, p, fx, y, 64, key)
+        text(p, u, fx + 70, y + (CH - FH) / 2, "textMuted")
+        return fx
+    end
+    sbCheck(S, p, 0, 0, "WeightEnabled")
+    local y = para(p, T("Weight_desc"), 0, CH + 4, w) + 4
+    y = heading(y, T("WeightUnits"), T("WeightUnits_hint", M.weightPct(1)))
+    for i = 1, 3 do cell(i, y, TIER_LABELS[i], "WeightUnits" .. i, unit) end
+    y = y + ROW
+    local fx = cell(1, y, T("WeightCap"), "WeightCap", unit)
+    S.capPct = text(p, "", fx + 70 + measure(unit) + GAP, y + (CH - FH) / 2, "textMuted")
+    y = heading(y + ROW + 4, T("CoreDrain"), T("CoreDrain_hint"))
+    for i = 1, 3 do cell(i, y, TIER_LABELS[i], "DrainWeight" .. i, "%", true) end
+    y = heading(y + ROW + 4, T("CoreLoot"), T("CoreLoot_hint"))
+    for i = 1, 3 do sbCheck(S, p, (i - 1) * (cw + GAP * 2), y, "LootWeight" .. i, TIER_LABELS[i], cw) end
+    y = heading(y + ROW + GAP, M.moduleName("eco"), T("Eco_hint"))
+    sbCheck(S, p, 0, y, "EcoKeepsMap", T("EcoKeepsMap"))
+    y = y + ROW
+    cell(1, y, T("EcoDrain"), "EcoEnduranceDrain", "%")
+    cell(2, y, T("EcoRegen"), "EcoEnduranceRegen", "%")
+    para(p, T("Cores_note"), 0, y + ROW + GAP, w)
 end
 
 -- ===== 分類：取得方式 =====
@@ -817,8 +859,8 @@ end
 local Footer = ISUIElement:derive("MinidoracatWatchAdminFooter")
 Footer.render = Pane.render
 
--- 充電開關關掉：時數沒有作用，欄位停用；打到一半的壞值丟掉（文字回 draft、清紅框、移出 S.bad），停用的欄位不擋套用
-local function chargeHours(S, key, on)
+-- 開關關掉：相依的數字欄沒有作用、停用；打到一半的壞值丟掉（文字回 draft、清紅框、移出 S.bad），停用的欄位不擋套用
+local function gate(S, key, on)
     local tf = S.ctrl[key]
     if not on and S.bad[tf] then
         markBad(S, tf, false)
@@ -826,11 +868,16 @@ local function chargeHours(S, key, on)
     end
     tf:setEnabled(on)
 end
+local WEIGHT_FIELDS = { "WeightUnits1", "WeightUnits2", "WeightUnits3", "WeightCap", "DrainWeight1", "DrainWeight2",
+    "DrainWeight3" }
 -- 動態文字（總覽一覽、續航試算、頁尾修改數與訊息）；每次修改後重算
 function AU.refresh(S)
     if not S.footer then return end
-    chargeHours(S, "CarHours", S.draft.sb.ChargeCar == true) -- 先於 liveMsg：丟掉壞值後「不合法」訊息跟著清
-    chargeHours(S, "HouseHours", S.draft.sb.ChargeHouse == true)
+    -- 先於 liveMsg：丟掉壞值後「不合法」訊息跟著清
+    gate(S, "CarHours", S.draft.sb.ChargeCar == true)
+    gate(S, "HouseHours", S.draft.sb.ChargeHouse == true)
+    for _, k in ipairs(WEIGHT_FIELDS) do gate(S, k, S.draft.sb.WeightEnabled == true) end
+    S.capPct.text = S.bad[S.ctrl.WeightCap] and "" or T("WeightPct", M.weightPct(S.draft.sb.WeightCap))
     local p = S.summaryPane
     local keep = {}
     for _, t in ipairs(p.texts) do if not t.summary then keep[#keep + 1] = t end end
@@ -929,6 +976,8 @@ function AU.build(pn, player, st)
     win:addChild(S.tabs)
     local econ = W.econStatus == "READY" and T("EconOn") or T("EconOff")
     local head = newPane(S, S.tabs:getRight() + GAP, top, w - S.tabs:getRight() - GAP - PAD, S.tabs.height)
+    -- 七個分頁在德文等語言下剩給狀態的寬度不多：截短，不壓到頁籤
+    if UI.Text and UI.Text.fit then econ = UI.Text.fit(econ, head.width, FONT) end
     text(head, econ, head.width - measure(econ), (S.tabs.height - FH) / 2, W.econStatus == "READY" and "accent" or "textMuted")
     win:addChild(head)
     local py = top + S.tabs.height + 12
@@ -949,7 +998,7 @@ function AU.build(pn, player, st)
     end, "normal", 120)
     S.dirtyText = text(foot, "", S.discard:getX() - 150, (FOOT_H - FH) / 2, "textMuted")
     local builders = { overview = buildOverview, features = buildFeatures, slots = buildSlots, battery = buildBattery,
-        acquire = buildAcquire, zombies = buildZombies }
+        cores = buildCores, acquire = buildAcquire, zombies = buildZombies }
     S.base = M.readBase(st)
     S.draft = M.copy(S.base)
     S.rev = st.rev

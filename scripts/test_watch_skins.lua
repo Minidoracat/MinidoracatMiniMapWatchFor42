@@ -35,6 +35,7 @@ local PAIRS = {
     { "tagText", "tierStd", 4.5, "等級標籤" }, { "tagText", "tierExt", 4.5, "等級標籤" },
     { "tagText", "tierAdv", 4.5, "等級標籤" }, { "tagText", "tierCore", 4.5, "等級標籤" },
     { "tagText", "tierAddon", 4.5, "等級標籤" }, { "tagText", "tierOrphan", 4.5, "等級標籤" },
+    { "tagText", "tierWeight", 4.5, "負重槽的等級標籤（I／II／III）" },
 }
 -- 電量列（底色＝footSurface 或標題列色）上的按鈕：用 foot theme
 local FOOT_PAIRS = {
@@ -88,6 +89,12 @@ for _, key in ipairs(keys) do
     run(key, foot, FOOT_PAIRS, "（電量列）")
 end
 check(#keys == 8, "七款皮膚＋嗶嗶腕機琥珀＝8 套（" .. #keys .. "）")
+local distinct = true
+for _, key in ipairs(keys) do
+    local c = S.spec(key).colors
+    if not c.tierWeight or c.tierWeight == c.tierAddon or c.tierWeight == c.tierCore then distinct = false end
+end
+check(distinct, "每款都有負重槽色 tierWeight，和其他 MOD、核心槽的色不同")
 -- 預設 theme（管理員視窗與確認框、Dock、框架太舊時的面板）：框架 DARK 的色＋共用色，底色不透明
 local DEFAULT_PAIRS = {
     { "text", "surface", 4.5, "內文" }, { "textMuted", "surface", 4.5, "說明文字、欄位單位" },

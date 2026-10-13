@@ -497,6 +497,41 @@ check(out[#out].args.ok == true and W.Config.get("moduleDrains").weather == 40 a
 out = adminCmd(boss, W.CMD_ADMIN_SET, args)
 check(out[1].args.code == "conflict", "同一個舊版本再送一次：衝突，不覆蓋")
 
+F.print("情境十四：負重核心與節能核心（2026-10-14）→ 負重核心只進自己的負重槽；伺服器每秒提高負重基數並推給本人、沒電回到原值；節能核心退回耐力消耗")
+local SBW = SandboxVars.MinidoracatWatch
+SBW.SlotWt2, SBW.SlotCore = 1, 1
+local kim = F.player("kim", 0)
+local kw = F.item(F.RIGHT)
+kim.inv:AddItem(kw)
+F.action(ISWearClothing, kim, kw):complete()
+kim.inv:AddItem(F.item("Base.Screwdriver"))
+local core2 = F.item("MinidoracatWatch.Module_Weight2")
+kim.inv:AddItem(core2)
+tick(2000, 500)
+F.reset()
+send(kim, W.CMD_MODULE, { watchId = kw:getID(), slotId = "core", install = true, itemId = core2:getID() })
+check(W.slotRecord(kw, "core") == nil and core2.container == kim.inv and fails(kim) == 1, "負重核心送進核心槽：拒絕、物品不動")
+send(kim, W.CMD_MODULE, { watchId = kw:getID(), slotId = "wt2", install = true, itemId = core2:getID() })
+check(W.slotRecord(kw, "wt2") and W.slotRecord(kw, "wt2").id == "weight2" and core2.container == nil, "負重核心 II 裝進負重槽 II")
+F.reset()
+tick(2000, 500)
+check(kim:getMaxWeightBase() == 10 and #F.damages == 1 and F.damages[1] == kim, "伺服器：負重基數 8→10（+2 格），推給本人一次")
+W.setCharge(kw, 0)
+tick(2000, 500)
+check(kim:getMaxWeightBase() == 8, "沒電：基數回到原值")
+W.setCharge(kw, 1)
+local eco = F.item("MinidoracatWatch.Module_Eco")
+kim.inv:AddItem(eco)
+send(kim, W.CMD_MODULE, { watchId = kw:getID(), slotId = "core", install = true, itemId = eco:getID() })
+tick(2000, 500)
+check(kim:getMaxWeightBase() == 10, "換電池：加成回來")
+local kst = kim:getStats()
+local spent = kst:get(CharacterStat.ENDURANCE) - 0.2
+kst:set(CharacterStat.ENDURANCE, spent)
+tick(1000, 500)
+check(near(kst:get(CharacterStat.ENDURANCE), spent + 0.05), "節能核心：伺服器退回 25% 的耐力消耗")
+SBW.SlotWt2, SBW.SlotCore = nil, nil
+
 F.print()
 if F.failures > 0 then
     F.print(F.failures .. " 項失敗")

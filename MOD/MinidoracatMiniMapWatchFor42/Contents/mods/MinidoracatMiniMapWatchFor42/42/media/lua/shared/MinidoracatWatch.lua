@@ -96,8 +96,12 @@ function W.enabled() return W.sandbox("Enabled", true) ~= false end
 
 -- 「需要電池」關閉（沙盒 NeedBattery）＝地圖錶永遠不會沒電：不扣電、不充電，閘門與狀態判定一律當作滿電
 function W.needBattery() return W.sandbox("NeedBattery", true) ~= false end
--- 沒電時（沒電或沒電池）只保留小地圖（沙盒 DeadMode 2）；預設 1＝所有功能停用
-function W.deadKeepsMinimap() return W.sandbox("DeadMode", 1) == 2 end
+-- 沒電時（沒電或沒電池）只保留小地圖：沙盒 DeadMode 2（所有錶；預設 1＝所有功能停用），或這支錶的核心槽裝著
+-- 有效的節能核心（沙盒 EcoKeepsMap，預設開；2026-10-14 使用者裁定）。player＝nil 只看 DeadMode
+function W.deadKeepsMinimap(player)
+    if W.sandbox("DeadMode", 1) == 2 then return true end
+    return player ~= nil and W.sandbox("EcoKeepsMap", true) ~= false and W.modState(W.status(player), "eco") == "active"
+end
 
 function W.minimapRule()
     local r = W.sandbox("MinimapRule", W.RULE_WATCH)
@@ -594,6 +598,10 @@ local function visit(player, now, doSync, seen, drainOffline, fullHours, enabled
         s.dirty = false
     end
     showScreen(player, s)
+    -- 核心加成（MinidoracatWatch_Cores.lua）：上一秒改過的負重先推、再算這一秒；耐力照上一秒的變化退回或多給
+    W.weightPush(player, s)
+    W.weightCheck(player, s)
+    W.enduranceCheck(player, s)
     seen[key] = now
     -- 第三方模組的 onStateChanged：MP 伺服器在這裡比對；客戶端與單機在客戶端迴圈（MinidoracatWatch_Client.lua）
     if isServer() then W.pollStateCallbacks(player, player) end
@@ -645,3 +653,5 @@ if not isClient() then Events.OnTickEvenPaused.Add(W.onTick) end
 require "MinidoracatWatch_Modules"
 -- 照明模組（Phase 8）：開關、自動熄燈、光源物品（用到上面模組檔的 featureDecision）
 require "MinidoracatWatch_Light"
+-- 負重核心與節能核心的加成（visit 每秒呼叫）
+require "MinidoracatWatch_Cores"

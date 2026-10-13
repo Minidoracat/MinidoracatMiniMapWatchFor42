@@ -73,7 +73,7 @@ function C.gate(pn, feature, surface)
         if not enabled or rule ~= W.RULE_WATCH then return W.minimapDecision(enabled, rule, false, nil) end
         local watch = player and W.status(player).watch
         if not watch then return W.minimapDecision(enabled, rule, false, nil) end
-        return W.minimapDecision(enabled, rule, true, W.power(watch), W.deadKeepsMinimap())
+        return W.minimapDecision(enabled, rule, true, W.power(watch), W.deadKeepsMinimap(player))
     end
     local ok, reason, dist = W.featureDecision(player, feature, surface)
     if not ok and feature == "nav" and reason ~= W.REASON_FEATURE_OFF then
@@ -162,11 +162,12 @@ function C.ui()
     return nil
 end
 
--- 面板、付款與重要事件的通知：右上角 Toast（面板開著時避開面板，見 Panel 的 Toast.setAvoid）；框架缺席退回角色頭上的字
-function C.toast(player, text, title)
+-- 面板、付款與重要事件的通知：右上角 Toast（面板開著時避開面板，見 Panel 的 Toast.setAvoid）；框架缺席退回角色頭上的字。
+-- holdMs＝停留時間（nil＝框架預設 3 秒；負重相關的傳 8000，要讀完恢復方法）
+function C.toast(player, text, title, holdMs)
     local UI = C.ui()
     if UI and UI.CAPABILITIES.toast and UI.Toast then
-        UI.Toast.show({ title = title, message = text, maxLines = 3 })
+        UI.Toast.show({ title = title, message = text, maxLines = 3, holdMs = holdMs })
     elseif player and HaloTextHelper then
         HaloTextHelper.addBadText(player, title and (title .. " " .. text) or text)
     end
@@ -441,29 +442,72 @@ function C.moduleDesc(id)
     return s
 end
 
+-- ===== 核心（負重核心、節能核心）的數字：面板、物品停留說明、Toast 共用，數字一律照這台伺服器現在的沙盒 =====
+C.ROMAN = { "I", "II", "III" }
+
+-- 「+N 格（+X%）」：一格＝原版負重基數的 W.WEIGHT_UNIT_PCT%
+function C.unitsText(units)
+    local pct = units * W.WEIGHT_UNIT_PCT
+    local p = pct == math.floor(pct) and tostring(math.floor(pct)) or string.format("%.1f", pct)
+    return getText("IGUI_MinidoracatWatch_WeightUnits", tostring(units), p)
+end
+
+-- 這支錶的負重加成（格）：有效負重槽裡的核心加總、夾在上限；系統或負重核心關閉、沒電＝0。和 W.weightBonus 同一套，
+-- 但看指定的錶（面板可以開背包裡那支）。客戶端的 getMaxWeightBase 不同步，不拿它算
+function C.watchWeight(player, watch)
+    if not (watch and W.enabled() and W.weightEnabled()) then return 0 end
+    local c = W.power(watch)
+    if not (c and c > 0) then return 0 end
+    local units = 0
+    for _, slot in ipairs(W.slotList) do
+        local rec = slot.group == "weight" and W.slotRecord(watch, slot.id)
+        local def = rec and W.modules[rec.id]
+        local tier = def and W.WEIGHT_CLASSES[def.class]
+        if tier and W.slotValid(player, slot) then units = units + W.weightUnits(tier) end
+    end
+    return math.min(units, W.weightCap())
+end
+
+-- 節能核心的附加效果（句子陣列）：耐力一行（設 0 的那一項不寫，兩項都 0 整行不寫）；沒電時保留小地圖只在用得到時寫
+-- （沙盒 EcoKeepsMap 開著、DeadMode 不是本來就保留、小地圖規則要戴錶、會沒電＝需要電池）
+function C.ecoLines()
+    local out = {}
+    local d, r = W.ecoEnduranceDrain(), W.ecoEnduranceRegen()
+    if d > 0 or r > 0 then
+        local parts = {}
+        if d > 0 then parts[#parts + 1] = getText("IGUI_MinidoracatWatch_EcoEnduranceDrain", tostring(d)) end
+        if r > 0 then parts[#parts + 1] = getText("IGUI_MinidoracatWatch_EcoEnduranceRegen", tostring(r)) end
+        out[1] = getText("IGUI_MinidoracatWatch_EcoEndurance", table.concat(parts, getText("IGUI_MinidoracatWatch_ListSep")))
+    end
+    if W.sandbox("EcoKeepsMap", true) ~= false and not W.deadKeepsMinimap() and W.minimapRule() == W.RULE_WATCH
+        and W.needBattery() then
+        out[#out + 1] = getText("IGUI_MinidoracatWatch_EcoKeepsMap")
+    end
+    return out
+end
+
 -- 缺模組時的取得方式（面板功能清單「需要 X 模組」的滑過說明）：回句子陣列，或 nil（這台伺服器沒有開放從容器找到，也不能製作）。
 -- 只用客戶端本來就有的沙盒值與 shared 的戰利品表，不問伺服器；殭屍掉落規則在伺服器設定檔，不公開、不寫機率。
 function C.acquireLines(id)
     local def = W.modules[id]
     if not (def and W.BUILTIN[id] and W.enabled()) then return nil end
     local out = {}
-    if W.nativeSandbox("LootModules", true) ~= false then
-        local places, seen = {}, {}
-        for _, e in ipairs(W.lootEntries()) do
-            if e[2] == def.item then
-                for i = 1, #e[3], 2 do
-                    local p = getText("IGUI_MinidoracatWatch_LootPlace_" .. e[3][i])
-                    if not seen[p] then
-                        seen[p] = true
-                        places[#places + 1] = p
-                    end
+    -- 每一筆照自己的戰利品開關（W.lootOn：負重核心是 LootWeight1..3、預設關；其他模組是 LootModules）
+    local places, seen = {}, {}
+    for _, e in ipairs(W.lootEntries()) do
+        if e[2] == def.item and W.lootOn(e[1]) then
+            for i = 1, #e[3], 2 do
+                local p = getText("IGUI_MinidoracatWatch_LootPlace_" .. e[3][i])
+                if not seen[p] then
+                    seen[p] = true
+                    places[#places + 1] = p
                 end
             end
         end
-        if #places > 0 then
-            out[#out + 1] = getText("IGUI_MinidoracatWatch_Acquire_Loot",
-                table.concat(places, getText("IGUI_MinidoracatWatch_ListSep")))
-        end
+    end
+    if #places > 0 then
+        out[#out + 1] = getText("IGUI_MinidoracatWatch_Acquire_Loot",
+            table.concat(places, getText("IGUI_MinidoracatWatch_ListSep")))
     end
     local R = MinidoracatWatch_Recipe -- shared 檔，遊戲裡一定比本檔先載入
     if R and R.RECIPES[id] and R.canCraft() then

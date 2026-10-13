@@ -21,6 +21,8 @@ W.CMD_UNLOCKS = "unlocks"
 
 W.RULE_MODULE = "module"
 W.CLASSES = { standard = true, advanced = true, core = true }
+-- 負重核心的三階（值＝階數；2026-10-14 使用者裁定）：只給內建模組與負重槽用，registerWatchModule／Slot 照樣拒收
+W.WEIGHT_CLASSES = { weight1 = 1, weight2 = 2, weight3 = 3 }
 W.MAX_ADDON_SLOTS = 6 -- 面板「其他 MOD」那一列放得下的數量
 
 W.FAIL_MODULE = "IGUI_MinidoracatWatch_ModuleFailed"
@@ -86,7 +88,8 @@ end
 -- 槽位開啟方式：1 免費開放、2 解鎖卡、3 經濟系統、4 不開放。經濟系統要伺服器的 Economy 整合是 READY
 -- （W.econStatus，MinidoracatWatch_Pay.lua）；Economy 缺席、版本不足、單機時改用解鎖卡。
 -- 預設照設計稿 DEFAULT_ADMIN：擴充／進階／核心＝經濟系統，其他 MOD 的槽位＝免費（沙盒 SlotAddon；設定檔有逐槽設定時以它為準）。
-W.SLOT_MODE_KEY = { ext = "SlotExt", adv = "SlotAdv", core = "SlotCore", addon = "SlotAddon" }
+W.SLOT_MODE_KEY = { ext = "SlotExt", adv = "SlotAdv", core = "SlotCore", addon = "SlotAddon",
+    wt1 = "SlotWt1", wt2 = "SlotWt2", wt3 = "SlotWt3" }
 function W.slotModeValue(slot) -- 沙盒原始值（第三方槽位先看設定檔的逐槽設定）
     local key = W.SLOT_MODE_KEY[slot.tier]
     if not key then return 1 end
@@ -151,13 +154,16 @@ local function reject(what, def, why)
     return false
 end
 
--- 驗證失敗整筆拒收（fail closed）、記 log 一次；欄位複製進內部表，不留呼叫端的 table
-local function registerModule(def)
+-- 驗證失敗整筆拒收（fail closed）、記 log 一次；欄位複製進內部表，不留呼叫端的 table。
+-- builtin＝本檔登記的內建模組（只有它們能用負重的三階類別）；對外 API 不傳這個參數
+local function registerModule(def, builtin)
     if type(def) ~= "table" then return reject("registerWatchModule", def, "def is not a table") end
     if not validId(def.id) then return reject("registerWatchModule", def, "bad id") end
     if W.modules[def.id] then return reject("registerWatchModule", def, "duplicate id") end
     if type(def.name) ~= "string" or def.name == "" then return reject("registerWatchModule", def, "bad name") end
-    if not W.CLASSES[def.class] then return reject("registerWatchModule", def, "bad class") end
+    if not (W.CLASSES[def.class] or (builtin and W.WEIGHT_CLASSES[def.class])) then
+        return reject("registerWatchModule", def, "bad class")
+    end
     if not finite(def.drain, 0, 1000) then return reject("registerWatchModule", def, "bad drain") end
     if type(def.item) ~= "string" or not def.item:match("^[%w_]+%.[%w_]+$") then
         return reject("registerWatchModule", def, "bad item")
@@ -219,6 +225,10 @@ addSlot("ext", "IGUI_MinidoracatWatch_Slot_ext", "ext", STD, { rent = 60, days =
 addSlot("adv", "IGUI_MinidoracatWatch_Slot_adv", "adv", { "standard", "advanced" }, { rent = 150, days = 7, buy = 1200 })
 addSlot("core", "IGUI_MinidoracatWatch_Slot_core", "core", { "standard", "advanced", "core" },
     { rent = 300, days = 7, buy = 2400 })
+-- 負重槽（2026-10-14）：一階一格、只收同一階的負重核心；開法、價格、產品、解鎖卡都照自己的 tier（同擴充、進階、核心槽）
+addSlot("wt1", "IGUI_MinidoracatWatch_Slot_wt1", "wt1", { "weight1" }, { rent = 60, days = 7, buy = 400 }).group = "weight"
+addSlot("wt2", "IGUI_MinidoracatWatch_Slot_wt2", "wt2", { "weight2" }, { rent = 150, days = 7, buy = 1200 }).group = "weight"
+addSlot("wt3", "IGUI_MinidoracatWatch_Slot_wt3", "wt3", { "weight3" }, { rent = 300, days = 7, buy = 2400 }).group = "weight"
 
 -- feature＝這個模組開放的功能（沒有＝不對應功能，例如節能核心）；drainKey＝耗電的沙盒選項
 W.BUILTIN = {}
@@ -234,10 +244,14 @@ local BUILTIN = {
     { "eco", "Eco", "core", 0, nil },
     -- 照明：裝著不耗電，開燈時另加 LightDrain%（W.drainFactor；沙盒鍵不叫 DrainLight，moduleDrain 才會是 0）
     { "light", "Light", "standard", 0, "light" },
+    -- 負重核心：耗電讀沙盒 DrainWeight1..3（預設 +100／200／300%）；不對應小地圖功能，加成在 MinidoracatWatch_Cores.lua
+    { "weight1", "Weight1", "weight1", 100, nil },
+    { "weight2", "Weight2", "weight2", 200, nil },
+    { "weight3", "Weight3", "weight3", 300, nil },
 }
 for _, b in ipairs(BUILTIN) do
     registerModule({ id = b[1], name = "IGUI_MinidoracatWatch_Module_" .. b[1], class = b[3], drain = b[4],
-        item = "MinidoracatWatch.Module_" .. b[2] })
+        item = "MinidoracatWatch.Module_" .. b[2] }, true)
     W.BUILTIN[b[1]] = { feature = b[5], drainKey = "Drain" .. b[2] }
 end
 -- 每個功能由哪些模組提供（順序＝缺模組時提示哪一個）
@@ -245,7 +259,9 @@ W.PROVIDERS = { poi = { "ledger" }, nav = { "gps" }, share = { "comm", "longcomm
     scan = { "scan" }, zombie = { "detect", "mildetect" }, light = { "light" } }
 
 W.CARD_TYPES = { ext = "MinidoracatWatch.UnlockCard_Ext", adv = "MinidoracatWatch.UnlockCard_Adv",
-    core = "MinidoracatWatch.UnlockCard_Core", addon = "MinidoracatWatch.UnlockCard_Ext" }
+    core = "MinidoracatWatch.UnlockCard_Core", addon = "MinidoracatWatch.UnlockCard_Ext",
+    -- 負重槽照階級用擴充、進階、核心槽卡（2026-10-14 使用者裁定）
+    wt1 = "MinidoracatWatch.UnlockCard_Ext", wt2 = "MinidoracatWatch.UnlockCard_Adv", wt3 = "MinidoracatWatch.UnlockCard_Core" }
 function W.cardType(slot) return W.CARD_TYPES[slot.tier] end
 
 -- 模組耗電（%）：內建模組讀沙盒；第三方讀設定檔 moduleDrains（管理員調整），沒有就用它登記的建議值
@@ -373,7 +389,15 @@ function W.orphanSlots(watch)
     return out
 end
 
--- 錶的耗電倍率：Σ（有效槽位裡、功能沒被關閉的模組耗電%，照明開著時另加 LightDrain%）；節能核心運作時整支錶減半（設計稿 fullRuntime）
+-- 管理員關掉了這個內建模組的作用：對應功能是「關閉」，或負重核心整個關閉（沙盒 WeightEnabled）。關掉的模組不耗電
+function W.moduleOff(def)
+    local b = W.BUILTIN[def.id]
+    if not b then return false end
+    if b.feature then return W.featureRule(b.feature) == W.RULE_OFF end
+    return W.WEIGHT_CLASSES[def.class] ~= nil and not W.weightEnabled()
+end
+
+-- 錶的耗電倍率：Σ（有效槽位裡、作用沒被關掉的模組耗電%，照明開著時另加 LightDrain%）；節能核心運作時整支錶減半（設計稿 fullRuntime）
 function W.drainFactor(player, watch)
     local slots = W.slotsOf(watch)
     if not slots then return 1 end
@@ -382,8 +406,7 @@ function W.drainFactor(player, watch)
         local rec = slots[slot.id]
         local def = type(rec) == "table" and W.modules[rec.id]
         if def and W.slotValid(player, slot) then
-            local b = W.BUILTIN[def.id]
-            if not (b and b.feature and W.featureRule(b.feature) == W.RULE_OFF) then
+            if not W.moduleOff(def) then
                 pct = pct + W.moduleDrain(def)
                 if def.id == "eco" then eco = true end
                 if def.id == "light" and not lit and W.lightLit(player, watch) then
@@ -506,7 +529,7 @@ function W.moduleState(player, id)
     if not W.enabled() then return "notRequired" end
     local b = W.BUILTIN[id]
     local rule = b and b.feature and W.featureRule(b.feature) or W.RULE_MODULE
-    if rule == W.RULE_OFF then return "disabled" end
+    if W.moduleOff(W.modules[id]) then return "disabled" end -- 功能關閉，或負重核心整個關閉
     local e = W.status(player)
     local on = powered(e)
     local m = on and W.modState(e, id)
@@ -635,7 +658,7 @@ end
 MinidoracatWatchAPI = MinidoracatWatchAPI or {}
 local API = MinidoracatWatchAPI
 API.watchApiVersion = 2
-API.registerWatchModule = registerModule
+API.registerWatchModule = function(def) return registerModule(def) end
 API.registerWatchSlot = registerSlot
 API.getWatchModuleState = W.moduleState
 API.getWatchModuleData = W.moduleData
