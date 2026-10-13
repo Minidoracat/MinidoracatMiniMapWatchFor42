@@ -163,11 +163,12 @@ function C.ui()
 end
 
 -- 面板、付款與重要事件的通知：右上角 Toast（面板開著時避開面板，見 Panel 的 Toast.setAvoid）；框架缺席退回角色頭上的字。
--- holdMs＝停留時間（nil＝框架預設 3 秒；負重相關的傳 8000，要讀完恢復方法）
+-- holdMs＝停留時間（nil＝框架預設 3 秒）。負重相關的傳 8000：要讀完恢復方法，訊息也長（併進沒電那則時拉丁語系要 5 行，
+-- MP 的翻譯包字型更寬要 7 行），所以給到 8 行；其他照舊 3 行（2026-10-14 PTBR 實機：3 行截掉恢復方法、6 行截掉最後半句）
 function C.toast(player, text, title, holdMs)
     local UI = C.ui()
     if UI and UI.CAPABILITIES.toast and UI.Toast then
-        UI.Toast.show({ title = title, message = text, maxLines = 3, holdMs = holdMs })
+        UI.Toast.show({ title = title, message = text, maxLines = holdMs and 8 or 3, holdMs = holdMs })
     elseif player and HaloTextHelper then
         HaloTextHelper.addBadText(player, title and (title .. " " .. text) or text)
     end

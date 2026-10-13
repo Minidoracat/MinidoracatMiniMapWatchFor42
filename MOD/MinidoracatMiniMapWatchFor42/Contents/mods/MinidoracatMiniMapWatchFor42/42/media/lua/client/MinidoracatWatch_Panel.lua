@@ -1174,7 +1174,7 @@ function M:drawInspector(UI, player, watch, slot)
     if slot.orphan then
         y = box(self, theme, x, y, width, getText("IGUI_MinidoracatWatch_Desc_Orphan"), "warning", "warn")
     elseif st == "dead" then
-        y = box(self, theme, x, y, width, getText("IGUI_MinidoracatWatch_Desc_Dead"), "pause", "paused")
+        y = box(self, theme, x, y, width, getText("IGUI_MinidoracatWatch_Desc_Dead"), STATUS_ICON.dead, "paused")
     elseif st == "paused" and not (ui and not ui.keep) then
         y = box(self, theme, x, y, width, getText("IGUI_MinidoracatWatch_Desc_Paused", name), "pause", "paused")
     end

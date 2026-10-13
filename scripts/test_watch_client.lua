@@ -1015,15 +1015,15 @@ check(fss == 40 and fsx == 0 and fsy >= wty + wts + 16 + 2 and panel.sockets.hei
     "其他 MOD 的槽位排在負重列與等級標籤下面（40px、有「其他 MOD」標題），槽位區跟著長高")
 sk.cur = slotIndex("wt1")
 check(sk:onFocusKey(Keyboard.KEY_DOWN) and sk.cur == slotIndex("forecast"), "負重列 ↓：到其他 MOD 的槽位")
--- C.toast 把 holdMs 交給框架的 Toast（負重相關的停 8 秒）；沒給＝框架預設
+-- C.toast 把 holdMs 交給框架的 Toast（負重相關的停 8 秒、給到 8 行，恢復方法才不會被截掉）；沒給＝框架預設、3 行
 local shown = {}
 local realShow = C.ui().Toast.show
 C.ui().Toast.show = function(o) shown[#shown + 1] = o end
 C.toast(p, "msg", "title", 8000)
 C.toast(p, "msg2")
 C.ui().Toast.show = realShow
-check(shown[1] and shown[1].holdMs == 8000 and shown[1].title == "title" and shown[1].message == "msg" and shown[1].maxLines == 3
-    and shown[2] and shown[2].holdMs == nil, "C.toast：holdMs 交給 UI.Toast（沒給就不帶）")
+check(shown[1] and shown[1].holdMs == 8000 and shown[1].title == "title" and shown[1].message == "msg" and shown[1].maxLines == 8
+    and shown[2] and shown[2].holdMs == nil and shown[2].maxLines == 3, "C.toast：holdMs 交給 UI.Toast（沒給就不帶）；停久的給 8 行")
 for _, c in ipairs(savedCards) do p.inv:AddItem(c) end
 SB.SlotAddon = 1
 for i = #W.slotList, 1, -1 do if W.slotList[i].id == "forecast" then table.remove(W.slotList, i) end end
