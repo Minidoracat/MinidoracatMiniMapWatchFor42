@@ -530,6 +530,7 @@
     "IGUI_MinidoracatWatch_Toast_WeightOff": "Taşıma Çekirdekleri devre dışı",
     "IGUI_MinidoracatWatch_Toast_WeightOff_msg": "Harita saati bileğinizde değil, bu yüzden taşıma kapasiteniz normale döndü. Geri getirmek için saati tekrar takın.",
     "IGUI_MinidoracatWatch_Toast_Dead_weight": "%1 Taşıma Çekirdekleri de durdu; taşıma kapasitesi normale döndü.",
+    "IGUI_MinidoracatWatch_ToastFold": "%1. %2",
     "IGUI_MinidoracatWatch_WeightCores": "Taşıma Çekirdekleri",
     "IGUI_MinidoracatWatch_WeightUnits": "+%1 birim (+%%%2)",
     "IGUI_MinidoracatWatch_WeightUnitsShort": "+%1 birim",

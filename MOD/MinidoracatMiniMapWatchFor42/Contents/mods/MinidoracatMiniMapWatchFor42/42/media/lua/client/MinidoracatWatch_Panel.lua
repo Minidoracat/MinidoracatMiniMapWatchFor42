@@ -405,13 +405,17 @@ function Sockets:drawSocket(i, player, watch, colors, drop)
         local delta = busy.action and busy:getJobDelta() or 0.5
         rect(self, x + 8 * k, y + s - 9 * k, math.max(1, (s - 16 * k) * delta), math.max(2, 4 * k), colors.accent)
     end
-    -- 等級標籤（非標準槽，大格才畫）
+    -- 等級標籤（非標準槽，大格才畫）。一排六格（row）的格距只有 LEFT_W/6≈48px：標籤最寬到格距減 2，字太長就截，
+    -- 免得相鄰兩個疊在一起（2026-10-14 PTBR 實機：翻譯包字型下「Avan」「Núcleo」疊住；中文在 2x 字級也會）
     if slot.tier ~= "std" and s >= 44 then
         local label = getText("IGUI_MinidoracatWatch_Tag_" .. slot.tier)
-        local tw = measure(label) + 12
-        local ty = y + s + 1
-        p.theme:fill(self, x + math.floor((s - tw) / 2), ty, tw, fontH() + 2, tier, "pill")
-        text(self, label, x + math.floor((s - tw) / 2) + 6, ty + 1, colors.tagText)
+        local room = (i <= 6 and self.layout == "row") and math.floor(LEFT_W / 6) - 2 or nil
+        if room and measure(label) > room - 4 and UI.Text and UI.Text.fit then label = UI.Text.fit(label, room - 4) end
+        local lw = measure(label)
+        local tw = room and math.min(lw + 12, room) or lw + 12
+        local tx, ty = x + math.floor((s - tw) / 2), y + s + 1
+        p.theme:fill(self, tx, ty, tw, fontH() + 2, tier, "pill")
+        text(self, label, tx + math.floor((tw - lw) / 2), ty + 1, colors.tagText)
     end
 end
 

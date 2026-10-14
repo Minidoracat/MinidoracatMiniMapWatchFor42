@@ -530,6 +530,7 @@
     "IGUI_MinidoracatWatch_Toast_WeightOff": "Rdzenie udźwigu wstrzymane",
     "IGUI_MinidoracatWatch_Toast_WeightOff_msg": "Nie masz zegarka z mapą na nadgarstku, więc twój udźwig wrócił do normy. Załóż go ponownie, aby znów zwiększyć udźwig.",
     "IGUI_MinidoracatWatch_Toast_Dead_weight": "%1 Rdzenie udźwigu też się zatrzymały; udźwig wrócił do normy.",
+    "IGUI_MinidoracatWatch_ToastFold": "%1. %2",
     "IGUI_MinidoracatWatch_WeightCores": "Rdzenie udźwigu",
     "IGUI_MinidoracatWatch_WeightUnits": "+%1 jedn. (+%2%%)",
     "IGUI_MinidoracatWatch_WeightUnitsShort": "+%1 jedn.",

@@ -902,6 +902,21 @@ sk:prerender()
 check(drew("IGUI_MinidoracatWatch_Tag_wt1") and drew("IGUI_MinidoracatWatch_Tag_wt2") and drew("IGUI_MinidoracatWatch_Tag_wt3")
     and drew("IGUI_MinidoracatWatch_WeightCores") and drew(panel.weightText) and not drew("IGUI_MinidoracatWatch_OtherMods"),
     "負重列：自己的標題與總加成、三格都畫等級標籤；沒有其他 MOD 的槽位就不畫「其他 MOD」")
+-- ValuTech 一排六格的格距只有 48px：擴充、進階、核心三個等級標籤最寬 46px、相鄰兩個不重疊（假字寬下鍵名一定比格距長）
+do
+    local pills, rowY = {}, select(2, sk:socketRect(slotIndex("core"))) + 44 + 1
+    panel.theme.fill = function(_, _, x, y, w, _, _, shape)
+        if shape == "pill" and y == rowY then pills[#pills + 1] = { x = x, w = w } end
+    end
+    sk:prerender()
+    panel.theme.fill = nil
+    table.sort(pills, function(a, b) return a.x < b.x end)
+    local ok = #pills == 3
+    for j, q in ipairs(pills) do
+        if q.w > 46 or (pills[j + 1] and q.x + q.w >= pills[j + 1].x) then ok = false end
+    end
+    check(ok, "ValuTech 一排六格：擴充、進階、核心三個等級標籤最寬 46px，相鄰兩個不重疊")
+end
 -- 標題和總加成一行放不下（假字寬 7px／字：鍵名一定放不下）就把總加成換到第二行、負重列往下一行；放得下就同一行
 do
     local function sumY()
@@ -1008,15 +1023,22 @@ check(fss == 40 and fsx == 0 and fsy >= wty + wts + 16 + 2 and panel.sockets.hei
     "其他 MOD 的槽位排在負重列與等級標籤下面（40px、有「其他 MOD」標題），槽位區跟著長高")
 sk.cur = slotIndex("wt1")
 check(sk:onFocusKey(Keyboard.KEY_DOWN) and sk.cur == slotIndex("forecast"), "負重列 ↓：到其他 MOD 的槽位")
--- C.toast 把 holdMs 交給框架的 Toast（負重相關的停 8 秒、給到 8 行，恢復方法才不會被截掉）；沒給＝框架預設、3 行
+-- C.toast 把 holdMs 交給框架的 Toast（負重相關的停 8 秒、給到 8 行，恢復方法才不會被截掉）；沒給＝框架預設、3 行。
+-- 框架的標題只畫一行（284px，假字寬 7px／字：40 字放得下、41 字放不下）：放不下就併進訊息開頭、多給兩行
 local shown = {}
 local realShow = C.ui().Toast.show
 C.ui().Toast.show = function(o) shown[#shown + 1] = o end
 C.toast(p, "msg", "title", 8000)
 C.toast(p, "msg2")
+C.toast(p, "msg3", string.rep("t", 40))
+C.toast(p, "msg4", string.rep("t", 41), 8000)
 C.ui().Toast.show = realShow
 check(shown[1] and shown[1].holdMs == 8000 and shown[1].title == "title" and shown[1].message == "msg" and shown[1].maxLines == 8
     and shown[2] and shown[2].holdMs == nil and shown[2].maxLines == 3, "C.toast：holdMs 交給 UI.Toast（沒給就不帶）；停久的給 8 行")
+check(shown[3] and shown[3].title == string.rep("t", 40) and shown[3].message == "msg3" and shown[3].maxLines == 3
+    and shown[4] and shown[4].title == nil and shown[4].message == "IGUI_MinidoracatWatch_ToastFold|" .. string.rep("t", 41) .. "|msg4"
+    and shown[4].maxLines == 10 and shown[4].holdMs == 8000,
+    "C.toast：標題放得下照舊；放不下就併進訊息開頭、多給兩行（停留時間照帶）")
 for _, c in ipairs(savedCards) do p.inv:AddItem(c) end
 SB.SlotAddon = 1
 for i = #W.slotList, 1, -1 do if W.slotList[i].id == "forecast" then table.remove(W.slotList, i) end end

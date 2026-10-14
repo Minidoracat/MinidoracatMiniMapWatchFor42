@@ -530,6 +530,7 @@
     "IGUI_MinidoracatWatch_Toast_WeightOff": "Carry Cores paused",
     "IGUI_MinidoracatWatch_Toast_WeightOff_msg": "The map watch isn't on your wrist, so your carry capacity is back to normal. Put it back on to restore it.",
     "IGUI_MinidoracatWatch_Toast_Dead_weight": "%1 The Carry Cores stopped too; carry capacity is back to normal.",
+    "IGUI_MinidoracatWatch_ToastFold": "%1. %2",
     "IGUI_MinidoracatWatch_WeightCores": "Carry Cores",
     "IGUI_MinidoracatWatch_WeightUnits": "+%1 units (+%2%%)",
     "IGUI_MinidoracatWatch_WeightUnitsShort": "+%1 units",

@@ -530,6 +530,7 @@
     "IGUI_MinidoracatWatch_Toast_WeightOff": "Ядра грузоподъёмности приостановлены",
     "IGUI_MinidoracatWatch_Toast_WeightOff_msg": "Часы с картой не на запястье, поэтому грузоподъёмность вернулась к обычной. Наденьте их снова, чтобы восстановить её.",
     "IGUI_MinidoracatWatch_Toast_Dead_weight": "%1 Ядра грузоподъёмности тоже остановлены; грузоподъёмность вернулась к обычной.",
+    "IGUI_MinidoracatWatch_ToastFold": "%1. %2",
     "IGUI_MinidoracatWatch_WeightCores": "Ядра грузоподъёмности",
     "IGUI_MinidoracatWatch_WeightUnits": "+%1 ед. (+%2%%)",
     "IGUI_MinidoracatWatch_WeightUnitsShort": "+%1 ед.",

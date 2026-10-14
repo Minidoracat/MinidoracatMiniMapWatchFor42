@@ -8,8 +8,10 @@ local check = F.check
 F.mode = "client"
 
 function getCore() return { getScreenWidth = function() return 1920 end, getScreenHeight = function() return 1080 end } end
+-- Toast 標題的字型量成 0：這裡的標題是翻譯鍵（很長），照實量會被 C.toast 併進訊息；併的規則在 test_watch_client 測
+UIFont.NewSmall = "NS"
 function getTextManager()
-    return { MeasureStringX = function(_, _, s) return #s * 7 end, getFontHeight = function() return 16 end }
+    return { MeasureStringX = function(_, f, s) return f == UIFont.NewSmall and 0 or #s * 7 end, getFontHeight = function() return 16 end }
 end
 function getScriptManager()
     return { FindItem = function() return { getNormalTexture = function() return "tex" end } end }

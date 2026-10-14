@@ -530,6 +530,7 @@
     "IGUI_MinidoracatWatch_Toast_WeightOff": "적재 코어 일시 정지",
     "IGUI_MinidoracatWatch_Toast_WeightOff_msg": "지도 시계를 손목에 차고 있지 않아 최대 적재량이 원래대로 돌아왔습니다. 다시 착용하면 복구됩니다.",
     "IGUI_MinidoracatWatch_Toast_Dead_weight": "%1 적재 코어도 정지되어 최대 적재량이 원래대로 돌아왔습니다.",
+    "IGUI_MinidoracatWatch_ToastFold": "%1. %2",
     "IGUI_MinidoracatWatch_WeightCores": "적재 코어",
     "IGUI_MinidoracatWatch_WeightUnits": "+%1칸 (+%2%%)",
     "IGUI_MinidoracatWatch_WeightUnitsShort": "+%1칸",

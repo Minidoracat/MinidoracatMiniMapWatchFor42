@@ -530,6 +530,7 @@
     "IGUI_MinidoracatWatch_Toast_WeightOff": "積載コアが停止しました",
     "IGUI_MinidoracatWatch_Toast_WeightOff_msg": "マップウォッチを手首に着けていないため、積載量が元に戻りました。着け直すと戻ります。",
     "IGUI_MinidoracatWatch_Toast_Dead_weight": "%1積載コアも停止し、積載量が元に戻りました。",
+    "IGUI_MinidoracatWatch_ToastFold": "%1。%2",
     "IGUI_MinidoracatWatch_WeightCores": "積載コア",
     "IGUI_MinidoracatWatch_WeightUnits": "+%1 単位（+%2%%）",
     "IGUI_MinidoracatWatch_WeightUnitsShort": "+%1 単位",

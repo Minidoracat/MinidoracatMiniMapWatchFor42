@@ -530,6 +530,7 @@
     "IGUI_MinidoracatWatch_Toast_WeightOff": "Traglastkerne pausiert",
     "IGUI_MinidoracatWatch_Toast_WeightOff_msg": "Die Kartenuhr ist nicht an deinem Handgelenk, daher ist deine Traglast wieder normal. Leg sie wieder an, um den Bonus zurückzubekommen.",
     "IGUI_MinidoracatWatch_Toast_Dead_weight": "%1 Auch die Traglastkerne sind gestoppt; die Traglast ist wieder normal.",
+    "IGUI_MinidoracatWatch_ToastFold": "%1. %2",
     "IGUI_MinidoracatWatch_WeightCores": "Traglastkerne",
     "IGUI_MinidoracatWatch_WeightUnits": "+%1 Einheiten (+%2%%)",
     "IGUI_MinidoracatWatch_WeightUnitsShort": "+%1 Einheiten",

@@ -164,11 +164,18 @@ end
 
 -- 面板、付款與重要事件的通知：右上角 Toast（面板開著時避開面板，見 Panel 的 Toast.setAvoid）；框架缺席退回角色頭上的字。
 -- holdMs＝停留時間（nil＝框架預設 3 秒）。負重相關的傳 8000：要讀完恢復方法，訊息也長（併進沒電那則時拉丁語系要 5 行，
--- MP 的翻譯包字型更寬要 7 行），所以給到 8 行；其他照舊 3 行（2026-10-14 PTBR 實機：3 行截掉恢復方法、6 行截掉最後半句）
+-- MP 的翻譯包字型更寬要 7 行），所以給到 8 行；其他照舊 3 行（2026-10-14 PTBR 實機：3 行截掉恢復方法、6 行截掉最後半句）。
+-- 框架的標題只畫一行、不截字（Toast.lua：寬 300、左右各留 8），拉丁語系帶槽位或模組名的標題常常畫出框外
+-- （同日 PTBR 實機：翻譯包字型下「Núcleos de Capacidade de Carga pausados」超出 30px）：放不下就把標題併進訊息開頭、多給兩行
+local TOAST_TEXT_W = 284
 function C.toast(player, text, title, holdMs)
     local UI = C.ui()
     if UI and UI.CAPABILITIES.toast and UI.Toast then
-        UI.Toast.show({ title = title, message = text, maxLines = holdMs and 8 or 3, holdMs = holdMs })
+        local lines = holdMs and 8 or 3
+        if title and getTextManager():MeasureStringX(UIFont.NewSmall, title) > TOAST_TEXT_W then
+            text, title, lines = getText("IGUI_MinidoracatWatch_ToastFold", title, text), nil, lines + 2
+        end
+        UI.Toast.show({ title = title, message = text, maxLines = lines, holdMs = holdMs })
     elseif player and HaloTextHelper then
         HaloTextHelper.addBadText(player, title and (title .. " " .. text) or text)
     end

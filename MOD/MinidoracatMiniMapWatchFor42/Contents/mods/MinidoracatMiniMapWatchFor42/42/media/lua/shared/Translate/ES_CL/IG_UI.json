@@ -530,6 +530,7 @@
     "IGUI_MinidoracatWatch_Toast_WeightOff": "Núcleos de capacidad de carga en pausa",
     "IGUI_MinidoracatWatch_Toast_WeightOff_msg": "El reloj de mapa no está en tu muñeca, así que tu capacidad de carga vuelve a ser la normal. Vuelve a ponértelo para restablecerla.",
     "IGUI_MinidoracatWatch_Toast_Dead_weight": "%1 Los Núcleos de capacidad de carga también se detuvieron; la capacidad de carga vuelve a ser la normal.",
+    "IGUI_MinidoracatWatch_ToastFold": "%1. %2",
     "IGUI_MinidoracatWatch_WeightCores": "Núcleos de capacidad de carga",
     "IGUI_MinidoracatWatch_WeightUnits": "+%1 unidades (+%2%%)",
     "IGUI_MinidoracatWatch_WeightUnitsShort": "+%1 unidades",
