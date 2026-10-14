@@ -895,8 +895,8 @@ sp(W.applyModuleChange, p, watch:getID(), "wt1", true, w1a:getID())
 sp(W.applyModuleChange, p, watch:getID(), "wt2", true, w2a:getID())
 tick()
 selectSlot("wt2")
-check(panel.weightText == "IGUI_MinidoracatWatch_WeightRowSum|IGUI_MinidoracatWatch_WeightUnits|4|50|8",
-    "負重列標題：這支錶 +4 格（+50%）／上限 8 格（負重核心 II 照沙盒 3 格）")
+check(panel.weightText == "IGUI_MinidoracatWatch_WeightUnits|4|50",
+    "負重列標題：這支錶 +4 格（+50%）；三階加起來 7 格碰不到上限 8，不寫上限（負重核心 II 照沙盒 3 格）")
 F.texts = {}
 sk:prerender()
 check(drew("IGUI_MinidoracatWatch_Tag_wt1") and drew("IGUI_MinidoracatWatch_Tag_wt2") and drew("IGUI_MinidoracatWatch_Tag_wt3")
@@ -931,8 +931,8 @@ panel:prerender()
 check(drew("IGUI_MinidoracatWatch_KV_Tier|II") and drew("IGUI_MinidoracatWatch_KV_Bonus|IGUI_MinidoracatWatch_WeightUnits|3|37.5")
     and drew("IGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainPlus|200")
     and drew("IGUI_MinidoracatWatch_KV_Slot|IGUI_MinidoracatWatch_St_active")
-    and drew("IGUI_MinidoracatWatch_KV_WatchTotal|IGUI_MinidoracatWatch_WeightUnitsShort|4") and drew("IGUI_MinidoracatWatch_KV_Cap|8"),
-    "檢視區（負重核心 II）：階級、加成、耗電、槽位、這支錶合計、總上限六格")
+    and drew("IGUI_MinidoracatWatch_KV_WatchTotal|IGUI_MinidoracatWatch_WeightUnitsShort|4") and not drew("IGUI_MinidoracatWatch_KV_Cap"),
+    "檢視區（負重核心 II）：階級、加成、耗電、槽位、這支錶合計五格；上限碰不到就沒有總上限那格")
 check(drew("IGUI_MinidoracatWatch_WeightNow|17.5") and not drew("|99"), "角色現在的負重上限讀 getMaxWeight（不從不同步的基數算）")
 SB.WeightCap = 3
 panel.scanAt = nil
@@ -940,13 +940,20 @@ panel:update()
 F.texts = {}
 panel:prerender()
 check(panel.weightText:find("WeightUnits|3|37.5|3", 1, true) and drew("IGUI_MinidoracatWatch_KV_WatchTotal|IGUI_MinidoracatWatch_WeightUnitsShort|3")
-    and drew("IGUI_MinidoracatWatch_KV_Cap|3"), "總上限 3 格：合計夾在上限")
+    and drew("IGUI_MinidoracatWatch_KV_Cap|3"), "上限 3 格卡得到（三階 7 格）：標題與檢視區都寫上限，合計夾在上限")
+SB.WeightCap = 7
+panel.scanAt = nil
+panel:update()
+F.texts = {}
+panel:prerender()
+check(panel.weightText == "IGUI_MinidoracatWatch_WeightUnits|4|50" and not drew("IGUI_MinidoracatWatch_KV_Cap"),
+    "三階加起來剛好等於上限（7）：上限沒卡到任何東西，不寫")
 SB.WeightCap, SB.WeightEnabled = nil, false
 panel.scanAt = nil
 panel:update()
 F.texts = {}
 panel:prerender()
-check(panel.weightText:find("WeightUnits|0|0|", 1, true) and drew("IGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainNone"),
+check(panel.weightText == "IGUI_MinidoracatWatch_WeightUnits|0|0" and drew("IGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainNone"),
     "負重核心整個關閉：合計 0 格、不耗電")
 SB.WeightEnabled = nil
 W.setCharge(watch, 0)
@@ -967,7 +974,7 @@ panel.scanAt = nil
 panel:update()
 F.icons = {}
 sk:prerender()
-check(iconCount("pause") == 1 and iconCount("battery") == 0 and panel.weightText:find("WeightUnits|1|12.5|8", 1, true),
+check(iconCount("pause") == 1 and iconCount("battery") == 0 and panel.weightText == "IGUI_MinidoracatWatch_WeightUnits|1|12.5",
     "負重槽 II 不開放：那一格畫暫停徽章、合計只剩 I 的 1 格")
 sk.cur = slotIndex("wt1")
 check(sk:onFocusKey(Keyboard.KEY_UP) and sk.cur <= 6, "負重列 ↑ 回到六格")

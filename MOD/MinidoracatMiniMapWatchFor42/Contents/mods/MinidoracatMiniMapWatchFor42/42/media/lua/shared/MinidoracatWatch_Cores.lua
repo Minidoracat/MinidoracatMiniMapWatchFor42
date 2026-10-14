@@ -25,6 +25,12 @@ function W.weightEnabled() return W.sandbox("WeightEnabled", true) ~= false end
 -- 每一階的格數（預設 1／2／3）與一支錶的上限（預設 8 格＝+100%）
 function W.weightUnits(tier) return intIn(W.sandbox("WeightUnits" .. tier, tier), 0, 8, tier) end
 function W.weightCap() return intIn(W.sandbox("WeightCap", 8), 0, 16, 8) end
+-- 一支錶最多幾格：負重槽一階一格、只收同一階（第三方不能登記負重核心），所以是 I＋II＋III，再夾在上限。
+-- 第二個值＝上限卡得到嗎：三階加起來超過上限才卡得到（預設 1＋2＋3＝6，碰不到 8）；卡不到時玩家面板不寫上限
+function W.weightMax()
+    local sum, cap = W.weightUnits(1) + W.weightUnits(2) + W.weightUnits(3), W.weightCap()
+    return math.min(sum, cap), sum > cap
+end
 
 -- 這位玩家現在的加成格數：戴著、有電的錶上，裝在有效負重槽的核心加總，夾在上限（W.status 有 1 秒快取、不配置）
 function W.weightBonus(player)
