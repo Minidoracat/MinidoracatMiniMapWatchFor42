@@ -200,9 +200,9 @@ local ENDUR, DRAIN_E, REGEN_E = "IGUI_MinidoracatWatch_EcoEndurance|", "IGUI_Min
 lines = coreTip("Eco")
 check(texts(lines) == "IGUI_MinidoracatWatch_KV_Class|IGUI_MinidoracatWatch_Class_core\n"
     .. "IGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainHalf\n"
-    .. ENDUR .. DRAIN_E .. "25IGUI_MinidoracatWatch_ListSep" .. REGEN_E .. "50\n"
+    .. ENDUR .. DRAIN_E .. "25IGUI_MinidoracatWatch_ListSep" .. REGEN_E .. "30\n"
     .. "IGUI_MinidoracatWatch_EcoKeepsMap\nIGUI_MinidoracatWatch_EcoNeeds" and lines[5][2] == "dim" and lines[3][2] == false,
-    "節能核心：耐力（預設消耗 −25%、恢復 +50%）、沒電保留小地圖、生效條件（次要色）；沒有功能列")
+    "節能核心：耐力（預設消耗 −25%、恢復 +30%）、沒電保留小地圖、生效條件（次要色）；沒有功能列")
 SB.EcoEnduranceDrain, SB.EcoEnduranceRegen = 40, 0
 s = texts(coreTip("Eco"))
 check(s:find("\n" .. ENDUR .. DRAIN_E .. "40\n", 1, true) and not s:find(REGEN_E, 1, true),

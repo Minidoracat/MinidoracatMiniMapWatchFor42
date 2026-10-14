@@ -722,7 +722,7 @@ local pushed = #F.damages
 run(1000, 1000)
 check(kp2:getMaxWeightBase() == 13 and #F.damages == pushed, "單機：照樣改基數，不送封包")
 
--- ===== 節能核心：耐力消耗少 25%、恢復多 50%（實測 en-*-1014a～c）；沒電時保住小地圖 =====
+-- ===== 節能核心：耐力消耗少 25%、恢復多 30%（實測 en-*-1014a～c）；沒電時保住小地圖 =====
 kp = kp2
 put("core", "eco")
 local stats = kp:getStats()
@@ -739,7 +739,7 @@ run(1000, 1000)
 local after, raw = change(-0.1)
 check(near(after, raw + 0.025), "消耗 0.1：退回 25%")
 after, raw = change(0.1)
-check(near(after, raw + 0.05), "恢復 0.1：多給 50%")
+check(near(after, raw + 0.03), "恢復 0.1：多給 30%")
 run(1000, 1000)
 check(near(stats:get(END), after), "沒變化：不動")
 sbx.EcoEnduranceDrain, sbx.EcoEnduranceRegen = 0, 100

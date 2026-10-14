@@ -354,15 +354,15 @@
     "Sandbox_MinidoracatWatch_DrainWeight3": "Verbrauch Traglastkern III (%%)",
     "Sandbox_MinidoracatWatch_DrainWeight3_tooltip": "Zusätzlicher Strom, den Traglastkern III zur reinen Minimap verbraucht. Zum Beispiel bedeutet 300 einen 4x Verbrauch.\nKein Verbrauch, solange sein Slot nicht offen ist oder Traglastkerne deaktiviert sind.",
     "Sandbox_MinidoracatWatch_LootWeight1": "Traglastkern I als Beute",
-    "Sandbox_MinidoracatWatch_LootWeight1_tooltip": "Standardmäßig aus: nur im Wirtschaftszentrum-Laden erhältlich (unter \"Beschaffung\" anbieten). Wenn an, erscheint er in Elektroniklagern des Militärs (selten); die Menge folgt der Einstellung für die Modulmenge. Wirkt sofort.",
+    "Sandbox_MinidoracatWatch_LootWeight1_tooltip": "Standardmäßig aus: Traglastkerne gibt es erst, wenn ein Admin sie freigibt. Wenn an, erscheint er in Elektroniklagern des Militärs (selten); die Menge folgt der Einstellung für die Modulmenge. Weitere Wege zur Freigabe: Regeln unter \"Zombie-Drops\" anlegen oder ihn unter \"Beschaffung\" im Wirtschaftszentrum-Laden anbieten. Wirkt sofort.",
     "Sandbox_MinidoracatWatch_LootWeight2": "Traglastkern II als Beute",
-    "Sandbox_MinidoracatWatch_LootWeight2_tooltip": "Standardmäßig aus: nur im Wirtschaftszentrum-Laden erhältlich (unter \"Beschaffung\" anbieten). Wenn an, erscheint er in Militärbunkern (sehr selten); die Menge folgt der Einstellung für die Modulmenge. Wirkt sofort.",
+    "Sandbox_MinidoracatWatch_LootWeight2_tooltip": "Standardmäßig aus: Traglastkerne gibt es erst, wenn ein Admin sie freigibt. Wenn an, erscheint er in Militärbunkern (sehr selten); die Menge folgt der Einstellung für die Modulmenge. Weitere Wege zur Freigabe: Regeln unter \"Zombie-Drops\" anlegen oder ihn unter \"Beschaffung\" im Wirtschaftszentrum-Laden anbieten. Wirkt sofort.",
     "Sandbox_MinidoracatWatch_LootWeight3": "Traglastkern III als Beute",
-    "Sandbox_MinidoracatWatch_LootWeight3_tooltip": "Standardmäßig aus: nur im Wirtschaftszentrum-Laden erhältlich (unter \"Beschaffung\" anbieten). Wenn an, erscheint er in Militärbunkern (äußerst selten); die Menge folgt der Einstellung für die Modulmenge. Wirkt sofort.",
+    "Sandbox_MinidoracatWatch_LootWeight3_tooltip": "Standardmäßig aus: Traglastkerne gibt es erst, wenn ein Admin sie freigibt. Wenn an, erscheint er in Militärbunkern (äußerst selten); die Menge folgt der Einstellung für die Modulmenge. Weitere Wege zur Freigabe: Regeln unter \"Zombie-Drops\" anlegen oder ihn unter \"Beschaffung\" im Wirtschaftszentrum-Laden anbieten. Wirkt sofort.",
     "Sandbox_MinidoracatWatch_EcoKeepsMap": "Energiesparkern: Minimap bei leerer Batterie",
     "Sandbox_MinidoracatWatch_EcoKeepsMap_tooltip": "Standardmäßig an. Steckt ein Energiesparkern im Kern-Slot der Uhr (Slot offen), bleibt die Minimap auch bei leerer oder fehlender Batterie an; andere Funktionen und Module stoppen trotzdem. Keine Wirkung, wenn die Minimap-Regel \"Keine Uhr nötig\" ist.",
     "Sandbox_MinidoracatWatch_EcoEnduranceDrain": "Energiesparkern: weniger Ausdauerverbrauch (%%)",
     "Sandbox_MinidoracatWatch_EcoEnduranceDrain_tooltip": "Solange der Energiesparkern läuft (getragen, mit Strom, Kern-Slot offen), verbrauchen Rennen, Sprinten, Schwingen von Waffen und andere Aktionen um so viel weniger Ausdauer. Standard 25; 0 = aus, 100 = kein Ausdauerverbrauch.",
     "Sandbox_MinidoracatWatch_EcoEnduranceRegen": "Energiesparkern: schnellere Ausdauererholung (%%)",
-    "Sandbox_MinidoracatWatch_EcoEnduranceRegen_tooltip": "Solange der Energiesparkern läuft, erholt sich die Ausdauer im Stehen oder Sitzen um so viel schneller (Essen und Aufwachen zählen auch). Standard 50; 0 = aus."
+    "Sandbox_MinidoracatWatch_EcoEnduranceRegen_tooltip": "Solange der Energiesparkern läuft, erholt sich die Ausdauer im Stehen oder Sitzen um so viel schneller (Essen und Aufwachen zählen auch). Standard 30; 0 = aus."
 }

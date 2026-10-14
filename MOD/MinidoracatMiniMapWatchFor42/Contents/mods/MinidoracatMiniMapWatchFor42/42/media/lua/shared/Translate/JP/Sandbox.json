@@ -354,15 +354,15 @@
     "Sandbox_MinidoracatWatch_DrainWeight3": "積載コア III の消費電力（%%）",
     "Sandbox_MinidoracatWatch_DrainWeight3_tooltip": "積載コア III を装着しているとき、ミニマップだけの場合に比べて増える消費電力です。たとえば 300 なら消費電力が 4 倍になります。\nスロットが開放されていないときや、積載コアが無効のときは消費しません。",
     "Sandbox_MinidoracatWatch_LootWeight1": "積載コア I を戦利品に出す",
-    "Sandbox_MinidoracatWatch_LootWeight1_tooltip": "初期設定はオフ：経済センターのショップでのみ販売されます（「入手方法」タブから出品）。オンにすると軍事施設の電子機器の保管場所（レア）に出ます。量はモジュールの量の設定に従います。変更はすぐ反映されます。",
+    "Sandbox_MinidoracatWatch_LootWeight1_tooltip": "初期設定はオフ：積載コアは管理者が開放するまで入手できません。オンにすると軍事施設の電子機器の保管場所（レア）に出ます。量はモジュールの量の設定に従います。ほかの開放方法：「ゾンビのドロップ」タブでルールを追加するか、「入手方法」タブから経済センターのショップに出品します。変更はすぐ反映されます。",
     "Sandbox_MinidoracatWatch_LootWeight2": "積載コア II を戦利品に出す",
-    "Sandbox_MinidoracatWatch_LootWeight2_tooltip": "初期設定はオフ：経済センターのショップでのみ販売されます（「入手方法」タブから出品）。オンにすると軍の地下壕（とてもレア）に出ます。量はモジュールの量の設定に従います。変更はすぐ反映されます。",
+    "Sandbox_MinidoracatWatch_LootWeight2_tooltip": "初期設定はオフ：積載コアは管理者が開放するまで入手できません。オンにすると軍の地下壕（とてもレア）に出ます。量はモジュールの量の設定に従います。ほかの開放方法：「ゾンビのドロップ」タブでルールを追加するか、「入手方法」タブから経済センターのショップに出品します。変更はすぐ反映されます。",
     "Sandbox_MinidoracatWatch_LootWeight3": "積載コア III を戦利品に出す",
-    "Sandbox_MinidoracatWatch_LootWeight3_tooltip": "初期設定はオフ：経済センターのショップでのみ販売されます（「入手方法」タブから出品）。オンにすると軍の地下壕（極めてレア）に出ます。量はモジュールの量の設定に従います。変更はすぐ反映されます。",
+    "Sandbox_MinidoracatWatch_LootWeight3_tooltip": "初期設定はオフ：積載コアは管理者が開放するまで入手できません。オンにすると軍の地下壕（極めてレア）に出ます。量はモジュールの量の設定に従います。ほかの開放方法：「ゾンビのドロップ」タブでルールを追加するか、「入手方法」タブから経済センターのショップに出品します。変更はすぐ反映されます。",
     "Sandbox_MinidoracatWatch_EcoKeepsMap": "省電力コア：電池切れでもミニマップを維持",
     "Sandbox_MinidoracatWatch_EcoKeepsMap_tooltip": "初期設定はオン。ウォッチのコアスロットに省電力コアがある（スロット開放済み）とき、電池切れや電池なしでもミニマップは表示されたままになります。他の機能とモジュールは停止します。ミニマップのルールがウォッチ不要のときは効果がありません。",
     "Sandbox_MinidoracatWatch_EcoEnduranceDrain": "省電力コア：持久力の消費を軽減（%%）",
     "Sandbox_MinidoracatWatch_EcoEnduranceDrain_tooltip": "省電力コアが動作している間（着けていて電池があり、コアスロットが開放済み）、走る、全力疾走する、武器を振るなどの動作で消費する持久力がこの割合だけ減ります。初期値 25。0＝オフ、100＝持久力を消費しない。",
     "Sandbox_MinidoracatWatch_EcoEnduranceRegen": "省電力コア：持久力の回復を加速（%%）",
-    "Sandbox_MinidoracatWatch_EcoEnduranceRegen_tooltip": "省電力コアが動作している間、立っている、または座っているときの持久力の回復がこの割合だけ増えます（食事や起床時の回復も含む）。初期値 50。0＝オフ。"
+    "Sandbox_MinidoracatWatch_EcoEnduranceRegen_tooltip": "省電力コアが動作している間、立っている、または座っているときの持久力の回復がこの割合だけ増えます（食事や起床時の回復も含む）。初期値 30。0＝オフ。"
 }

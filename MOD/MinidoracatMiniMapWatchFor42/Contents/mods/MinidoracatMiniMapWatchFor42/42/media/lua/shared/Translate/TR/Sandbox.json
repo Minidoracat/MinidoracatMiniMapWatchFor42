@@ -354,15 +354,15 @@
     "Sandbox_MinidoracatWatch_DrainWeight3": "Taşıma Çekirdeği III tüketimi (%%)",
     "Sandbox_MinidoracatWatch_DrainWeight3_tooltip": "Taşıma Çekirdeği III, tek başına mini haritanın tüketimine ek olarak bu kadar güç kullanır. Örneğin 300, 4 kat tüketim demektir.\nYuvası açık değilken veya Taşıma Çekirdekleri devre dışıyken tüketim yok.",
     "Sandbox_MinidoracatWatch_LootWeight1": "Taşıma Çekirdeği I ganimet olarak çıkar",
-    "Sandbox_MinidoracatWatch_LootWeight1_tooltip": "Varsayılan olarak kapalı: yalnızca Ekonomi Merkezi mağazasında satılır (Edinme sekmesinden satışa koyun). Açıkken askeri elektronik depolarında çıkar (nadir); miktar modül miktarı ayarını izler. Hemen etkili olur.",
+    "Sandbox_MinidoracatWatch_LootWeight1_tooltip": "Varsayılan olarak kapalı: Taşıma Çekirdekleri bir yönetici izin verene kadar elde edilemez. Açıkken askeri elektronik depolarında çıkar (nadir); miktar modül miktarı ayarını izler. Diğer yollar: Zombi Düşürme sekmesinde kural ekleyin veya Edinme sekmesinden Ekonomi Merkezi mağazasında satışa koyun. Hemen etkili olur.",
     "Sandbox_MinidoracatWatch_LootWeight2": "Taşıma Çekirdeği II ganimet olarak çıkar",
-    "Sandbox_MinidoracatWatch_LootWeight2_tooltip": "Varsayılan olarak kapalı: yalnızca Ekonomi Merkezi mağazasında satılır (Edinme sekmesinden satışa koyun). Açıkken askeri sığınaklarda çıkar (çok nadir); miktar modül miktarı ayarını izler. Hemen etkili olur.",
+    "Sandbox_MinidoracatWatch_LootWeight2_tooltip": "Varsayılan olarak kapalı: Taşıma Çekirdekleri bir yönetici izin verene kadar elde edilemez. Açıkken askeri sığınaklarda çıkar (çok nadir); miktar modül miktarı ayarını izler. Diğer yollar: Zombi Düşürme sekmesinde kural ekleyin veya Edinme sekmesinden Ekonomi Merkezi mağazasında satışa koyun. Hemen etkili olur.",
     "Sandbox_MinidoracatWatch_LootWeight3": "Taşıma Çekirdeği III ganimet olarak çıkar",
-    "Sandbox_MinidoracatWatch_LootWeight3_tooltip": "Varsayılan olarak kapalı: yalnızca Ekonomi Merkezi mağazasında satılır (Edinme sekmesinden satışa koyun). Açıkken askeri sığınaklarda çıkar (son derece nadir); miktar modül miktarı ayarını izler. Hemen etkili olur.",
+    "Sandbox_MinidoracatWatch_LootWeight3_tooltip": "Varsayılan olarak kapalı: Taşıma Çekirdekleri bir yönetici izin verene kadar elde edilemez. Açıkken askeri sığınaklarda çıkar (son derece nadir); miktar modül miktarı ayarını izler. Diğer yollar: Zombi Düşürme sekmesinde kural ekleyin veya Edinme sekmesinden Ekonomi Merkezi mağazasında satışa koyun. Hemen etkili olur.",
     "Sandbox_MinidoracatWatch_EcoKeepsMap": "Güç Tasarrufu Çekirdeği: pil bitince mini haritayı koru",
     "Sandbox_MinidoracatWatch_EcoKeepsMap_tooltip": "Varsayılan olarak açık. Saatin Çekirdek Yuvasında bir Güç Tasarrufu Çekirdeği varken (yuva açık), pil bitmiş veya eksik olsa bile mini harita açık kalır; diğer özellikler ve modüller yine durur. Mini harita kuralı saat gerektirmiyorsa etkisi yoktur.",
     "Sandbox_MinidoracatWatch_EcoEnduranceDrain": "Güç Tasarrufu Çekirdeği: daha az dayanıklılık tüketimi (%%)",
     "Sandbox_MinidoracatWatch_EcoEnduranceDrain_tooltip": "Güç Tasarrufu Çekirdeği çalışırken (saat takılı ve şarjlı, Çekirdek Yuvası açık) koşma, depar atma, silah sallama ve diğer eylemler bu oranda daha az dayanıklılık harcar. Varsayılan 25; 0 = kapalı, 100 = hiç dayanıklılık harcanmaz.",
     "Sandbox_MinidoracatWatch_EcoEnduranceRegen": "Güç Tasarrufu Çekirdeği: daha hızlı dayanıklılık yenilenmesi (%%)",
-    "Sandbox_MinidoracatWatch_EcoEnduranceRegen_tooltip": "Güç Tasarrufu Çekirdeği çalışırken dayanıklılık, ayakta dururken veya otururken bu oranda daha hızlı yenilenir (yemek yemek ve uyanmak da sayılır). Varsayılan 50; 0 = kapalı."
+    "Sandbox_MinidoracatWatch_EcoEnduranceRegen_tooltip": "Güç Tasarrufu Çekirdeği çalışırken dayanıklılık, ayakta dururken veya otururken bu oranda daha hızlı yenilenir (yemek yemek ve uyanmak da sayılır). Varsayılan 30; 0 = kapalı."
 }

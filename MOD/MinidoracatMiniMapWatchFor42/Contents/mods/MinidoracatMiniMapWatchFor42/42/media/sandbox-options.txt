@@ -392,7 +392,7 @@ option MinidoracatWatch.EcoEnduranceDrain
 {type = integer, min = 0, max = 100, default = 25, page = MinidoracatWatchCores, translation = MinidoracatWatch_EcoEnduranceDrain,}
 
 option MinidoracatWatch.EcoEnduranceRegen
-{type = integer, min = 0, max = 300, default = 50, page = MinidoracatWatchCores, translation = MinidoracatWatch_EcoEnduranceRegen,}
+{type = integer, min = 0, max = 300, default = 30, page = MinidoracatWatchCores, translation = MinidoracatWatch_EcoEnduranceRegen,}
 
 /* ===== MinidoracatWatchAcquire：設定視窗「取得方式」與「殭屍掉落」頁 ===== */
 

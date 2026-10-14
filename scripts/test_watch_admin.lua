@@ -207,12 +207,12 @@ do
     check(has(s, "負重槽 I：租用每 7 天 60 倖存幣，或買斷 400 倖存幣") and has(s, "負重槽 II：租用每 7 天 150 倖存幣，或買斷 1,200 倖存幣")
         and has(s, "負重槽 III：租用每 7 天 300 倖存幣，或買斷 2,400 倖存幣"), "summary: one line per carry slot with its own price")
     check(has(s, "負重核心：I／II／III 各 +1／2／3 格，上限 8 格（+100%）"), "summary: carry cores at defaults")
-    check(has(s, "節能核心：耐力消耗 -25%、恢復 +50%，沒電保留小地圖"), "summary: power-saver core at defaults")
+    check(has(s, "節能核心：耐力消耗 -25%、恢復 +30%，沒電保留小地圖"), "summary: power-saver core at defaults")
     local k = M.copy(base)
     k.sb.WeightUnits2, k.sb.WeightCap, k.sb.EcoEnduranceDrain, k.sb.EcoKeepsMap = 4, 3, 0, false
     k.sb.LootWeight1, k.sb.LootPaws = true, false
     s = M.summary(k, true)
-    check(has(s, "負重核心：I／II／III 各 +1／4／3 格，上限 3 格（+37.5%）") and has(s, "節能核心：耐力恢復 +50%")
+    check(has(s, "負重核心：I／II／III 各 +1／4／3 格，上限 3 格（+37.5%）") and has(s, "節能核心：耐力恢復 +30%")
         and not find(s, "沒電保留小地圖"), "summary: tuned carry units and cap (fractional %), regen only, no keep-minimap")
     check(has(s, "戰利品：6 款地圖手錶會出現"), "summary: a carry-core loot switch does not count as a watch style")
     k.sb.EcoEnduranceRegen, k.sb.EcoEnduranceDrain, k.sb.EcoKeepsMap = 0, 40, true
@@ -298,7 +298,7 @@ do
     check(n == 8 and not warn and has(lines, "啟用負重核心：從 開 改成 關") and has(lines, "負重核心 I 的加成（格）：從 1 改成 2")
         and has(lines, "一支錶的負重加成上限（格）：從 8 改成 12") and has(lines, "負重核心 III 耗電（%）：從 300 改成 50")
         and has(lines, "負重核心 II 出現在戰利品中：從 關 改成 開") and has(lines, "節能核心：沒電時保留小地圖：從 開 改成 關")
-        and has(lines, "節能核心：耐力消耗減少（%）：從 25 改成 0") and has(lines, "節能核心：耐力恢復增加（%）：從 50 改成 120"),
+        and has(lines, "節能核心：耐力消耗減少（%）：從 25 改成 0") and has(lines, "節能核心：耐力恢復增加（%）：從 30 改成 120"),
         "diff: one line per changed core field, no re-consent warning")
     t = M.copy(base)
     t.sb.SlotWt1RetryHours = 48
@@ -865,7 +865,7 @@ do
     check(S3.capPct.text == "＝+100%" and S3.capPct.x > c3.WeightCap.x + c3.WeightCap.width and S3.capPct.y == c3.WeightCap.y + 5,
         "cap hint: '= +100%' right of the cap field")
     check(c3.WeightEnabled.checked == true and c3.LootWeight1.checked == false and c3.EcoKeepsMap.checked == true
-        and c3.EcoEnduranceRegen.text == "50", "controls start at the sandbox defaults")
+        and c3.EcoEnduranceRegen.text == "30", "controls start at the sandbox defaults")
     -- 壞值：紅框、擋套用、draft 不變
     local bads = { { "WeightUnits1", "9" }, { "WeightUnits2", "-1" }, { "WeightUnits3", "1.5" }, { "WeightCap", "17" },
         { "DrainWeight1", "1001" }, { "EcoEnduranceDrain", "101" }, { "EcoEnduranceRegen", "301" }, { "DrainWeight3", "x" } }

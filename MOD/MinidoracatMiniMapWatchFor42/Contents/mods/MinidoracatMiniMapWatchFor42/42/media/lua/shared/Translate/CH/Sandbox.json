@@ -354,15 +354,15 @@
     "Sandbox_MinidoracatWatch_DrainWeight3": "負重核心 III 耗電（%%）",
     "Sandbox_MinidoracatWatch_DrainWeight3_tooltip": "裝著負重核心 III 時，比只開小地圖多耗的電。例如 300 表示耗電變成 4 倍。\n槽位沒開啟、或負重核心被關閉時不耗電。",
     "Sandbox_MinidoracatWatch_LootWeight1": "負重核心 I 出現在戰利品中",
-    "Sandbox_MinidoracatWatch_LootWeight1_tooltip": "預設關閉：只能在經濟中心買（管理員到「取得方式」頁上架）。開啟時出現在軍事據點的電子器材（很少見），數量跟著模組的數量設定。改了立刻生效。",
+    "Sandbox_MinidoracatWatch_LootWeight1_tooltip": "預設關閉：負重核心要管理員開放才拿得到。開啟後會出現在軍事據點的電子器材（很少見），數量跟著模組的數量設定。其他開放方式：在「殭屍掉落」頁加規則，或到「取得方式」頁上架到經濟中心。改了立刻生效。",
     "Sandbox_MinidoracatWatch_LootWeight2": "負重核心 II 出現在戰利品中",
-    "Sandbox_MinidoracatWatch_LootWeight2_tooltip": "預設關閉：只能在經濟中心買（管理員到「取得方式」頁上架）。開啟時出現在軍事地堡（極少見），數量跟著模組的數量設定。改了立刻生效。",
+    "Sandbox_MinidoracatWatch_LootWeight2_tooltip": "預設關閉：負重核心要管理員開放才拿得到。開啟後會出現在軍事地堡（極少見），數量跟著模組的數量設定。其他開放方式：在「殭屍掉落」頁加規則，或到「取得方式」頁上架到經濟中心。改了立刻生效。",
     "Sandbox_MinidoracatWatch_LootWeight3": "負重核心 III 出現在戰利品中",
-    "Sandbox_MinidoracatWatch_LootWeight3_tooltip": "預設關閉：只能在經濟中心買（管理員到「取得方式」頁上架）。開啟時出現在軍事地堡（非常少見），數量跟著模組的數量設定。改了立刻生效。",
+    "Sandbox_MinidoracatWatch_LootWeight3_tooltip": "預設關閉：負重核心要管理員開放才拿得到。開啟後會出現在軍事地堡（非常少見），數量跟著模組的數量設定。其他開放方式：在「殭屍掉落」頁加規則，或到「取得方式」頁上架到經濟中心。改了立刻生效。",
     "Sandbox_MinidoracatWatch_EcoKeepsMap": "節能核心：沒電時保留小地圖",
     "Sandbox_MinidoracatWatch_EcoKeepsMap_tooltip": "預設開啟。錶的核心槽裝著節能核心（槽位開啟）時，就算沒電或沒有電池，小地圖照樣顯示；其他功能與模組照樣停用。小地圖規則設成「不需要錶」時沒有作用。",
     "Sandbox_MinidoracatWatch_EcoEnduranceDrain": "節能核心：耐力消耗減少（%%）",
     "Sandbox_MinidoracatWatch_EcoEnduranceDrain_tooltip": "節能核心運作時（戴著、有電、核心槽開啟），跑步、衝刺、揮武器等動作消耗的耐力少這麼多。預設 25；0＝關閉，100＝不消耗耐力。",
     "Sandbox_MinidoracatWatch_EcoEnduranceRegen": "節能核心：耐力恢復增加（%%）",
-    "Sandbox_MinidoracatWatch_EcoEnduranceRegen_tooltip": "節能核心運作時，站著、坐著休息恢復的耐力多這麼多（吃東西、睡醒的回升也算）。預設 50；0＝關閉。"
+    "Sandbox_MinidoracatWatch_EcoEnduranceRegen_tooltip": "節能核心運作時，站著、坐著休息恢復的耐力多這麼多（吃東西、睡醒的回升也算）。預設 30；0＝關閉。"
 }

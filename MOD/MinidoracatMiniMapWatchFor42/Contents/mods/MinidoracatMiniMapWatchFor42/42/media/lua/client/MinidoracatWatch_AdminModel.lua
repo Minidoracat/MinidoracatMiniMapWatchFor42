@@ -69,7 +69,7 @@ M.FIELDS = {
     { "WeightUnits3", I, 0, 8, 3 }, { "WeightCap", I, 0, 16, 8 }, { "DrainWeight1", I, 0, 1000, 100 },
     { "DrainWeight2", I, 0, 1000, 200 }, { "DrainWeight3", I, 0, 1000, 300 }, { "LootWeight1", B, nil, nil, false },
     { "LootWeight2", B, nil, nil, false }, { "LootWeight3", B, nil, nil, false }, { "EcoKeepsMap", B, nil, nil, true },
-    { "EcoEnduranceDrain", I, 0, 100, 25 }, { "EcoEnduranceRegen", I, 0, 300, 50 },
+    { "EcoEnduranceDrain", I, 0, 100, 25 }, { "EcoEnduranceRegen", I, 0, 300, 30 },
     -- acquire
     { "LootValuTech", B, nil, nil, true }, { "LootPaws", B, nil, nil, true }, { "LootNexus", B, nil, nil, true },
     { "LootSpiffo", B, nil, nil, true }, { "LootRanger", B, nil, nil, true }, { "LootLuthex", B, nil, nil, true },

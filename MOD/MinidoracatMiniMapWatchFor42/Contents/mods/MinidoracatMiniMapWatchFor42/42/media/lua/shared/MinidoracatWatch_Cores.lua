@@ -61,7 +61,7 @@ end
 
 -- 節能核心的耐力加成（%；0＝關）
 function W.ecoEnduranceDrain() return intIn(W.sandbox("EcoEnduranceDrain", 25), 0, 100, 25) end
-function W.ecoEnduranceRegen() return intIn(W.sandbox("EcoEnduranceRegen", 50), 0, 300, 50) end
+function W.ecoEnduranceRegen() return intIn(W.sandbox("EcoEnduranceRegen", 30), 0, 300, 30) end
 
 -- 每秒：節能核心運作中（戴著、有電、核心槽有效）時，上一秒掉的耐力退回 drain%、回升的多給 regen%。
 -- 吃東西、睡醒的回升也算恢復；Stats.set 夾在 0..1。s.endurance 只在記憶體
