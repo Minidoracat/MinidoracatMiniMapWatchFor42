@@ -199,7 +199,7 @@ do
     check(has(s, "電池：滿電約 72 小時（現實時間），離線時不耗電，暫停時不耗電"), "summary: battery line")
     check(has(s, "模組耗電：建議值，開燈時 +100%"), "summary: drains at defaults")
     check(has(s, "戰利品：7 款地圖手錶都會出現"), "summary: all seven styles in loot")
-    check(has(s, "殭屍掉落：10 條規則，每隻最多 1 件"), "summary: drops")
+    check(has(s, "殭屍掉落：13 條規則，每隻最多 1 件"), "summary: drops")
     check(has(s, "充電：只能換電池"), "summary: charge defaults to battery swaps only")
     s = M.summary(base, true)
     check(has(s, "擴充槽：租用每 7 天 60 倖存幣，或買斷 400 倖存幣"), "summary: rent and buy with Economy")
@@ -348,7 +348,7 @@ do
     check(args.expected == 7 and args.sandbox == 1 and nLists == 0, "payload: sandbox only, no list sections")
     d.drops[1].chance = 3
     args = M.payload(base, d, 7, "why", { "x" })
-    check(args.lists.zombieDrops and #args.lists.zombieDrops == 10 and args.lists.zombieDrops[1].outfits == nil,
+    check(args.lists.zombieDrops and #args.lists.zombieDrops == 13 and args.lists.zombieDrops[1].outfits == nil,
         "payload: changed drops sent in the file shape")
     check(M.problems(d) == 0, "valid draft has no problems")
     d.sb.FullHours = 0
@@ -391,7 +391,7 @@ F.mode = "server"
 
 local st = A.state()
 local rev0 = st.rev
-check(type(rev0) == "number" and #st.zombieDrops == 10 and FS[cfgPath] ~= nil, "state: revision, default drops, file written")
+check(type(rev0) == "number" and #st.zombieDrops == 13 and FS[cfgPath] ~= nil, "state: revision, default drops, file written")
 
 local function req(lists, extra)
     local a = { expected = Cfg.revision, reason = "balance", changes = { "a: 1 to 2" }, lists = lists, sandbox = 0 }

@@ -343,7 +343,7 @@
     "IGUI_MinidoracatWatch_Admin_CoreDrain": "耗電",
     "IGUI_MinidoracatWatch_Admin_CoreDrain_hint": "%%，比只開小地圖多耗的電",
     "IGUI_MinidoracatWatch_Admin_CoreLoot": "戰利品",
-    "IGUI_MinidoracatWatch_Admin_CoreLoot_hint": "預設都不會掉落；數量跟著「取得方式」頁的模組數量",
+    "IGUI_MinidoracatWatch_Admin_CoreLoot_hint": "預設都不會出現；數量跟著「取得方式」頁的模組數量",
     "IGUI_MinidoracatWatch_Admin_Eco_hint": "%%；設 0 就關掉",
     "IGUI_MinidoracatWatch_Admin_EcoKeepsMap": "沒電時保住小地圖",
     "IGUI_MinidoracatWatch_Admin_EcoDrain": "耐力消耗少",

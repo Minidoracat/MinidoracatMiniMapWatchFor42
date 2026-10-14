@@ -483,7 +483,7 @@ local function adminCmd(player, cmd, args)
 end
 local out = adminCmd(boss, W.CMD_ADMIN_GET, {})
 local st = out[1] and out[1].args
-check(out[1] and out[1].command == W.CMD_ADMIN_STATE and #st.zombieDrops == 10, "管理員讀到設定與預設掉落規則")
+check(out[1] and out[1].command == W.CMD_ADMIN_STATE and #st.zombieDrops == 13, "管理員讀到設定與預設掉落規則")
 local args = { expected = st.rev, reason = "smoke", changes = { "weather +40%" }, lists = { moduleDrains = { weather = 40 } } }
 out = adminCmd(eve, W.CMD_ADMIN_SET, args)
 check(out[1].args.code == "denied" and W.Config.get("moduleDrains").weather == nil, "一般玩家偽造 adminSet：拒絕、設定不變")

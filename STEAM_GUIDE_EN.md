@@ -50,7 +50,7 @@ Where to loot each watch is under "Seven watches".
 [h3]Modules and unlock cards[/h3]
 [list]
 [*] [b]Modules[/b]: electronics stores and crates, military and police sites, survival gear lockers. General modules are more common; Advanced and Core are rare.
-[*] [b]Carry Cores[/b]: can't be obtained or crafted by default. Admins can make them appear as loot (military electronics storage, rare), add them to the zombie drop rules, or sell them in the Economy Center.
+[*] [b]Carry Cores[/b]: by default only army zombies carry them, and higher tiers are rarer (see "Zombie drops" below). They can't be crafted and don't spawn in containers by default. Admins can change the drop rules, make them appear as loot (military electronics storage, rare), or sell them in the Economy Center.
 [*] [b]Unlock cards[/b] (rare):
 [list]
 [*] Expansion Slot Unlock Card: electronics stores
@@ -85,6 +85,9 @@ Default rules:
 [tr][td]Students[/td][td]Cat Paw Map Watch[/td][td]1%[/td][/tr]
 [tr][td]Office workers[/td][td]Aurora Map Watch[/td][td]1%[/td][/tr]
 [tr][td]Mechanics and workers[/td][td]Random General module[/td][td]2%[/td][/tr]
+[tr][td]Army[/td][td]Carry Core I[/td][td]0.5%[/td][/tr]
+[tr][td]Army[/td][td]Carry Core II[/td][td]0.2%[/td][/tr]
+[tr][td]Army[/td][td]Carry Core III[/td][td]0.05%[/td][/tr]
 [/table]
 === 🧰 Panel and status
 {{img:01-panel-en.jpg}}
@@ -235,7 +238,7 @@ Off by default (swap batteries instead). Admins can allow two ways to charge, bo
 [*] [b]Drain[/b]: more than other modules, +100%/+200%/+300% each by default; pair them with a Power-Saver Core to last longer.
 [*] [b]When the bonus stops[/b]: a dead battery, taking the watch off, an invalid Carry Slot (e.g. the rental ended), or admins turning Carry Cores off. Capacity goes back to normal and a pop-up tells you how to restore it.
 [*] [b]Panel[/b]: the "Carry Cores" row shows the watch's total bonus; selecting a Carry Core also shows your character's current carry capacity.
-[*] [b]Getting them[/b]: not obtainable or craftable by default; see "Getting them".
+[*] [b]Getting them[/b]: by default only army zombies carry them, higher tiers are rarer, and they can't be crafted; see "Getting them".
 [/list]
 [h3]Power-Saver Core[/h3]
 [list]
@@ -328,7 +331,7 @@ Off by default (swap batteries instead). Admins can allow two ways to charge, bo
 === ⚙️ Server settings file
 [list]
 [*] [b]Location[/b]: Zomboid/Lua/MinidoracatWatch/server name/server-settings.json (sp_save name in single player)
-[*] [b]Missing file[/b]: a default with 10 drop rules is written.
+[*] [b]Missing file[/b]: a default with 13 drop rules is written.
 [*] [b]Applies[/b]: within 10 seconds, no restart.
 [*] [b]Invalid file[/b]: if the JSON or any rule is invalid, the whole rule list is rejected and the last valid one kept; the server log names the rule and the problem.
 [/list]

@@ -34,7 +34,8 @@ W.STYLE_IDS = { "valutech", "paws", "nexus", "spiffo", "ranger", "luthex", "crt"
 W.GENERAL_MODULES = { "ledger", "gps", "comm", "scan", "detect", "light" }
 W.CARD_TIERS = { "ext", "adv", "core" }
 
--- 預設 10 條（設計稿 DEFAULT_DROPS；機率單位是 %）。每次回新的一份
+-- 預設 13 條（設計稿 DEFAULT_DROPS 的 10 條＋負重核心 3 條；機率單位是 %）。每次回新的一份。
+-- 負重核心只從軍人掉、階越高越稀有（2026-10-14 使用者裁定）；排在最後，同一隻已經掉滿上限就輪不到
 function W.defaultDrops()
     local out = {}
     for _, r in ipairs({
@@ -42,6 +43,7 @@ function W.defaultDrops()
         { "police", "mod:comm", 2 }, { "survivalist", "watch:crt", 3 }, { "spiffo", "watch:spiffo", 5 },
         { "rich", "watch:luthex", 1 }, { "student", "watch:paws", 1 }, { "office", "watch:nexus", 1 },
         { "worker", "mod:any", 2 },
+        { "army", "mod:weight1", 0.5 }, { "army", "mod:weight2", 0.2 }, { "army", "mod:weight3", 0.05 },
     }) do
         out[#out + 1] = { group = r[1], item = r[2], chance = r[3] }
     end

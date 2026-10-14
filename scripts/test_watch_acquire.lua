@@ -69,13 +69,16 @@ end
 
 -- ===== 預設規則與服裝分組 =====
 local defaults = D.defaults()
-check(#defaults == 10, "預設 10 條規則")
+check(#defaults == 13, "預設 13 條規則")
 local parsed = D.parse(defaults)
-check(parsed and #parsed == 10, "預設規則通過驗證")
+check(parsed and #parsed == 13, "預設規則通過驗證")
 local seen = {}
 for _, r in ipairs(defaults) do seen[r.group .. ">" .. r.item] = r.chance end
 check(seen["all>watch:valutech"] == 0.2 and seen["survivalist>watch:crt"] == 3 and seen["worker>mod:any"] == 2
     and seen["army>mod:mildetect"] == 1 and seen["spiffo>watch:spiffo"] == 5, "預設規則照設計稿 DEFAULT_DROPS")
+local w1, w2, w3 = seen["army>mod:weight1"], seen["army>mod:weight2"], seen["army>mod:weight3"]
+check(w1 and w2 and w3 and w3 > 0 and w1 > w2 and w2 > w3 and w1 < seen["army>mod:mildetect"],
+    "負重核心 I／II／III 預設從軍人掉：階越高越稀有，都比軍規偵測模組少見")
 check(#D.GROUPS.survivalist == 15 and D.groupsOf["Survivalist03_Late"].survivalist, "生存狂含 02–05 與 _Mid／_Late（15 種）")
 local xml = readFile(PZ .. "/media/clothing/clothing.xml")
 if xml then
@@ -118,12 +121,12 @@ check(math.abs(r1 - 0.02) < 0.0015, string.format("單條 2%%：實得 %.4f", r1
 check(rate("Police", single, 1, N, 42) == 0, "不符合分組：0")
 check(rate("ArmyCamoGreen", { rule("army", "watch:ranger", 0) }, 5, 1000, 1) == 0, "機率 0：永遠不掉")
 check(rate("ArmyCamoGreen", { rule("army", "watch:ranger", 100) }, 1, 1000, 1) == 1, "機率 100：每隻都掉")
--- 預設規則下的軍人（全部 + 遊騎兵 2% + 軍規偵測 1%）：上限 1 時依序擲、掉到就停
+-- 預設規則下的軍人（全部 0.2% + 遊騎兵 2% + 軍規偵測 1% + 負重核心 0.5／0.2／0.05%）：上限 1 時依序擲、掉到就停
 local items1, z1 = rate("ArmyCamoGreen", parsed, 1, N, 7)
-local expect1 = 1 - (1 - 0.002) * (1 - 0.02) * (1 - 0.01)
+local expect1 = 1 - (1 - 0.002) * (1 - 0.02) * (1 - 0.01) * (1 - 0.005) * (1 - 0.002) * (1 - 0.0005)
 check(math.abs(z1 - expect1) < 0.002 and items1 == z1, string.format("上限 1：每隻最多 1 件（%.4f，期望 %.4f）", z1, expect1))
 local items5 = rate("ArmyCamoGreen", parsed, 5, N, 7)
-check(math.abs(items5 - 0.032) < 0.002, string.format("上限 5：各規則獨立擲（平均 %.4f 件，期望 0.032）", items5))
+check(math.abs(items5 - 0.0395) < 0.002, string.format("上限 5：各規則獨立擲（平均 %.4f 件，期望 0.0395）", items5))
 -- 上限：三條 100% 的規則
 local three = D.parse({ { group = "all", item = "battery", chance = 100 }, { group = "all", item = "card:adv", chance = 100 },
     { group = "all", item = "watch:paws", chance = 100 } })
@@ -185,10 +188,10 @@ F.reset()
 Cfg.poll()
 check(FS[PATH] ~= nil and logged("server settings written with defaults"), "缺檔：寫一份預設並 log")
 local doc = Cfg.decode(FS[PATH])
-check(doc and doc.version == 1 and #doc.zombieDrops == 10 and doc.zombieDrops[5].item == "watch:crt", "寫出的檔解得回來、10 條")
+check(doc and doc.version == 1 and #doc.zombieDrops == 13 and doc.zombieDrops[5].item == "watch:crt", "寫出的檔解得回來、13 條")
 check(FS[PATH]:find('"group": "all"', 1, true) and FS[PATH]:find("\n  \"zombieDrops\": [", 1, true), "縮排輸出、鍵照 group 開頭")
 local reparsed = D.parse(doc.zombieDrops)
-check(reparsed and reparsed[1].chance == 0.2, "寫出的規則再驗證也通過（0.2 不失真）")
+check(reparsed and reparsed[1].chance == 0.2 and reparsed[13].chance == 0.05, "寫出的規則再驗證也通過（0.2、0.05 不失真）")
 -- 管理員改檔：10 秒內套用
 local function setFile(text)
     FS[PATH] = text
@@ -214,10 +217,10 @@ setFile('\239\187\191{ "version": 1, "zombieDrops": [ { "group": "all", "item": 
 cur = Cfg.get("zombieDrops")
 check(#cur == 1 and cur[1].item == "battery" and logged("unknown key futureThing"), "BOM 可讀；未知的鍵只 log、不影響掉落規則")
 setFile('{ "version": 1 }')
-check(#Cfg.get("zombieDrops") == 10, "缺區段：用預設值")
+check(#Cfg.get("zombieDrops") == 13, "缺區段：用預設值")
 unreadable[PATH] = true
 setFile(FS[PATH])
-check(#Cfg.get("zombieDrops") == 10 and logged("unreadable"), "讀不到：保留目前設定並 log")
+check(#Cfg.get("zombieDrops") == 13 and logged("unreadable"), "讀不到：保留目前設定並 log")
 unreadable[PATH] = nil
 -- 可擴充：再登記一個區段（Phase 4 第三方模組耗電會這樣加），兩個區段各自驗證
 Cfg.section("testDrain", {
