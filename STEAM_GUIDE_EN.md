@@ -1,7 +1,7 @@
 <!-- Steam guide source (English): the full reference for this mod; the Workshop description only summarizes. Format and sync: pz-family-docs/release.md「完整說明：Steam 指南」 -->
 <!-- 指南網址：https://steamcommunity.com/sharedfiles/filedetails/?id=3816991145 -->
 <!-- 標題：📖 Map Watch Mod Guide: Getting Watches, Modules, Battery & Server Settings -->
-<!-- 摘要：Illustrated guide to the Minidoracat Map Watch mod: getting a watch, the seven styles, modules and slots, battery and charging, the Light Module, paid slots, and player and admin settings. -->
+<!-- 摘要：Illustrated guide to the Minidoracat Map Watch mod: getting a watch, the seven styles, modules and slots, Carry Cores and the Power-Saver Core, battery and charging, the Light Module, paid slots, and player and admin settings. -->
 === 🚀 Quick start
 [b]繁體中文版：[/b][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3816991041]地圖手錶 Map Watch MOD 完整說明[/url]
 
@@ -16,7 +16,7 @@ https://steamcommunity.com/sharedfiles/filedetails/?id=3816406671
 [/olist]
 [b]The server sets the rules[/b]. Admins can change them in two places:
 [list]
-[*] The four sandbox pages "Minidoracat Map Watch": Features, Slots & Prices, Battery, Obtaining (the same split as the settings window).
+[*] The five sandbox pages "Minidoracat Map Watch": Features, Slots & Prices, Battery, Cores, Obtaining (the same split as the settings window).
 [*] "Map Watch Admin" in Map Display Settings (the gear on the mini-map), visible to admins only.
 [/list]
 === 🧰 Wear it to use the minimap
@@ -50,6 +50,7 @@ Where to loot each watch is under "Seven watches".
 [h3]Modules and unlock cards[/h3]
 [list]
 [*] [b]Modules[/b]: electronics stores and crates, military and police sites, survival gear lockers. General modules are more common; Advanced and Core are rare.
+[*] [b]Carry Cores[/b]: can't be obtained or crafted by default. Admins can make them appear as loot (military electronics storage, rare), add them to the zombie drop rules, or sell them in the Economy Center.
 [*] [b]Unlock cards[/b] (rare):
 [list]
 [*] Expansion Slot Unlock Card: electronics stores
@@ -65,7 +66,7 @@ No recipe to learn; needs a screwdriver, a surface and Electrical 3 (adjustable)
 [tr][td]Comms Module[/td][td]Radio Transmitter + Radio Receiver + Scrap Electronics[/td][/tr]
 [tr][td]Light Module[/td][td]Flashlight (used up) + 2 Scrap Electronics[/td][/tr]
 [/table]
-Other modules are loot or zombie drops only.
+Other modules are loot or zombie drops only (Carry Cores: see above).
 [h3]Zombie drops[/h3]
 [list]
 [*] The [b]first time a corpse is searched[/b], items roll by outfit.
@@ -103,13 +104,13 @@ Default rules:
 [list]
 [*] [b]Minimap title bar[/b]: watch charge %, in a warning color when low or a rental ended.
 [*] [b]Family toolbar[/b]: the Map Watch button icon shows charge too.
-[*] [b]Hover a watch[/b]: charge, time left (or charging / no battery needed), installed modules (rented / disabled) and paid slots.
+[*] [b]Hover a watch[/b]: charge, time left (or charging / no battery needed), installed modules (rented / disabled), Carry Cores and paid slots.
 [*] [b]Hover a module[/b]: class, drain, feature and range, using this server's settings; it also says when the feature is off or works without a module.
 [/list]
 {{img:07-item-tooltip-en.jpg}}
 [h3]Pop-ups and sounds[/h3]
 [list]
-[*] [b]Pop-ups[/b] (top right, once each): low battery, dead battery, rental ended, auto-renew success or failure, charging started, fully charged, modules disabled by an invalid slot.
+[*] [b]Pop-ups[/b] (top right, once each): low battery, dead battery, rental ended, auto-renew success or failure, charging started, fully charged, modules disabled by an invalid slot, Carry Cores paused.
 [*] [b]Sounds[/b] (only you hear them):
 [list]
 [*] Installing a module: each of the seven watches has its own sound, based on the one you wear
@@ -126,9 +127,10 @@ Default rules:
 [tr][td]Expansion Slot[/td][td]General modules[/td][td]Paid slot[/td][/tr]
 [tr][td]Advanced Slot[/td][td]General, Advanced modules[/td][td]Paid slot[/td][/tr]
 [tr][td]Core Slot[/td][td]General, Advanced, Core modules[/td][td]Paid slot[/td][/tr]
+[tr][td]Carry Slot I/II/III[/td][td]The Carry Core of the same tier[/td][td]Paid slot[/td][/tr]
 [/table]
 [list]
-[*] [b]Add-on slots[/b]: other mods can add up to 6 slots, shown in the "Other mods" row.
+[*] [b]Add-on slots[/b]: other mods can add up to 6 slots, shown in the "Other mods" row at the bottom.
 [*] How paid slots open: see "Paid slots".
 [/list]
 [h3]Modules[/h3]
@@ -143,10 +145,11 @@ Default rules:
 [tr][td]Military Detector Module[/td][td]Advanced[/td][td]Double radius, zombies on the world map too[/td][/tr]
 [tr][td]Long-Range Comms Module[/td][td]Advanced[/td][td]Longer range, replaces Comms[/td][/tr]
 [tr][td]Relay Core[/td][td]Core[/td][td]Faction sharing with no distance limit[/td][/tr]
-[tr][td]Power-Saver Core[/td][td]Core[/td][td]Halves the whole watch's drain[/td][/tr]
+[tr][td]Power-Saver Core[/td][td]Core[/td][td]Halves the whole watch's drain; while running, less endurance used and faster recovery, and the minimap stays on a dead battery; see "Carry Cores and the Power-Saver Core"[/td][/tr]
+[tr][td]Carry Core I/II/III[/td][td]Carry I/II/III[/td][td]Raises carry capacity; see "Carry Cores and the Power-Saver Core"[/td][/tr]
 [/table]
 [list]
-[*] Core modules fit the Core Slot only.
+[*] Core modules fit the Core Slot only; each Carry Core fits only the Carry Slot of its tier.
 [*] An AutoDrive GPS on you or in your vehicle also counts as a Positioning Module.
 [*] [b]Faction sharing[/b]:
 [list]
@@ -170,7 +173,8 @@ Default rules:
 [/list]
 [h3]When a module stops[/h3]
 [list]
-[*] [b]Invalid slot[/b] (not opened, disabled, rental ended): its module stops and uses no power; remove it anytime and use another slot.
+[*] [b]Dead battery[/b]: modules show "No power" with a battery icon; a charged battery brings them back.
+[*] [b]Invalid slot[/b] (not opened, disabled, rental ended): its module shows "Disabled" and uses no power; remove it anytime and use another slot.
 [*] [b]Slot from a removed mod[/b]:
 [list]
 [*] The module stops, uses no power and can be removed.
@@ -189,6 +193,7 @@ Default rules:
 [h3]When it's dead[/h3]
 [list]
 [*] All features stop by default; the minimap shows "No Signal".
+[*] With a Power-Saver Core in the Core Slot, the minimap keeps working; other features still stop (admins can turn this off).
 [*] Admins can keep the minimap, or turn off "Needs a battery" so watches never run out.
 [*] A removed battery is never fuller than when it went in: charge gained in the watch stays there, so you can't charge batteries with it.
 [/list]
@@ -220,16 +225,35 @@ Off by default (swap batteries instead). Admins can allow two ways to charge, bo
 [*] [b]Hotkey[/b]: default [b]Scroll Lock[/b]; rebind under Options → Key Bindings → "Minidoracat Map Watch". No Scroll Lock on your keyboard? Use the panel or the right-click menu.
 [*] [b]Vanilla "Equip/Turn On/Off Light Source" key[/b] (default [b]F[/b]): with no light in your hands, it toggles the watch light too; a flashlight in hand is toggled first, as in vanilla.
 [/list]
+=== 🧰 Carry Cores and the Power-Saver Core
+{{img:10-carry-en.jpg}}
+[h3]Carry Cores[/h3]
+[list]
+[*] [b]What they do[/b]: raise your carry capacity while you wear a charged map watch.
+[*] [b]Three tiers[/b]: Carry Core I, II and III, each fitting only the Carry Slot of its tier (the three cells in the panel's "Carry Cores" row).
+[*] [b]Bonus[/b]: +1/+2/+3 units by default; one unit is about 12.5% of your carry capacity. All three give +6 units (about +75%).
+[*] [b]Drain[/b]: more than other modules, +100%/+200%/+300% each by default; pair them with a Power-Saver Core to last longer.
+[*] [b]When the bonus stops[/b]: a dead battery, taking the watch off, an invalid Carry Slot (e.g. the rental ended), or admins turning Carry Cores off. Capacity goes back to normal and a pop-up tells you how to restore it.
+[*] [b]Panel[/b]: the "Carry Cores" row shows the watch's total bonus; selecting a Carry Core also shows your character's current carry capacity.
+[*] [b]Getting them[/b]: not obtainable or craftable by default; see "Getting them".
+[/list]
+[h3]Power-Saver Core[/h3]
+[list]
+[*] [b]Saves power[/b]: halves the whole watch's drain.
+[*] [b]Endurance[/b]: while it's running (worn, charged, in an open Core Slot), running, sprinting, swinging weapons and other actions use 25% less endurance, and resting recovers 30% more (eating and waking up count too).
+[*] [b]Keeps the minimap on a dead battery[/b]: with a Power-Saver Core in the Core Slot, the minimap keeps working even with a dead or missing battery; other features and modules still stop.
+[*] Admins can change all these numbers; item tooltips show this server's current values.
+[/list]
 === 🧰 Paid slots
 [list]
-[*] [b]Which slots[/b]: Expansion, Advanced, Core and add-on slots.
+[*] [b]Which slots[/b]: Expansion, Advanced, Core, Carry Slots I–III and add-on slots.
 [*] [b]Four access types[/b] (set per slot type): Free, Unlock Card, Economy, Disabled.
-[*] [b]Defaults[/b]: Economy for Expansion, Advanced and Core; Free for add-on slots.
+[*] [b]Defaults[/b]: Economy for Expansion, Advanced, Core and the three Carry Slots; Free for add-on slots.
 [*] [b]Tied to your account[/b]: all access (card, purchase, rental) works on any watch.
 [/list]
 [h3]Unlock cards[/h3]
 [list]
-[*] One card opens a slot for good; add-on slots use Expansion cards.
+[*] One card opens a slot for good; Carry Slots I, II and III use Expansion, Advanced and Core cards, and add-on slots use Expansion cards.
 [*] A card isn't used up if the slot is already open.
 [*] [b]How to use[/b]: the panel button on a locked slot, or right-click the card → "Use Unlock Card".
 [/list]
@@ -282,10 +306,11 @@ Off by default (swap batteries instead). Admins can allow two ways to charge, bo
 [list]
 [*] [b]Where[/b]: Map Display Settings → "Admin" group → "Map Watch Admin", then press "Open Map Watch Settings".
 [*] [b]Who sees it[/b]: admins and moderators (not gm or players); always in single player.
-[*] [b]Six pages[/b]:
+[*] [b]Seven pages[/b]:
 [list]
 [*] Overview: presets Relaxed / Standard (recommended) / Hardcore, and current settings
 [*] Features, Slots & Prices, Battery, Obtaining, Zombie Drops
+[*] Cores: Carry Cores on/off, each tier's bonus, drain and whether it appears as loot; the Power-Saver Core's endurance bonuses and keeping the minimap on a dead battery
 [/list]
 [/list]
 [h3]Applying changes[/h3]
@@ -312,7 +337,7 @@ Each rule has three fields:
 [table]
 [tr][th]Field[/th][th]Values[/th][/tr]
 [tr][td]group[/td][td]all, army, police, fire, medic, worker, office, student, survivalist, rich, spiffo, outdoor; or custom with an outfits list (modded zombies work too)[/td][/tr]
-[tr][td]item[/td][td]watch:any or a style, mod:any or mod:id, card:ext/adv/core, battery[/td][/tr]
+[tr][td]item[/td][td]watch:any or a style, mod:any or mod:id, card:ext/adv/core, battery; mod:any never picks Carry Cores, use mod:weight1 to mod:weight3 for them[/td][/tr]
 [tr][td]chance[/td][td]Percent per zombie, decimals OK[/td][/tr]
 [/table]
 [h3]moduleDrains and addonSlots[/h3]
@@ -325,13 +350,13 @@ Each rule has three fields:
 === ⚙️ Selling in the Economy Center
 [list]
 [*] [b]Where[/b]: "Sell in Economy Center" on the settings window's Obtaining page.
-[*] [b]What it does[/b]: opens the Economy admin shop page with a draft for each of the seven watches, ten modules and the battery not yet sold.
+[*] [b]What it does[/b]: opens the Economy admin shop page with a draft for each of the seven watches, thirteen modules (including the three Carry Cores) and the battery not yet sold.
 [*] [b]Prices[/b]: you set them; nothing goes on sale until you apply.
 [*] [b]Needs[/b]: Economy 42.21.0-0.11.0 or later and Economy Center admin access.
 [*] [b]Paid slot prices and periods[/b]: sandbox options, sent to Economy within 5 seconds of startup or a change.
 [/list]
 === ⚙️ Sandbox options and defaults
-The sandbox options are on the four "Minidoracat Map Watch" pages.
+The sandbox options are on the five "Minidoracat Map Watch" pages.
 [h3]Main switch and features[/h3]
 [table]
 [tr][th]Option[/th][th]Default[/th][/tr]
@@ -368,7 +393,7 @@ Ranges never go beyond the minimap view distance.
 [h3]Paid slots[/h3]
 [table]
 [tr][th]Option[/th][th]Default[/th][/tr]
-[tr][td]Expansion/Advanced/Core Slot access[/td][td]Economy[/td][/tr]
+[tr][td]Expansion/Advanced/Core/Carry Slot I–III access[/td][td]Economy[/td][/tr]
 [tr][td]Add-on slot access[/td][td]Free[/td][/tr]
 [tr][td]Also accept unlock cards[/td][td]Off[/td][/tr]
 [/table]
@@ -378,6 +403,9 @@ Buy prices and rent per period:
 [tr][td]Expansion[/td][td]400[/td][td]60[/td][/tr]
 [tr][td]Advanced[/td][td]1200[/td][td]150[/td][/tr]
 [tr][td]Core[/td][td]2400[/td][td]300[/td][/tr]
+[tr][td]Carry I[/td][td]400[/td][td]60[/td][/tr]
+[tr][td]Carry II[/td][td]1200[/td][td]150[/td][/tr]
+[tr][td]Carry III[/td][td]2400[/td][td]300[/td][/tr]
 [tr][td]Add-on[/td][td]600[/td][td]80[/td][/tr]
 [/table]
 Each tier has its own currency, period and renewal, all defaulting to:
@@ -388,13 +416,24 @@ Each tier has its own currency, period and renewal, all defaulting to:
 [*] Reminder: 24 h
 [*] Auto-renew allowed
 [/list]
+[h3]Carry Cores and the Power-Saver Core[/h3]
+[table]
+[tr][th]Option[/th][th]Default[/th][/tr]
+[tr][td]Enable Carry Cores[/td][td]On[/td][/tr]
+[tr][td]Carry Core I/II/III bonus[/td][td]1/2/3 units (one unit = 1/8 of the vanilla carry base)[/td][/tr]
+[tr][td]Carry Core I/II/III drain[/td][td]100%/200%/300%[/td][/tr]
+[tr][td]Carry Core I/II/III appears as loot[/td][td]Off[/td][/tr]
+[tr][td]Power-Saver Core: keep the minimap on a dead battery[/td][td]On[/td][/tr]
+[tr][td]Power-Saver Core: less endurance used[/td][td]25%[/td][/tr]
+[tr][td]Power-Saver Core: faster endurance recovery[/td][td]30%[/td][/tr]
+[/table]
 [h3]Installing, crafting and loot[/h3]
 [table]
 [tr][th]Option[/th][th]Default[/th][/tr]
 [tr][td]Screwdriver required for modules[/td][td]On[/td][/tr]
 [tr][td]Allow crafting modules[/td][td]On[/td][/tr]
 [tr][td]Electrical level to craft modules[/td][td]3[/td][/tr]
-[tr][td]Watches, modules, unlock cards appear as loot[/td][td]On[/td][/tr]
+[tr][td]Watches, modules (except Carry Cores), unlock cards appear as loot[/td][td]On[/td][/tr]
 [tr][td]Amount[/td][td]Watches and modules Normal, cards Very Low[/td][/tr]
 [tr][td]Zombies carry map watch items[/td][td]On[/td][/tr]
 [tr][td]Max drops per zombie[/td][td]1[/td][/tr]
@@ -409,6 +448,7 @@ Each tier has its own currency, period and renewal, all defaulting to:
 [*] getWatchModuleData: read the data of a module on a player's worn watch (e.g. a serial number)
 [/list]
 [*] [b]Register in a shared file[/b]: dedicated servers don't run the client folder, so client-only registration shows in the panel but every install is rejected.
+[*] [b]Carry Cores are built-in only[/b]: other mods can't register modules of the Carry Core classes or let their slots take Carry Cores.
 [*] [b]Keep your feature open when Map Watch is missing, outdated or disabled[/b]; don't lock it just because the watch isn't there.
 [*] Access, pricing and drain tuning are handled by Map Watch.
 [*] Full fields, states and sample code: [url=https://github.com/Minidoracat/MinidoracatMiniMapWatchFor42]GitHub README[/url]
@@ -425,6 +465,7 @@ Each tier has its own currency, period and renewal, all defaulting to:
 [*] [b]Economy removed and re-added[/b]: rentals aren't compensated (they keep counting).
 [*] [b]No-steam servers[/b]: no identity check, so a player renamed to an offline player may use that player's opened slots.
 [*] [b]Changed drop or loot settings[/b]: already-searched corpses and already-spawned container loot aren't affected.
+[*] [b]Other mods that change carry capacity[/b]: if they add or subtract, both bonuses are kept; if they set a fixed value, theirs wins.
 [/list]
 === ❓ FAQ
 [h3]The minimap works without a watch?[/h3]
@@ -437,12 +478,25 @@ Each tier has its own currency, period and renewal, all defaulting to:
 [*] The watch is dead or has no battery.
 [*] Insert or replace one.
 [/list]
+[h3]The battery is dead, but the minimap still works?[/h3]
+[list]
+[*] With a Power-Saver Core in the Core Slot, the minimap stays on a dead battery; other features and modules still stop.
+[*] Admins can turn this off on the settings window's Cores page.
+[/list]
 [h3]A module shows as disabled?[/h3]
 [list]
-[*] Its slot isn't open, the rental ended, or the watch is dead.
+[*] Its slot isn't open or the rental ended; a dead watch shows "No power" instead.
 [*] It also won't work if the admin turned its feature off.
 [*] Move it to a working slot.
 [/list]
+[h3]Carry Core installed, but my carry capacity didn't change?[/h3]
+Check that:
+[list]
+[*] The watch is on your wrist and charged
+[*] The Carry Core is in an open Carry Slot of the same tier
+[*] The admin hasn't turned Carry Cores off or set that tier's bonus to 0
+[/list]
+If another mod sets carry capacity to a fixed value, its value wins.
 [h3]Detector or Scanner installed, but nothing shows on the minimap?[/h3]
 [list]
 [*] The server's minimap settings may have zombie positions and heat, or vehicle and animal icons, turned off; the modules can't show them then.

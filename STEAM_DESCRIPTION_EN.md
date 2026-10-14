@@ -27,8 +27,8 @@ Without this mod installed, the minimap stays fully available as before. Works i
 [list]
 [*] [b]Wear it to use the minimap[/b]: the world map, search and your own coordinates work without one
 [*] [b]Seven watches[/b]: different looks, same features, one worn at a time
-[*] [b]Modules and slots[/b]: install modules to unlock navigation, resource points, zombie detection and more
-[*] [b]Light Module[/b]: a light on your watch that nearby players can see too
+[*] [b]Modules and slots[/b]: install modules to unlock navigation, resource points, zombie detection, a light and more
+[*] [b]Carry and Power-Saver Cores[/b]: carry more once admins allow Carry Cores, and save power and endurance with the Power-Saver Core
 [*] [b]Battery and charging[/b]: drains in real time, and admins can allow charging in vehicles or powered buildings
 [*] [b]Status at a glance[/b]: the title bar shows the battery, and important events like a low battery pop up
 [*] [b]Paid slots[/b]: buy or rent them with Economy, or use unlock cards without it
