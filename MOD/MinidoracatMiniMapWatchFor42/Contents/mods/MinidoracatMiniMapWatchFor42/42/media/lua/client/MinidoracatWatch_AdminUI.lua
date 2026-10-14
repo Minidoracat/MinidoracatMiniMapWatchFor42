@@ -589,9 +589,6 @@ local function buildCores(S, p)
     local y = para(p, T("Weight_desc"), 0, CH + 4, w) + 4
     y = heading(y, T("WeightUnits"), T("WeightUnits_hint", M.weightPct(1)))
     for i = 1, 3 do cell(i, y, TIER_LABELS[i], "WeightUnits" .. i, unit) end
-    y = y + ROW
-    local fx = cell(1, y, T("WeightCap"), "WeightCap", unit)
-    S.capPct = text(p, "", fx + 70 + measure(unit) + GAP, y + (CH - FH) / 2, "textMuted")
     y = heading(y + ROW + 4, T("CoreDrain"), T("CoreDrain_hint"))
     for i = 1, 3 do cell(i, y, TIER_LABELS[i], "DrainWeight" .. i, "%", true) end
     y = heading(y + ROW + 4, T("CoreLoot"), T("CoreLoot_hint"))
@@ -868,8 +865,7 @@ local function gate(S, key, on)
     end
     tf:setEnabled(on)
 end
-local WEIGHT_FIELDS = { "WeightUnits1", "WeightUnits2", "WeightUnits3", "WeightCap", "DrainWeight1", "DrainWeight2",
-    "DrainWeight3" }
+local WEIGHT_FIELDS = { "WeightUnits1", "WeightUnits2", "WeightUnits3", "DrainWeight1", "DrainWeight2", "DrainWeight3" }
 -- 動態文字（總覽一覽、續航試算、頁尾修改數與訊息）；每次修改後重算
 function AU.refresh(S)
     if not S.footer then return end
@@ -877,7 +873,6 @@ function AU.refresh(S)
     gate(S, "CarHours", S.draft.sb.ChargeCar == true)
     gate(S, "HouseHours", S.draft.sb.ChargeHouse == true)
     for _, k in ipairs(WEIGHT_FIELDS) do gate(S, k, S.draft.sb.WeightEnabled == true) end
-    S.capPct.text = S.bad[S.ctrl.WeightCap] and "" or T("WeightPct", M.weightPct(S.draft.sb.WeightCap))
     local p = S.summaryPane
     local keep = {}
     for _, t in ipairs(p.texts) do if not t.summary then keep[#keep + 1] = t end end

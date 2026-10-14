@@ -345,8 +345,6 @@
     "Sandbox_MinidoracatWatch_WeightUnits2_tooltip": "1칸 = 기본 적재량의 1/8로, 최대 적재량이 약 +12.5%% 늘어납니다. 기본값 2, 0 = 보너스 없음.",
     "Sandbox_MinidoracatWatch_WeightUnits3": "적재 코어 III 보너스(칸)",
     "Sandbox_MinidoracatWatch_WeightUnits3_tooltip": "1칸 = 기본 적재량의 1/8로, 최대 적재량이 약 +12.5%% 늘어납니다. 기본값 3, 0 = 보너스 없음.",
-    "Sandbox_MinidoracatWatch_WeightCap": "시계당 적재 보너스 상한(칸)",
-    "Sandbox_MinidoracatWatch_WeightCap_tooltip": "한 시계에 장착된 모든 적재 코어의 보너스를 합친 최댓값입니다. 기본값 8(최대 적재량 +100%%), 0 = 적재 코어 보너스 없음.",
     "Sandbox_MinidoracatWatch_DrainWeight1": "적재 코어 I 소모(%%)",
     "Sandbox_MinidoracatWatch_DrainWeight1_tooltip": "적재 코어 I이 미니맵만 켰을 때보다 추가로 쓰는 전력입니다. 예를 들어 100은 2배 소모를 뜻합니다.\n슬롯이 열려 있지 않거나 적재 코어가 비활성화되어 있으면 소모하지 않습니다.",
     "Sandbox_MinidoracatWatch_DrainWeight2": "적재 코어 II 소모(%%)",

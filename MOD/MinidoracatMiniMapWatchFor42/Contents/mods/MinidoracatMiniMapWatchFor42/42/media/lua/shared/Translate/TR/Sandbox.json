@@ -345,8 +345,6 @@
     "Sandbox_MinidoracatWatch_WeightUnits2_tooltip": "Bir birim = orijinal temel taşıma kapasitesinin 1/8'i, yaklaşık +12,5%% taşıma kapasitesi. Varsayılan 2; 0 = bonus yok.",
     "Sandbox_MinidoracatWatch_WeightUnits3": "Taşıma Çekirdeği III bonusu (birim)",
     "Sandbox_MinidoracatWatch_WeightUnits3_tooltip": "Bir birim = orijinal temel taşıma kapasitesinin 1/8'i, yaklaşık +12,5%% taşıma kapasitesi. Varsayılan 3; 0 = bonus yok.",
-    "Sandbox_MinidoracatWatch_WeightCap": "Harita saati başına taşıma bonusu sınırı (birim)",
-    "Sandbox_MinidoracatWatch_WeightCap_tooltip": "Tek bir harita saatindeki tüm Taşıma Çekirdeklerinin toplamda ekleyebileceği en fazla birim. Varsayılan 8 (taşıma kapasitesi +100%%); 0 = Taşıma Çekirdekleri bonus vermez.",
     "Sandbox_MinidoracatWatch_DrainWeight1": "Taşıma Çekirdeği I tüketimi (%%)",
     "Sandbox_MinidoracatWatch_DrainWeight1_tooltip": "Taşıma Çekirdeği I, tek başına mini haritanın tüketimine ek olarak bu kadar güç kullanır. Örneğin 100, 2 kat tüketim demektir.\nYuvası açık değilken veya Taşıma Çekirdekleri devre dışıyken tüketim yok.",
     "Sandbox_MinidoracatWatch_DrainWeight2": "Taşıma Çekirdeği II tüketimi (%%)",

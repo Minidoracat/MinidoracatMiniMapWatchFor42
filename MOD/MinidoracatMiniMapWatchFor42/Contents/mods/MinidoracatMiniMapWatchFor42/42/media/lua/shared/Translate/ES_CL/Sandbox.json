@@ -345,8 +345,6 @@
     "Sandbox_MinidoracatWatch_WeightUnits2_tooltip": "Una unidad = 1/8 de la capacidad de carga base del juego, aprox. +12.5%% de capacidad de carga. Predeterminado: 2; 0 = sin bonificación.",
     "Sandbox_MinidoracatWatch_WeightUnits3": "Bonificación del Núcleo de capacidad de carga III (unidades)",
     "Sandbox_MinidoracatWatch_WeightUnits3_tooltip": "Una unidad = 1/8 de la capacidad de carga base del juego, aprox. +12.5%% de capacidad de carga. Predeterminado: 3; 0 = sin bonificación.",
-    "Sandbox_MinidoracatWatch_WeightCap": "Límite de bonificación por reloj (unidades)",
-    "Sandbox_MinidoracatWatch_WeightCap_tooltip": "El máximo de unidades que suman todos los Núcleos de capacidad de carga de un reloj. Predeterminado: 8 (+100%% de capacidad de carga); 0 = los Núcleos de capacidad de carga no dan bonificación.",
     "Sandbox_MinidoracatWatch_DrainWeight1": "Consumo del Núcleo de capacidad de carga I (%%)",
     "Sandbox_MinidoracatWatch_DrainWeight1_tooltip": "Energía extra que usa el Núcleo de capacidad de carga I sobre la del minimapa solo. Por ejemplo, 100 significa 2x de consumo.\nNo consume mientras su espacio no esté abierto o los Núcleos de capacidad de carga estén desactivados.",
     "Sandbox_MinidoracatWatch_DrainWeight2": "Consumo del Núcleo de capacidad de carga II (%%)",

@@ -345,8 +345,6 @@
     "Sandbox_MinidoracatWatch_WeightUnits2_tooltip": "One unit = 1/8 of the vanilla carry base, about +12.5%% carry capacity. Default 2; 0 = no bonus.",
     "Sandbox_MinidoracatWatch_WeightUnits3": "Carry Core III bonus (units)",
     "Sandbox_MinidoracatWatch_WeightUnits3_tooltip": "One unit = 1/8 of the vanilla carry base, about +12.5%% carry capacity. Default 3; 0 = no bonus.",
-    "Sandbox_MinidoracatWatch_WeightCap": "Carry bonus cap per watch (units)",
-    "Sandbox_MinidoracatWatch_WeightCap_tooltip": "The most units all Carry Cores on one watch add up to. Default 8 (+100%% carry capacity); 0 = Carry Cores give no bonus.",
     "Sandbox_MinidoracatWatch_DrainWeight1": "Carry Core I drain (%%)",
     "Sandbox_MinidoracatWatch_DrainWeight1_tooltip": "Extra power Carry Core I uses on top of the minimap alone. For example, 100 means 2x drain.\nNo drain while its slot isn't open or Carry Cores are disabled.",
     "Sandbox_MinidoracatWatch_DrainWeight2": "Carry Core II drain (%%)",

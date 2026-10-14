@@ -206,21 +206,21 @@ do
     check(has(s, "核心槽：租用每 7 天 300 倖存幣，或買斷 2,400 倖存幣"), "summary: thousands separator")
     check(has(s, "負重槽 I：租用每 7 天 60 倖存幣，或買斷 400 倖存幣") and has(s, "負重槽 II：租用每 7 天 150 倖存幣，或買斷 1,200 倖存幣")
         and has(s, "負重槽 III：租用每 7 天 300 倖存幣，或買斷 2,400 倖存幣"), "summary: one line per carry slot with its own price")
-    check(has(s, "負重核心：I／II／III 各 +1／2／3 格，上限 8 格（+100%）"), "summary: carry cores at defaults")
+    check(has(s, "負重核心：I／II／III 各 +1／2／3 格，三顆全裝 +6 格（+75%）"), "summary: carry cores at defaults")
     check(has(s, "節能核心：耐力消耗 -25%、恢復 +30%，沒電保留小地圖"), "summary: power-saver core at defaults")
     local k = M.copy(base)
-    k.sb.WeightUnits2, k.sb.WeightCap, k.sb.EcoEnduranceDrain, k.sb.EcoKeepsMap = 4, 3, 0, false
+    k.sb.WeightUnits2, k.sb.WeightUnits3, k.sb.EcoEnduranceDrain, k.sb.EcoKeepsMap = 4, 2, 0, false
     k.sb.LootWeight1, k.sb.LootPaws = true, false
     s = M.summary(k, true)
-    check(has(s, "負重核心：I／II／III 各 +1／4／3 格，上限 3 格（+37.5%）") and has(s, "節能核心：耐力恢復 +30%")
-        and not find(s, "沒電保留小地圖"), "summary: tuned carry units and cap (fractional %), regen only, no keep-minimap")
+    check(has(s, "負重核心：I／II／III 各 +1／4／2 格，三顆全裝 +7 格（+87.5%）") and has(s, "節能核心：耐力恢復 +30%")
+        and not find(s, "沒電保留小地圖"), "summary: tuned carry units add up (fractional %), regen only, no keep-minimap")
     check(has(s, "戰利品：6 款地圖手錶會出現"), "summary: a carry-core loot switch does not count as a watch style")
     k.sb.EcoEnduranceRegen, k.sb.EcoEnduranceDrain, k.sb.EcoKeepsMap = 0, 40, true
     check(has(M.summary(k, true), "節能核心：耐力消耗 -40%，沒電保留小地圖"), "summary: drain only, keeps the minimap")
     k.sb.EcoEnduranceDrain, k.sb.WeightEnabled = 0, false
     s = M.summary(k, true)
     check(has(s, "節能核心：只讓整支錶耗電減半，沒電保留小地圖") and has(s, "負重核心：關閉")
-        and not find(s, "格，上限"), "summary: both endurance bonuses off; carry cores off is one line")
+        and not find(s, "三顆全裝"), "summary: both endurance bonuses off; carry cores off is one line")
     k.sb.EcoKeepsMap = false
     check(has(M.summary(k, true), "節能核心：只讓整支錶耗電減半"), "summary: power-saver core with every option off")
     local d = M.copy(base)
@@ -292,11 +292,11 @@ do
         and has(lines, "製作模組需要的電學等級：從 3 改成 5"), "diff: battery switch, dead mode and craft level")
     -- 核心頁的欄位：照沙盒名稱寫「原本 → 改成」；負重槽的租金、幣別、天數也是條款，重試、提醒不是
     local w = M.copy(base)
-    w.sb.WeightEnabled, w.sb.WeightUnits1, w.sb.WeightCap, w.sb.DrainWeight3 = false, 2, 12, 50
+    w.sb.WeightEnabled, w.sb.WeightUnits1, w.sb.DrainWeight3 = false, 2, 50
     w.sb.LootWeight2, w.sb.EcoKeepsMap, w.sb.EcoEnduranceDrain, w.sb.EcoEnduranceRegen = true, false, 0, 120
     lines, warn, n = M.diff(base, w)
-    check(n == 8 and not warn and has(lines, "啟用負重核心：從 開 改成 關") and has(lines, "負重核心 I 的加成（格）：從 1 改成 2")
-        and has(lines, "一支錶的負重加成上限（格）：從 8 改成 12") and has(lines, "負重核心 III 耗電（%）：從 300 改成 50")
+    check(n == 7 and not warn and has(lines, "啟用負重核心：從 開 改成 關") and has(lines, "負重核心 I 的加成（格）：從 1 改成 2")
+        and has(lines, "負重核心 III 耗電（%）：從 300 改成 50")
         and has(lines, "負重核心 II 出現在戰利品中：從 關 改成 開") and has(lines, "節能核心：沒電時保留小地圖：從 開 改成 關")
         and has(lines, "節能核心：耐力消耗減少（%）：從 25 改成 0") and has(lines, "節能核心：耐力恢復增加（%）：從 30 改成 120"),
         "diff: one line per changed core field, no re-consent warning")
@@ -356,18 +356,18 @@ do
     d.drops[3].group = "custom"
     check(M.problems(d) == 3, "problems: out-of-range hours, chance over 100, custom rule without outfits")
     local c = M.copy(base)
-    c.sb.WeightCap, c.sb.WeightUnits2, c.sb.EcoEnduranceDrain, c.sb.EcoEnduranceRegen, c.sb.DrainWeight1 = 17, -1, 101, 2.5, 1001
+    c.sb.WeightUnits2, c.sb.WeightUnits3, c.sb.EcoEnduranceDrain, c.sb.EcoEnduranceRegen, c.sb.DrainWeight1 = -1, 9, 101, 2.5, 1001
     c.sb.LootWeight3 = "yes"
-    check(M.problems(c) == 6, "problems: every out-of-range core value (cap 17, units -1, drain 101, regen 2.5, 1001%, loot not bool)")
+    check(M.problems(c) == 6, "problems: every out-of-range core value (units -1 and 9, drain 101, regen 2.5, 1001%, loot not bool)")
     c = M.copy(base)
-    c.sb.WeightCap, c.sb.WeightUnits2, c.sb.EcoEnduranceDrain, c.sb.EcoEnduranceRegen = 16, 0, 100, 300
+    c.sb.WeightUnits2, c.sb.WeightUnits3, c.sb.EcoEnduranceDrain, c.sb.EcoEnduranceRegen = 0, 8, 100, 300
     check(M.problems(c) == 0, "problems: core values at their limits are fine")
     c.sb.WeightEnabled, c.sb.SlotWt2RentPrice = false, 999
     local ch = M.sandboxChanges(base, c)
     local got = {}
     for _, x in ipairs(ch) do got[x[1]] = x[2] end
     args = M.payload(base, c, 7, "why", { "x" })
-    check(#ch == 6 and args.sandbox == 6 and got.WeightCap == 16 and got.WeightUnits2 == 0 and got.EcoEnduranceDrain == 100
+    check(#ch == 6 and args.sandbox == 6 and got.WeightUnits3 == 8 and got.WeightUnits2 == 0 and got.EcoEnduranceDrain == 100
         and got.EcoEnduranceRegen == 300 and got.WeightEnabled == false and got.SlotWt2RentPrice == 999,
         "payload: new sandbox values counted and carried (false included)")
     check(M.parseOutfits("HazardSuit, Bandit")[2] == "Bandit" and M.parseOutfits("bad name!") == nil
@@ -840,10 +840,10 @@ do
             if not (c3[o.name] and c3[o.name].parent == cp) then away[#away + 1] = o.name end
         end
     end
-    check(nCores == 14 and #away == 0, "every cores sandbox option has its control on the cores tab: " .. table.concat(away, ", "))
+    check(nCores == 13 and #away == 0, "every cores sandbox option has its control on the cores tab: " .. table.concat(away, ", "))
     local function grid()
         local u, d, l = c3.WeightUnits1, c3.DrainWeight1, c3.LootWeight1
-        local ok = c3.WeightCap.x == u.x and c3.WeightCap.y == u.y + ROW and d.y > c3.WeightCap.y and l.y > d.y
+        local ok = d.y > u.y and l.y > d.y
             and c3.EcoKeepsMap.y > l.y and c3.EcoEnduranceDrain.y == c3.EcoKeepsMap.y + ROW
             and c3.EcoEnduranceDrain.x == u.x and c3.EcoEnduranceRegen.x == c3.WeightUnits2.x
             and c3.EcoEnduranceRegen.y == c3.EcoEnduranceDrain.y
@@ -861,45 +861,43 @@ do
         for _, t in ipairs(cp.texts) do ok = ok and t.x >= 0 and t.x + mw(t.text) <= cp.width end
         return ok
     end
-    check(grid(), "cores tab: three aligned columns (I/II/III), cap under I, endurance fields on the same grid, text inside")
-    check(S3.capPct.text == "＝+100%" and S3.capPct.x > c3.WeightCap.x + c3.WeightCap.width and S3.capPct.y == c3.WeightCap.y + 5,
-        "cap hint: '= +100%' right of the cap field")
+    check(grid(), "cores tab: three aligned columns (I/II/III), endurance fields on the same grid, text inside")
     check(c3.WeightEnabled.checked == true and c3.LootWeight1.checked == false and c3.EcoKeepsMap.checked == true
         and c3.EcoEnduranceRegen.text == "30", "controls start at the sandbox defaults")
     -- 壞值：紅框、擋套用、draft 不變
-    local bads = { { "WeightUnits1", "9" }, { "WeightUnits2", "-1" }, { "WeightUnits3", "1.5" }, { "WeightCap", "17" },
-        { "DrainWeight1", "1001" }, { "EcoEnduranceDrain", "101" }, { "EcoEnduranceRegen", "301" }, { "DrainWeight3", "x" } }
+    local bads = { { "WeightUnits1", "9" }, { "WeightUnits2", "-1" }, { "WeightUnits3", "1.5" }, { "DrainWeight1", "1001" },
+        { "EcoEnduranceDrain", "101" }, { "EcoEnduranceRegen", "301" }, { "DrainWeight3", "x" } }
     local allBad = true
     for _, b in ipairs(bads) do
         local before = S3.draft.sb[b[1]]
         c3[b[1]].onChange(nil, b[2])
         allBad = allBad and S3.bad[c3[b[1]]] == true and c3[b[1]].invalid == true and S3.draft.sb[b[1]] == before
     end
-    check(allBad and S3.capPct.text == "", "cores tab: out-of-range values are marked and never reach the draft; cap hint hides")
+    check(allBad, "cores tab: out-of-range values are marked and never reach the draft")
     AU.check(S3)
     check(S3.msg == M.T("Invalid"), "cores tab: a bad value blocks apply")
-    -- 合法值（含上下限）寫進 draft；「＝+X%」跟著總上限
-    for _, g in ipairs({ { "WeightUnits1", "0", 0 }, { "WeightUnits2", "8", 8 }, { "WeightUnits3", "3", 3 }, { "WeightCap", "3", 3 },
+    -- 合法值（含上下限）寫進 draft
+    for _, g in ipairs({ { "WeightUnits1", "0", 0 }, { "WeightUnits2", "8", 8 }, { "WeightUnits3", "3", 3 },
         { "DrainWeight1", "1000", 1000 }, { "DrainWeight3", "300", 300 }, { "EcoEnduranceDrain", "100", 100 },
         { "EcoEnduranceRegen", "300", 300 } }) do
         c3[g[1]].onChange(nil, g[2])
         allBad = allBad and S3.bad[c3[g[1]]] == nil and S3.draft.sb[g[1]] == g[3]
     end
-    check(allBad and S3.capPct.text == "＝+37.5%", "cores tab: valid values (limits included) reach the draft; cap 3 = +37.5%")
+    check(allBad, "cores tab: valid values (limits included) reach the draft")
     c3.LootWeight2:setChecked(true)
     c3.EcoKeepsMap:setChecked(false)
     check(S3.draft.sb.LootWeight2 == true and S3.draft.sb.EcoKeepsMap == false, "cores tab: switches write the draft")
-    -- 負重核心關掉：七個數字欄停用、打到一半的壞值丟掉；戰利品與節能核心不受影響
-    c3.WeightCap.onChange(nil, "99")
+    -- 負重核心關掉：六個數字欄停用、打到一半的壞值丟掉；戰利品與節能核心不受影響
+    c3.WeightUnits3.onChange(nil, "99")
     c3.WeightEnabled:setChecked(false)
-    local off = S3.bad[c3.WeightCap] == nil and c3.WeightCap.invalid == false and c3.WeightCap.text == "3"
-    for _, k in ipairs({ "WeightUnits1", "WeightUnits2", "WeightUnits3", "WeightCap", "DrainWeight1", "DrainWeight2", "DrainWeight3" }) do
+    local off = S3.bad[c3.WeightUnits3] == nil and c3.WeightUnits3.invalid == false and c3.WeightUnits3.text == "3"
+    for _, k in ipairs({ "WeightUnits1", "WeightUnits2", "WeightUnits3", "DrainWeight1", "DrainWeight2", "DrainWeight3" }) do
         off = off and c3[k].enabled == false
     end
     check(off and c3.LootWeight1.enabled ~= false and c3.EcoEnduranceDrain.enabled == true and c3.EcoKeepsMap.enabled ~= false,
         "carry cores off: bonus and drain fields disabled, half-typed bad value dropped; loot and power-saver stay editable")
     c3.WeightEnabled:setChecked(true)
-    check(c3.WeightCap.enabled == true and c3.DrainWeight2.enabled == true, "carry cores back on: fields enabled again")
+    check(c3.WeightUnits1.enabled == true and c3.DrainWeight2.enabled == true, "carry cores back on: fields enabled again")
     c3.WeightEnabled:setChecked(false)
     -- 一覽、這次會改變、送出（單機套用）都帶新的值
     local sum = M.summary(S3.draft, false)
@@ -908,15 +906,15 @@ do
     local got = {}
     for _, x in ipairs(ch) do got[x[1]] = x[2] end
     local lines3 = M.diff(S3.base, S3.draft)
-    check(#ch == 9 and M.payload(S3.base, S3.draft, 1, "r", {}).sandbox == 9 and got.WeightEnabled == false
-        and got.WeightCap == 3 and got.LootWeight2 == true and got.EcoKeepsMap == false and got.EcoEnduranceRegen == 300
-        and has(lines3, "一支錶的負重加成上限（格）：從 8 改成 3"), "cores tab edits become sandbox changes and diff lines")
+    check(#ch == 8 and M.payload(S3.base, S3.draft, 1, "r", {}).sandbox == 8 and got.WeightEnabled == false
+        and got.WeightUnits2 == 8 and got.LootWeight2 == true and got.EcoKeepsMap == false and got.EcoEnduranceRegen == 300
+        and has(lines3, "負重核心 II 的加成（格）：從 2 改成 8"), "cores tab edits become sandbox changes and diff lines")
     M.applySandbox(ch)
-    check(NATIVE["MinidoracatWatch.WeightCap"] == 3 and SB.WeightEnabled == false and SB.EcoEnduranceRegen == 300
+    check(NATIVE["MinidoracatWatch.WeightUnits2"] == 8 and SB.WeightEnabled == false and SB.EcoEnduranceRegen == 300
         and SB.LootWeight2 == true, "single player: the new core values land in the native options and SandboxVars")
     resetSandbox()
     -- 德文等長字串：標籤截短、說明換行，欄位仍在格線上、文字不超出頁寬
-    local LONG = { "EcoDrain", "EcoRegen", "WeightCap", "WeightUnits_hint", "CoreDrain_hint", "CoreLoot_hint", "Eco_hint",
+    local LONG = { "EcoDrain", "EcoRegen", "WeightUnits_hint", "CoreDrain_hint", "CoreLoot_hint", "Eco_hint",
         "Cores_note", "Weight_desc" }
     local savedTr = {}
     for _, k in ipairs(LONG) do

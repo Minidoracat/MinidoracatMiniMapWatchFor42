@@ -345,8 +345,6 @@
     "Sandbox_MinidoracatWatch_WeightUnits2_tooltip": "Eine Einheit = 1/8 der Grund-Traglast, also etwa +12,5%% Traglast. Standard 2; 0 = kein Bonus.",
     "Sandbox_MinidoracatWatch_WeightUnits3": "Bonus Traglastkern III (Einheiten)",
     "Sandbox_MinidoracatWatch_WeightUnits3_tooltip": "Eine Einheit = 1/8 der Grund-Traglast, also etwa +12,5%% Traglast. Standard 3; 0 = kein Bonus.",
-    "Sandbox_MinidoracatWatch_WeightCap": "Traglast-Limit pro Uhr (Einheiten)",
-    "Sandbox_MinidoracatWatch_WeightCap_tooltip": "So viele Einheiten geben alle Traglastkerne einer Uhr zusammen höchstens. Standard 8 (+100%% Traglast); 0 = Traglastkerne geben keinen Bonus.",
     "Sandbox_MinidoracatWatch_DrainWeight1": "Verbrauch Traglastkern I (%%)",
     "Sandbox_MinidoracatWatch_DrainWeight1_tooltip": "Zusätzlicher Strom, den Traglastkern I zur reinen Minimap verbraucht. Zum Beispiel bedeutet 100 einen 2x Verbrauch.\nKein Verbrauch, solange sein Slot nicht offen ist oder Traglastkerne deaktiviert sind.",
     "Sandbox_MinidoracatWatch_DrainWeight2": "Verbrauch Traglastkern II (%%)",

@@ -658,13 +658,6 @@ function M:applySkin(key)
     end
 end
 
--- 負重列的總加成「+N 格（+X%）」；上限卡得到時接「／上限 M 格」（self.weightCapShown，scan 算好）
-local function weightSum(self, units)
-    local s = C.unitsText(units)
-    if self.weightCapShown then return getText("IGUI_MinidoracatWatch_WeightRowSum", s, tostring(self.weightCapShown)) end
-    return s
-end
-
 -- 背包與錶的掃描（解鎖卡、電池、孤立槽位、付費檢視、動作按鈕、功能清單）每 250ms 一次，不在每幀翻背包
 function M:scan(player, watch, slot)
     local now = getTimestampMs()
@@ -685,17 +678,16 @@ function M:scan(player, watch, slot)
     self.payUi = C.Pay.ui(player, watch, slot)
     self.actions = self:buildActions(player, watch, slot)
     self.feats = self:buildFeatures()
-    -- 負重列標題右邊（與檢視區「這支錶合計」）：這支錶的總加成；上限卡得到時才接上限、檢視區才多一格總上限；沒電寫「+0 格（沒電）」
+    -- 負重列標題右邊（與檢視區「這支錶合計」）：這支錶的總加成；沒電寫「+0 格（沒電）」
     local c = watch and W.power(watch)
-    local most, binds = W.weightMax()
     self.weightUnits = C.watchWeight(player, watch)
-    self.weightCapShown = binds and W.weightCap() or nil
     self.weightText = nil
     if watch then
-        self.weightText = (c and c > 0) and weightSum(self, self.weightUnits) or getText("IGUI_MinidoracatWatch_WeightRowDead")
+        self.weightText = (c and c > 0) and C.unitsText(self.weightUnits) or getText("IGUI_MinidoracatWatch_WeightRowDead")
     end
-    -- 一行放不下就把總加成換到第二行（ES、PTBR 的「負重核心」很長）。用最寬的情況判斷（加到最多、或沒電），數字變了版面不跳
-    local widest = math.max(measure(weightSum(self, most)), measure(getText("IGUI_MinidoracatWatch_WeightRowDead")))
+    -- 一行放不下就把總加成換到第二行（ES、PTBR 的「負重核心」很長）。用最寬的情況判斷（三顆全裝、或沒電），數字變了版面不跳
+    local most = W.weightUnits(1) + W.weightUnits(2) + W.weightUnits(3)
+    local widest = math.max(measure(C.unitsText(most)), measure(getText("IGUI_MinidoracatWatch_WeightRowDead")))
     self.weightWrap = measure(getText("IGUI_MinidoracatWatch_WeightCores")) + 8 + widest > LEFT_W
     self.ecoLines = C.ecoLines() -- 檢視區每幀畫，這裡先算好
     self:refreshFocusLabel()
@@ -1137,7 +1129,7 @@ function M:drawInspector(UI, player, watch, slot)
         y = y + 2
     end
     -- 資訊格，每列三格：一般模組＝類別／耗電／槽位（未知模組只有槽位）；負重核心兩列＝階級／加成／耗電、
-    -- 槽位狀態（租用剩多久）／這支錶合計（上限卡得到時再一格總上限），下面再寫這個角色現在的負重上限
+    -- 槽位狀態（租用剩多久）／這支錶合計，下面再寫這個角色現在的負重上限
     local kw = math.floor((width - 12) / 3)
     local tier = def and W.WEIGHT_CLASSES[def.class]
     local cells, n = self.kvCells, 0 -- 每幀重填同一個表（build 建的），不建 closure
@@ -1152,10 +1144,6 @@ function M:drawInspector(UI, player, watch, slot)
         cells[5] = getText("IGUI_MinidoracatWatch_KV_WatchTotal", getText("IGUI_MinidoracatWatch_WeightUnitsShort",
             tostring(self.weightUnits or 0)))
         n = 5
-        if self.weightCapShown then
-            n = 6
-            cells[6] = getText("IGUI_MinidoracatWatch_KV_Cap", tostring(self.weightCapShown))
-        end
     else
         if def then
             cells[1] = classLine(def)

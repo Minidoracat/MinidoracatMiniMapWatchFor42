@@ -453,7 +453,7 @@ function C.unitsText(units)
     return getText("IGUI_MinidoracatWatch_WeightUnits", tostring(units), p)
 end
 
--- 這支錶的負重加成（格）：有效負重槽裡的核心加總、夾在上限；系統或負重核心關閉、沒電＝0。和 W.weightBonus 同一套，
+-- 這支錶的負重加成（格）：有效負重槽裡的核心加總；系統或負重核心關閉、沒電＝0。和 W.weightBonus 同一套，
 -- 但看指定的錶（面板可以開背包裡那支）。客戶端的 getMaxWeightBase 不同步，不拿它算
 function C.watchWeight(player, watch)
     if not (watch and W.enabled() and W.weightEnabled()) then return 0 end
@@ -466,7 +466,7 @@ function C.watchWeight(player, watch)
         local tier = def and W.WEIGHT_CLASSES[def.class]
         if tier and W.slotValid(player, slot) then units = units + W.weightUnits(tier) end
     end
-    return math.min(units, W.weightCap())
+    return units
 end
 
 -- 節能核心的附加效果（句子陣列）：耐力一行（設 0 的那一項不寫，兩項都 0 整行不寫）；沒電時保留小地圖只在用得到時寫

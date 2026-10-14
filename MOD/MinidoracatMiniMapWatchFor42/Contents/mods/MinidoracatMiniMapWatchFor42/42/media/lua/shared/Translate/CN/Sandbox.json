@@ -345,8 +345,6 @@
     "Sandbox_MinidoracatWatch_WeightUnits2_tooltip": "一格＝原版负重基数的八分之一，负重上限约增加 12.5%%。默认 2；0＝没有加成。",
     "Sandbox_MinidoracatWatch_WeightUnits3": "负重核心 III 的加成（格）",
     "Sandbox_MinidoracatWatch_WeightUnits3_tooltip": "一格＝原版负重基数的八分之一，负重上限约增加 12.5%%。默认 3；0＝没有加成。",
-    "Sandbox_MinidoracatWatch_WeightCap": "每只手表的负重加成上限（格）",
-    "Sandbox_MinidoracatWatch_WeightCap_tooltip": "同一只手表上所有负重核心加起来最多几格。默认 8（负重上限 +100%%）；0＝负重核心没有加成。",
     "Sandbox_MinidoracatWatch_DrainWeight1": "负重核心 I 耗电（%%）",
     "Sandbox_MinidoracatWatch_DrainWeight1_tooltip": "装着负重核心 I时，比只开小地图多耗的电。例如 100 表示耗电变成 2 倍。\n槽位没有开启、或负重核心被关闭时不耗电。",
     "Sandbox_MinidoracatWatch_DrainWeight2": "负重核心 II 耗电（%%）",

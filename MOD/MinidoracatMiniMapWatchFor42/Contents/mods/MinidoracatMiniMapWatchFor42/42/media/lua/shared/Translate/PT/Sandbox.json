@@ -345,8 +345,6 @@
     "Sandbox_MinidoracatWatch_WeightUnits2_tooltip": "Um ponto = 1/8 da base original de capacidade de carga, cerca de +12,5%% de capacidade de carga. Padrão 2; 0 = sem bônus.",
     "Sandbox_MinidoracatWatch_WeightUnits3": "Bônus do Núcleo de Capacidade de Carga III (pontos)",
     "Sandbox_MinidoracatWatch_WeightUnits3_tooltip": "Um ponto = 1/8 da base original de capacidade de carga, cerca de +12,5%% de capacidade de carga. Padrão 3; 0 = sem bônus.",
-    "Sandbox_MinidoracatWatch_WeightCap": "Limite do bônus de capacidade por relógio (pontos)",
-    "Sandbox_MinidoracatWatch_WeightCap_tooltip": "O máximo de pontos que todos os Núcleos de Capacidade de Carga de um relógio podem somar. Padrão 8 (+100%% de capacidade de carga); 0 = os Núcleos de Capacidade de Carga não dão bônus.",
     "Sandbox_MinidoracatWatch_DrainWeight1": "Consumo do Núcleo de Capacidade de Carga I (%%)",
     "Sandbox_MinidoracatWatch_DrainWeight1_tooltip": "Energia extra que o Núcleo de Capacidade de Carga I consome além do minimapa sozinho. Por exemplo, 100 significa consumo de 2x.\nNão consome enquanto o espaço dele não estiver aberto ou os Núcleos de Capacidade de Carga estiverem desativados.",
     "Sandbox_MinidoracatWatch_DrainWeight2": "Consumo do Núcleo de Capacidade de Carga II (%%)",

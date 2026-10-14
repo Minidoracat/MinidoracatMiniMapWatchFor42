@@ -345,8 +345,6 @@
     "Sandbox_MinidoracatWatch_WeightUnits2_tooltip": "Une unité = 1/8 de la base de poids du jeu, soit environ +12,5%% de limite de poids. Par défaut 2 ; 0 = aucun bonus.",
     "Sandbox_MinidoracatWatch_WeightUnits3": "Bonus du Noyau de portage III (unités)",
     "Sandbox_MinidoracatWatch_WeightUnits3_tooltip": "Une unité = 1/8 de la base de poids du jeu, soit environ +12,5%% de limite de poids. Par défaut 3 ; 0 = aucun bonus.",
-    "Sandbox_MinidoracatWatch_WeightCap": "Plafond de bonus par montre (unités)",
-    "Sandbox_MinidoracatWatch_WeightCap_tooltip": "Nombre maximal d'unités cumulées par tous les Noyaux de portage d'une même montre. Par défaut 8 (+100%% de limite de poids) ; 0 = les Noyaux de portage ne donnent aucun bonus.",
     "Sandbox_MinidoracatWatch_DrainWeight1": "Consommation : Noyau de portage I (%%)",
     "Sandbox_MinidoracatWatch_DrainWeight1_tooltip": "Énergie supplémentaire consommée par le Noyau de portage I en plus de la mini-carte seule. Par exemple, 100 signifie une consommation x2.\nAucune consommation tant que son emplacement n'est pas ouvert ou que les Noyaux de portage sont désactivés.",
     "Sandbox_MinidoracatWatch_DrainWeight2": "Consommation : Noyau de portage II (%%)",

@@ -348,7 +348,7 @@ option MinidoracatWatch.LightDrain
 
 /* ===== MinidoracatWatchCores：設定視窗「核心」頁（2026-10-14：負重核心與節能核心） ===== */
 
-/* 負重核心：總開關；每一階的加成（格；一格＝原版負重基數的八分之一）與一支錶的上限 */
+/* 負重核心：總開關；每一階的加成（格；一格＝原版負重基數的八分之一）。一階一格，一支錶最多 I＋II＋III，不另設總上限 */
 option MinidoracatWatch.WeightEnabled
 {type = boolean, default = true, page = MinidoracatWatchCores, translation = MinidoracatWatch_WeightEnabled,}
 
@@ -360,9 +360,6 @@ option MinidoracatWatch.WeightUnits2
 
 option MinidoracatWatch.WeightUnits3
 {type = integer, min = 0, max = 8, default = 3, page = MinidoracatWatchCores, translation = MinidoracatWatch_WeightUnits3,}
-
-option MinidoracatWatch.WeightCap
-{type = integer, min = 0, max = 16, default = 8, page = MinidoracatWatchCores, translation = MinidoracatWatch_WeightCap,}
 
 /* 負重核心的耗電（%，同內建模組；W.moduleDrain 照 drainKey 讀） */
 option MinidoracatWatch.DrainWeight1

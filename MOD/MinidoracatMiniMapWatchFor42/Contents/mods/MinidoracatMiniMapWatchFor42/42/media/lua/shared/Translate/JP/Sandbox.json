@@ -345,8 +345,6 @@
     "Sandbox_MinidoracatWatch_WeightUnits2_tooltip": "1 単位＝バニラの積載基準値の 8 分の 1 で、積載量が約 +12.5%% 増えます。初期値 2。0＝ボーナスなし。",
     "Sandbox_MinidoracatWatch_WeightUnits3": "積載コア III のボーナス（単位）",
     "Sandbox_MinidoracatWatch_WeightUnits3_tooltip": "1 単位＝バニラの積載基準値の 8 分の 1 で、積載量が約 +12.5%% 増えます。初期値 3。0＝ボーナスなし。",
-    "Sandbox_MinidoracatWatch_WeightCap": "ウォッチ1つあたりの積載ボーナス上限（単位）",
-    "Sandbox_MinidoracatWatch_WeightCap_tooltip": "1つのウォッチのすべての積載コアを合計した最大の単位数です。初期値 8（積載量 +100%%）。0＝積載コアのボーナスなし。",
     "Sandbox_MinidoracatWatch_DrainWeight1": "積載コア I の消費電力（%%）",
     "Sandbox_MinidoracatWatch_DrainWeight1_tooltip": "積載コア I を装着しているとき、ミニマップだけの場合に比べて増える消費電力です。たとえば 100 なら消費電力が 2 倍になります。\nスロットが開放されていないときや、積載コアが無効のときは消費しません。",
     "Sandbox_MinidoracatWatch_DrainWeight2": "積載コア II の消費電力（%%）",

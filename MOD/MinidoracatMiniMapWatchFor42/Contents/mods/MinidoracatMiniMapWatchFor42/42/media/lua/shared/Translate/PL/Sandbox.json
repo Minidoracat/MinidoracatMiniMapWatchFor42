@@ -345,8 +345,6 @@
     "Sandbox_MinidoracatWatch_WeightUnits2_tooltip": "1 jedn. = 1/8 bazowego udźwigu z podstawowej gry, ok. +12,5%% udźwigu. Domyślnie 2; 0 = brak premii.",
     "Sandbox_MinidoracatWatch_WeightUnits3": "Premia Rdzenia udźwigu III (jedn.)",
     "Sandbox_MinidoracatWatch_WeightUnits3_tooltip": "1 jedn. = 1/8 bazowego udźwigu z podstawowej gry, ok. +12,5%% udźwigu. Domyślnie 3; 0 = brak premii.",
-    "Sandbox_MinidoracatWatch_WeightCap": "Limit premii udźwigu na zegarek (jedn.)",
-    "Sandbox_MinidoracatWatch_WeightCap_tooltip": "Ile jedn. łącznie mogą dać wszystkie Rdzenie udźwigu w jednym zegarku. Domyślnie 8 (+100%% udźwigu); 0 = Rdzenie udźwigu nie dają premii.",
     "Sandbox_MinidoracatWatch_DrainWeight1": "Pobór: Rdzeń udźwigu I (%%)",
     "Sandbox_MinidoracatWatch_DrainWeight1_tooltip": "Dodatkowa energia, jaką Rdzeń udźwigu I pobiera ponad samą minimapę. Na przykład 100 oznacza pobór 2x.\nBrak poboru, gdy jego gniazdo nie jest otwarte lub Rdzenie udźwigu są wyłączone.",
     "Sandbox_MinidoracatWatch_DrainWeight2": "Pobór: Rdzeń udźwigu II (%%)",

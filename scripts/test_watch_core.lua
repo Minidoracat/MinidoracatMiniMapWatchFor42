@@ -663,11 +663,8 @@ run(1000, 1000)
 check(kp:getMaxWeightBase() == 14 and W.weightBonus(kp) == 6, "三顆：+1＋2＋3＝6 格")
 sbx.WeightUnits3 = 8
 run(1000, 1000)
-check(kp:getMaxWeightBase() == 16 and W.weightBonus(kp) == 8, "加總夾在一支錶的上限 8 格")
-sbx.WeightCap = 4
-run(1000, 1000)
-check(kp:getMaxWeightBase() == 12, "上限調成 4 格")
-sbx.WeightUnits3, sbx.WeightCap = nil, nil
+check(kp:getMaxWeightBase() == 19 and W.weightBonus(kp) == 11, "沒有總上限：III 調成 8 格，三顆照加 1＋2＋8＝11 格")
+sbx.WeightUnits3 = nil
 run(1000, 1000)
 check(kp:getMaxWeightBase() == 14, "改回預設：+6 格")
 -- 別的 MOD 用加減寫法（+2 再 -2）：兩邊都保留，反覆幾次也不會越疊越多（以前把現值當原值，每改一次多疊 6 格）

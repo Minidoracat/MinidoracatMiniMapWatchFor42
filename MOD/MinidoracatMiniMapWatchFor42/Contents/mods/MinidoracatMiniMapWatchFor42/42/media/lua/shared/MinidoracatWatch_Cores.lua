@@ -22,17 +22,11 @@ local function intIn(v, lo, hi, default)
 end
 
 function W.weightEnabled() return W.sandbox("WeightEnabled", true) ~= false end
--- 每一階的格數（預設 1／2／3）與一支錶的上限（預設 8 格＝+100%）
+-- 每一階的格數（預設 1／2／3）。負重槽一階一格、只收同一階（第三方不能登記負重核心），一支錶最多 I＋II＋III，
+-- 總量就由這三個值決定，不另設總上限（2026-10-14 使用者裁定拿掉）
 function W.weightUnits(tier) return intIn(W.sandbox("WeightUnits" .. tier, tier), 0, 8, tier) end
-function W.weightCap() return intIn(W.sandbox("WeightCap", 8), 0, 16, 8) end
--- 一支錶最多幾格：負重槽一階一格、只收同一階（第三方不能登記負重核心），所以是 I＋II＋III，再夾在上限。
--- 第二個值＝上限卡得到嗎：三階加起來超過上限才卡得到（預設 1＋2＋3＝6，碰不到 8）；卡不到時玩家面板不寫上限
-function W.weightMax()
-    local sum, cap = W.weightUnits(1) + W.weightUnits(2) + W.weightUnits(3), W.weightCap()
-    return math.min(sum, cap), sum > cap
-end
 
--- 這位玩家現在的加成格數：戴著、有電的錶上，裝在有效負重槽的核心加總，夾在上限（W.status 有 1 秒快取、不配置）
+-- 這位玩家現在的加成格數：戴著、有電的錶上，裝在有效負重槽的核心加總（W.status 有 1 秒快取、不配置）
 function W.weightBonus(player)
     if not (W.enabled() and W.weightEnabled()) then return 0 end
     local e = W.status(player)
@@ -44,7 +38,7 @@ function W.weightBonus(player)
         local tier = def and W.WEIGHT_CLASSES[def.class]
         if tier and e.states[i] == "active" then units = units + W.weightUnits(tier) end
     end
-    return math.min(units, W.weightCap())
+    return units
 end
 
 -- 每秒：格數變了就把基數加減差額（只動自己那一份），沒變不寫。s＝這位玩家的扣電狀態（只在記憶體：重登、重生都從

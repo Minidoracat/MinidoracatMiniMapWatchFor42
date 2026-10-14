@@ -66,7 +66,7 @@ M.FIELDS = {
     { "DrainRelay", I, 0, 1000, 25 }, { "LightDrain", I, 0, 1000, 100 },
     -- cores（負重核心、節能核心）
     { "WeightEnabled", B, nil, nil, true }, { "WeightUnits1", I, 0, 8, 1 }, { "WeightUnits2", I, 0, 8, 2 },
-    { "WeightUnits3", I, 0, 8, 3 }, { "WeightCap", I, 0, 16, 8 }, { "DrainWeight1", I, 0, 1000, 100 },
+    { "WeightUnits3", I, 0, 8, 3 }, { "DrainWeight1", I, 0, 1000, 100 },
     { "DrainWeight2", I, 0, 1000, 200 }, { "DrainWeight3", I, 0, 1000, 300 }, { "LootWeight1", B, nil, nil, false },
     { "LootWeight2", B, nil, nil, false }, { "LootWeight3", B, nil, nil, false }, { "EcoKeepsMap", B, nil, nil, true },
     { "EcoEnduranceDrain", I, 0, 100, 25 }, { "EcoEnduranceRegen", I, 0, 300, 30 },
@@ -315,14 +315,15 @@ function M.hoursText(h)
     return T("DaysHours", tostring(d), tostring(r))
 end
 
--- 負重上限加成的百分比（格數 × 12.5，「＝+X%」與一覽共用）
+-- 負重上限加成的百分比（格數 × 12.5；格數說明與一覽共用）
 function M.weightPct(units) return M.chanceText(units * W.WEIGHT_UNIT_PCT) end
--- 一覽：負重核心（每階格數與上限）；節能核心（耐力加成，設 0 的那項不寫；沒電保留小地圖）
+-- 一覽：負重核心（每階格數與三顆全裝的總加成）；節能核心（耐力加成，設 0 的那項不寫；沒電保留小地圖）
 function M.weightText(s)
     local sb = s.sb
     if not sb.WeightEnabled then return T("Sum_WeightOff") end
+    local all = sb.WeightUnits1 + sb.WeightUnits2 + sb.WeightUnits3
     return T("Sum_Weight", tostring(sb.WeightUnits1), tostring(sb.WeightUnits2), tostring(sb.WeightUnits3),
-        tostring(sb.WeightCap), M.weightPct(sb.WeightCap))
+        tostring(all), M.weightPct(all))
 end
 function M.ecoText(s)
     local d, r = s.sb.EcoEnduranceDrain, s.sb.EcoEnduranceRegen
