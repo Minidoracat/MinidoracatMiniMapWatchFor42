@@ -46,7 +46,26 @@ Admins can change every one of these rules.
 [*] [b]BB-3000 screen[/b]: switches between green and amber (right-click or panel); cosmetic only.
 [/list]
 === 🧰 Getting them
-Where to loot each watch is under "Seven watches".
+{{img:11-guide-en.jpg}}
+[h3]Look it up in game: the Where to Get window[/h3]
+[list]
+[*] [b]Open it[/b]:
+[list]
+[*] the [b]Where to get[/b] button at the end of the panel's feature list
+[*] click a "Requires ..." feature to jump straight to that module
+[*] without a watch: Map Display Settings → "Map Watch" → "Where to get items"
+[/list]
+[*] [b]What it shows[/b]: all 24 items on the left; on the right, which containers have it, which zombies carry it and whether it can be crafted.
+[*] [b]Follows this server[/b]: when admins change loot or drop rules, the window changes too.
+[*] [b]The server decides how much it shows[/b]:
+[list]
+[*] Where to get (default): places, zombie types and crafting
+[*] Where to get and odds: also how rare it is in containers and the chance per zombie
+[*] Hidden: no button, hints or window
+[/list]
+[*] [b]Rarity[/b]: Common, Uncommon, Rare, Very rare, Extremely rare, compared only with other map watch items. Containers in areas with more zombies hold more of everything.
+[/list]
+The rest of this chapter shows the defaults. Where to loot each watch is under "Seven watches".
 [h3]Modules and unlock cards[/h3]
 [list]
 [*] [b]Modules[/b]: electronics stores and crates, military and police sites, survival gear lockers. General modules are more common; Advanced and Core are rare.
@@ -98,8 +117,9 @@ Default rules:
 [list]
 [*] slots and modules on the watch face
 [*] charge and time left
-[*] which module a feature is missing (hover it to see where to find one and whether you can craft it)
+[*] which module a feature is missing: hover it to see where to find one, which zombies carry it and whether you can craft it; click it to open the Where to Get window
 [*] buttons for the battery, the light and the BB-3000 screen
+[*] the [b]Where to get[/b] button (see "Getting them")
 [/list]
 [*] [b]Watch right-click menu[/b]: open the panel, insert/replace/remove the battery, remove modules.
 [/list]
@@ -303,6 +323,7 @@ Off by default (swap batteries instead). Admins can allow two ways to charge, bo
 [*] Untick it to hide it right away (in Options → Mods, press Apply).
 [*] You can still open the panel by right-clicking the map watch in your inventory and choosing "Open Map Watch".
 [/list]
+[*] [b]Where to get items[/b] (Map Display Settings only): opens the Where to Get window, even without a watch. Disabled when the server hides it.
 [/list]
 === ⚙️ Admin settings window
 {{img:08-admin-en.jpg}}
@@ -316,6 +337,13 @@ Off by default (swap batteries instead). Admins can allow two ways to charge, bo
 [*] Cores: Carry Cores on/off, each tier's bonus, drain and whether it appears as loot; the Power-Saver Core's endurance bonuses and keeping the minimap on a dead battery
 [/list]
 [/list]
+[h3]Obtaining page[/h3]
+[list]
+[*] [b]What players see about obtaining items[/b]: Hidden, Where to get (default), Where to get and odds.
+[*] [b]Loot multiplier per item[/b]: one row per item: None, Very Low ×0.25, Low ×0.5, Normal ×1, High ×2, Very High ×4, Extreme ×10, applied on top of the amounts above.
+[*] [b]Result[/b]: how rare the item is in its most common place, and in how many places.
+[*] Rows whose loot switch is off can't be changed.
+[/list]
 [h3]Applying changes[/h3]
 [list]
 [*] [b]Review & Apply[/b] lists every change first (old → new) and warns about rent, currency or period changes.
@@ -326,7 +354,7 @@ Off by default (swap batteries instead). Admins can allow two ways to charge, bo
 [h3]Where settings live[/h3]
 [list]
 [*] [b]Values[/b]: in the sandbox; saved and pushed by the server in multiplayer, in the save in single player.
-[*] [b]Lists[/b]: drop rules, add-on module drain and per-slot add-on settings live in the server settings file.
+[*] [b]Lists[/b]: drop rules, per-item loot multipliers, add-on module drain and per-slot add-on settings live in the server settings file.
 [/list]
 === ⚙️ Server settings file
 [list]
@@ -343,6 +371,13 @@ Each rule has three fields:
 [tr][td]item[/td][td]watch:any or a style, mod:any or mod:id, card:ext/adv/core, battery; mod:any never picks Carry Cores, use mod:weight1 to mod:weight3 for them[/td][/tr]
 [tr][td]chance[/td][td]Percent per zombie, decimals OK[/td][/tr]
 [/table]
+[h3]lootItems: loot multiplier per item[/h3]
+[list]
+[*] [b]Key[/b]: the item's full type, e.g. MinidoracatWatch.Module_Eco. Only items that spawn in containers: the seven watches, modules, cores, Carry Cores and unlock cards.
+[*] [b]Value[/b]: 0, 0.25, 0.5, 1, 2, 4 or 10. 0 means none; 1 needs no entry.
+[*] Applied on top of the sandbox amounts; items whose loot switch is off still don't spawn.
+[*] If any entry is invalid, the whole section keeps its last valid value.
+[/list]
 [h3]moduleDrains and addonSlots[/h3]
 [list]
 [*] [b]moduleDrains[/b]: drain for other mods' modules (0–1000%). Built-in drain is in the sandbox.
@@ -433,6 +468,7 @@ Each tier has its own currency, period and renewal, all defaulting to:
 [h3]Installing, crafting and loot[/h3]
 [table]
 [tr][th]Option[/th][th]Default[/th][/tr]
+[tr][td]What players see about obtaining items[/td][td]Where to get (also: Hidden, Where to get and odds)[/td][/tr]
 [tr][td]Screwdriver required for modules[/td][td]On[/td][/tr]
 [tr][td]Allow crafting modules[/td][td]On[/td][/tr]
 [tr][td]Electrical level to craft modules[/td][td]3[/td][/tr]
@@ -462,6 +498,7 @@ Each tier has its own currency, period and renewal, all defaulting to:
 [list]
 [*] Minidoracat MiniMap 42.21.0-0.37.0 or later: with an older one the watch has no effect, the minimap stays open, and you're told to update.
 [*] Minidoracat UI 42.21.0-0.8.0 or later: needed for the panel and settings window.
+[*] Minidoracat UI 42.21.0-0.9.0 or later: the Where to Get window and button; older versions only have the panel hints.
 [*] Minidoracat Economy 42.21.0-0.8.0 or later: buying and renting slots, on a multiplayer server.
 [*] Economy 42.21.0-0.11.0 or later: "Sell in Economy Center" and freezing rentals while an add-on mod is removed. Older versions only stop auto-renew charges while that mod is gone; the rental still ends on time.
 [/list]
@@ -504,6 +541,11 @@ If another mod sets carry capacity to a fixed value, its value wins.
 [list]
 [*] The server's minimap settings may have zombie positions and heat, or vehicle and animal icons, turned off; the modules can't show them then.
 [*] Ask the admin to turn them on in the minimap settings.
+[/list]
+[h3]No "Where to get" button in the panel?[/h3]
+[list]
+[*] The admin set "What players see about obtaining items" to Hidden.
+[*] Minidoracat UI is too old (before 42.21.0-0.9.0).
 [/list]
 [h3]Can't install a module?[/h3]
 Check that:
