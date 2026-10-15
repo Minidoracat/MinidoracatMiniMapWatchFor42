@@ -496,33 +496,96 @@ function C.ecoLines()
     return out
 end
 
--- 缺模組時的取得方式（面板功能清單「需要 X 模組」的滑過說明）：回句子陣列，或 nil（這台伺服器沒有開放從容器找到，也不能製作）。
--- 只用客戶端本來就有的沙盒值與 shared 的戰利品表，不問伺服器；殭屍掉落規則在伺服器設定檔，不公開、不寫機率。
-function C.acquireLines(id)
-    local def = W.modules[id]
-    if not (def and W.BUILTIN[id] and W.enabled()) then return nil end
-    local out = {}
-    -- 每一筆照自己的戰利品開關（W.lootOn：負重核心是 LootWeight1..3、預設關；其他模組是 LootModules）
-    local places, seen = {}, {}
+-- ===== 取得方式（「取得方式」視窗與面板「需要 X 模組」的說明共用；2026-10-15 使用者裁定）=====
+-- 內容照開放程度（W.guideLevel）：1 不開放＝nil；2 寫在哪裡找得到、哪些殭屍會帶、能不能製作；3 再加容器的稀有度與殭屍每隻的機率。
+-- 殭屍掉落規則與逐項倍率只來自伺服器裁切過的清單（W.guideList），伺服器沒送的欄位這裡也沒有。
+-- 容器只寫稀有度（W.lootTier）、不寫百分比：原版還有「其他」稀有度、擲骰次數與殭屍密度加成，一個數字會誤導。
+local GENERAL = {}
+for _, id in ipairs(W.GENERAL_MODULES) do GENERAL[id] = true end
+local STYLE_TYPES = {}
+for _, s in ipairs(W.STYLES) do STYLE_TYPES[W.watchType(s)] = true end
+
+-- 一條殭屍規則掉到這樣物品的比例：指定這樣物品＝1；隨機一般模組＝1/6；隨機一款錶＝1/7；其他＝0（同伺服器 D.resolve 的挑法）
+function C.dropShare(id, fullType)
+    if id == "mod:any" then
+        local def = W.moduleByItem[fullType]
+        return (def and GENERAL[def.id]) and 1 / #W.GENERAL_MODULES or 0
+    end
+    if id == "watch:any" then return STYLE_TYPES[fullType] and 1 / #W.STYLE_IDS or 0 end
+    return W.dropItemType(id) == fullType and 1 or 0
+end
+
+-- 回 { level, loot = { { place, tier? } … }, vanilla?, drops = { { group, pct?, random } … }, dropCap?, craft = 電學等級 | false }；
+-- 開放程度 1 或系統關閉回 nil。place 是翻譯好的地點名（同名的表合成一筆、留最常見的）
+function C.acquireInfo(fullType)
+    local level = W.guideLevel()
+    if level == W.GUIDE_OFF or not W.enabled() then return nil end
+    local rates = level == W.GUIDE_RATES
+    local info, best = { level = level, loot = {}, drops = {}, craft = false, vanilla = fullType == W.BATTERY_TYPE }, {}
     for _, e in ipairs(W.lootEntries()) do
-        if e[2] == def.item and W.lootOn(e[1]) then
-            for i = 1, #e[3], 2 do
-                local p = getText("IGUI_MinidoracatWatch_LootPlace_" .. e[3][i])
-                if not seen[p] then
-                    seen[p] = true
-                    places[#places + 1] = p
-                end
-            end
+        local f = e[2] == fullType and W.lootFactor(e) or 0
+        for i = 1, (f > 0 and #e[3] or 0), 2 do
+            local place = getText("IGUI_MinidoracatWatch_LootPlace_" .. e[3][i])
+            if not best[place] then info.loot[#info.loot + 1] = place end
+            best[place] = math.max(best[place] or 0, e[3][i + 1] * f)
         end
     end
-    if #places > 0 then
-        out[#out + 1] = getText("IGUI_MinidoracatWatch_Acquire_Loot",
-            table.concat(places, getText("IGUI_MinidoracatWatch_ListSep")))
+    for i, place in ipairs(info.loot) do
+        info.loot[i] = { place = place, tier = rates and W.lootTier(best[place]) or nil }
     end
-    local R = MinidoracatWatch_Recipe -- shared 檔，遊戲裡一定比本檔先載入
-    if R and R.RECIPES[id] and R.canCraft() then
-        local lv = R.level()
-        out[#out + 1] = lv > 0 and getText("IGUI_MinidoracatWatch_Acquire_Craft", tostring(lv))
+    for _, r in ipairs(W.guideList("drops") or {}) do
+        local share = C.dropShare(r.item, fullType)
+        if share > 0 then
+            info.drops[#info.drops + 1] = { group = r.group, random = share < 1,
+                pct = (rates and type(r.chance) == "number") and r.chance * share or nil }
+        end
+    end
+    if rates and #info.drops > 0 then info.dropCap = W.guideList("dropCap") end
+    local def, R = W.moduleByItem[fullType], MinidoracatWatch_Recipe -- Recipe 是 shared 檔，遊戲裡一定比本檔先載入
+    if def and R and R.RECIPES[def.id] and R.canCraft() then info.craft = R.level() end
+    return info
+end
+
+-- 殭屍類型（玩家看的寫法）：自訂服裝寫「穿特定服裝的殭屍」，不列服裝名
+function C.groupName(id)
+    if id == "custom" then return getText("IGUI_MinidoracatWatch_Guide_GroupCustom") end
+    return getText("IGUI_MinidoracatWatch_Admin_Group_" .. tostring(id))
+end
+
+-- 每隻的機率（%）：0.1 以上取兩位、更小取三位，整數不帶小數
+function C.pctText(p)
+    local digits = p >= 0.1 and 100 or 1000
+    local r = math.floor(p * digits + 0.5) / digits
+    if r <= 0 then return "<0.001" end
+    if r == math.floor(r) then return tostring(math.floor(r)) end
+    return tostring(r)
+end
+
+-- 缺模組時的取得方式（面板功能清單「需要 X 模組」的滑過說明）：回句子陣列，或 nil（不開放，或哪裡都拿不到）。
+-- 只寫地點、殭屍類型與製作，機率留給「取得方式」視窗
+function C.acquireLines(id)
+    local def = W.modules[id]
+    local info = def and W.BUILTIN[id] and C.acquireInfo(def.item)
+    if not info then return nil end
+    local sep, out = getText("IGUI_MinidoracatWatch_ListSep"), {}
+    if #info.loot > 0 then
+        local places = {}
+        for i, l in ipairs(info.loot) do places[i] = l.place end
+        out[#out + 1] = getText("IGUI_MinidoracatWatch_Acquire_Loot", table.concat(places, sep))
+    end
+    if #info.drops > 0 then
+        local groups, seen = {}, {}
+        for _, d in ipairs(info.drops) do
+            local g = C.groupName(d.group)
+            if not seen[g] then
+                seen[g] = true
+                groups[#groups + 1] = g
+            end
+        end
+        out[#out + 1] = getText("IGUI_MinidoracatWatch_Acquire_Zombie", table.concat(groups, sep))
+    end
+    if info.craft then
+        out[#out + 1] = info.craft > 0 and getText("IGUI_MinidoracatWatch_Acquire_Craft", tostring(info.craft))
             or getText("IGUI_MinidoracatWatch_Acquire_CraftAny")
     end
     if #out == 0 then return nil end

@@ -393,6 +393,11 @@ option MinidoracatWatch.EcoEnduranceRegen
 
 /* ===== MinidoracatWatchAcquire：設定視窗「取得方式」與「殭屍掉落」頁 ===== */
 
+/* 玩家能看到的取得方式（2026-10-15）：1 不開放、2 只列取得方式（地點、殭屍類型、製作）、3 再加容器的稀有度與殭屍每隻的機率。
+   「取得方式」視窗與面板「需要 X 模組」的說明都照它；伺服器只把開放的內容送給玩家（server/MinidoracatWatch_Admin.lua 的 A.lists） */
+option MinidoracatWatch.AcquireGuide
+{type = enum, numValues = 3, default = 2, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_AcquireGuide,}
+
 /* 取得方式（Phase 5）：每款錶、模組、解鎖卡是否出現在戰利品；數量（Phase 4）1 很少（×0.25）、2 少（×0.5）、3 一般（建議值）、4 多（×2），乘在每筆分佈的機率上（改了會重排分佈表，server/MinidoracatWatch_Loot.lua） */
 option MinidoracatWatch.LootValuTech
 {type = boolean, default = true, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_LootValuTech,}

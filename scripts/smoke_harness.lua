@@ -532,6 +532,39 @@ tick(1000, 500)
 check(near(kst:get(CharacterStat.ENDURANCE), spent + 0.05), "節能核心：伺服器退回 25% 的耐力消耗")
 SBW.SlotWt2, SBW.SlotCore = nil, nil
 
+F.print("情境十五：取得方式總覽（2026-10-15）→ 管理員改逐項倍率：寫檔、廣播；推給玩家的清單照開放程度裁切"
+    .. "（2 沒有機率、3 才有、1 沒有殭屍規則）；開放程度一改，下一次輪詢就重送")
+F.load("server/MinidoracatWatch_Loot.lua")
+local SBG = SandboxVars.MinidoracatWatch
+local ECO = "MinidoracatWatch.Module_Eco"
+local function listsOf(cmds)
+    for _, c in ipairs(cmds) do if c.command == W.CMD_LISTS and c.broadcast then return c.args end end
+    return nil
+end
+local gst = adminCmd(boss, W.CMD_ADMIN_GET, {})[1].args
+out = adminCmd(boss, W.CMD_ADMIN_SET, { expected = gst.rev, reason = "smoke", changes = { "eco x4" },
+    lists = { lootItems = { [ECO] = 4 } } })
+local l2 = listsOf(out)
+local leaked = false
+for _, d in ipairs(l2 and l2.drops or {}) do if d.chance ~= nil then leaked = true end end
+check(out[#out].args.ok == true and W.Config.get("lootItems")[ECO] == 4 and l2 and #l2.drops > 0 and not leaked
+    and l2.lootItems[ECO] == nil and l2.dropCap == nil, "開放程度 2（預設）：寫檔並廣播；清單有殭屍類型，沒有機率、倍率與每隻上限")
+out = adminCmd(eve, W.CMD_LISTS_REQ, {})
+check(out[1] and out[1].player == eve and out[1].args.drops[1].chance == nil, "一般玩家補要清單：一樣沒有機率")
+SBG.AcquireGuide = 3
+F.reset()
+tick(2500, 500)
+local l3 = listsOf(F.serverCmds)
+check(l3 and l3.drops[1].chance ~= nil and l3.lootItems[ECO] == 4 and l3.dropCap == 1,
+    "改成 3：下一次輪詢就重送，這次帶機率、倍率與每隻上限")
+SBG.AcquireGuide = 1
+F.reset()
+tick(2500, 500)
+local l1 = listsOf(F.serverCmds)
+check(l1 and l1.drops == nil and next(l1.lootItems) == nil, "改成 1：重送，殭屍規則與倍率都不送")
+SBG.AcquireGuide = nil
+adminCmd(boss, W.CMD_ADMIN_SET, { expected = W.Config.revision, reason = "smoke", changes = { "reset" }, lists = { lootItems = {} } })
+
 F.print()
 if F.failures > 0 then
     F.print(F.failures .. " 項失敗")

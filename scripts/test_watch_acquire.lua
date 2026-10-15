@@ -346,8 +346,7 @@ F.now = F.now + Lt.POLL_MS
 F.reset()
 Lt.tick()
 check(parses == 1 and count("ArmyBunkerStorage", W.watchType("BB3000")) == 0 and count("SurvivalGear", W.watchType("BB3000")) == 0
-    and count("SurvivalGear", "MinidoracatWatch.Module_Light") == 1 and logged("after a sandbox change"),
-    "關掉嗶嗶腕機：從所有表移除、其他照舊、Parse 一次")
+    and count("SurvivalGear", "MinidoracatWatch.Module_Light") == 1, "關掉嗶嗶腕機：從所有表移除、其他照舊、Parse 一次")
 F.now = F.now + Lt.POLL_MS
 Lt.tick()
 check(parses == 1, "沒變：不再 Parse")
@@ -415,8 +414,8 @@ NATIVE = {}
 F.now = F.now + Lt.POLL_MS
 Lt.tick()
 check(ours() == total and weightsAnywhere() == 0, "原生選項拿不到：退回 SandboxVars（預設全開，負重核心預設關）")
--- 面板的取得方式照模組在表上的地點寫（C.acquireLines）：模組用到的每張表都要有地點名稱，不然畫面上出現翻譯鍵。
--- 各語言鍵集一致由 verify 擋，這裡只對照英文
+-- 玩家看的取得方式（「取得方式」視窗、面板說明；C.acquireInfo）照物品在表上的地點寫：每張表都要有地點名稱（錶款與解鎖卡也是，
+-- 2026-10-15 起視窗列出全部 24 樣），不然畫面上出現翻譯鍵。各語言鍵集一致由 verify 擋，這裡只對照英文
 do
     local keys = {}
     for line in io.lines(F.MEDIA .. "/shared/Translate/EN/IG_UI.json") do
@@ -424,15 +423,11 @@ do
         if k then keys[k] = true end
     end
     local missing = {}
-    for _, e in ipairs(Lt.ENTRIES) do
-        if W.moduleByItem[e[2]] then
-            for i = 1, #e[3], 2 do
-                local k = "IGUI_MinidoracatWatch_LootPlace_" .. e[3][i]
-                if not keys[k] then missing[#missing + 1] = k end
-            end
-        end
+    for name in pairs(Lt.TABLES) do
+        local k = "IGUI_MinidoracatWatch_LootPlace_" .. name
+        if not keys[k] then missing[#missing + 1] = k end
     end
-    check(#missing == 0, "模組用到的分佈表都有地點名稱（缺：" .. table.concat(missing, ",") .. "）")
+    check(#missing == 0, "每張分佈表都有地點名稱（缺：" .. table.concat(missing, ",") .. "）")
 end
 
 -- ===== 配方 OnTest =====

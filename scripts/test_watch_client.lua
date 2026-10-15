@@ -212,6 +212,48 @@ SB.LootModules = false
 check(lootOf("weight1") ~= nil and lootOf("gps") == nil, "關掉模組戰利品：負重核心 I 照自己的開關，其他模組不寫")
 SB.LootModules, SB.LootWeight1 = nil, nil
 
+-- ===== 取得方式總覽（2026-10-15）：開放程度三段；殭屍規則與逐項倍率只讀伺服器推來、已裁切的清單（W.clientLists）=====
+do
+local ZOMBIE, GROUP = "IGUI_MinidoracatWatch_Acquire_Zombie|", "IGUI_MinidoracatWatch_Admin_Group_"
+SB.AcquireGuide = 1
+check(acquire("ledger") == nil and C.acquireInfo(MOD("Ledger")) == nil, "開放程度 1：面板說明與取得方式都沒有")
+SB.AcquireGuide = nil
+W.clientLists.drops = { { group = "police", item = "mod:comm", chance = 2 }, { group = "worker", item = "mod:any", chance = 2 },
+    { group = "custom", item = "mod:comm" } }
+check(acquire("comm") == LOOT .. PLACE .. "ElectronicStoreMisc" .. SEP .. PLACE .. "PoliceLockers\n" .. ZOMBIE .. GROUP .. "police"
+    .. SEP .. GROUP .. "worker" .. SEP .. "IGUI_MinidoracatWatch_Guide_GroupCustom\nIGUI_MinidoracatWatch_Acquire_Craft|3",
+    "開放程度 2：說明多一句哪些殭屍會帶（自訂服裝寫成「穿特定服裝的殭屍」）")
+local ginfo = C.acquireInfo(MOD("Comm"))
+check(ginfo.drops[1].pct == nil and ginfo.drops[2].random == true and ginfo.drops[1].random == false
+    and ginfo.loot[1].tier == nil and ginfo.dropCap == nil, "開放程度 2：清單裡就算有機率也不寫，容器不寫稀有度")
+check(not (acquire("eco") or ""):find("Acquire_Zombie", 1, true), "隨機一般模組不含核心：節能核心不寫殭屍")
+SB.AcquireGuide = 3
+W.clientLists.dropCap = 1
+ginfo = C.acquireInfo(MOD("Comm"))
+check(ginfo.drops[1].pct == 2 and F.near(ginfo.drops[2].pct, 2 / 6) and ginfo.drops[3].pct == nil
+    and ginfo.loot[1].tier == "uncommon" and ginfo.loot[2].tier == "uncommon" and ginfo.dropCap == 1,
+    "開放程度 3：每隻的機率（隨機一般模組平分成六份）、容器寫稀有度、每隻上限")
+local eco = C.acquireInfo(MOD("Eco"))
+check(#eco.loot == 2 and eco.loot[1].tier == "veryRare" and #eco.drops == 0 and eco.craft == false,
+    "節能核心：兩個地點都很稀有、殭屍不帶、不能製作")
+W.clientLists.lootItems = { [MOD("Eco")] = 4, [MOD("Ledger")] = 0 }
+check(C.acquireInfo(MOD("Eco")).loot[1].tier == "rare" and #C.acquireInfo(MOD("Ledger")).loot == 0
+    and C.acquireInfo(MOD("Ledger")).craft == 3, "逐項倍率：節能核心 ×4 變稀有；×0 的名錄模組不寫地點，製作照舊")
+SB.LootWatchAmount = 1
+check(C.acquireInfo(W.watchType("ValuTech")).loot[1].tier == "common"
+    and C.acquireInfo(W.watchType("Luthex")).loot[1].tier == "veryRare", "數量照沙盒：錶很少（×0.25）時展示櫃 4→1 仍常見、盧瑟斯降到很稀有")
+SB.LootWatchAmount = nil
+check(C.dropShare("watch:any", W.watchType("Luthex")) == 1 / 7 and C.dropShare("mod:any", MOD("Eco")) == 0
+    and C.dropShare("mod:any", MOD("Light")) == 1 / 6 and C.dropShare("battery", W.BATTERY_TYPE) == 1
+    and C.dropShare("card:ext", W.CARD_TYPES.ext) == 1 and C.dropShare("mod:comm", MOD("GPS")) == 0,
+    "掉落規則對物品的比例：隨機一款錶 1/7、隨機一般模組 1/6（不含核心）、指定物品全份、別的物品 0")
+check(C.pctText(2) == "2" and C.pctText(2 / 6) == "0.33" and C.pctText(0.05) == "0.05" and C.pctText(0.2 / 7) == "0.029"
+    and C.pctText(0.0001) == "<0.001", "機率的寫法：整數不帶小數、0.1 以上兩位、更小三位")
+local bat = C.acquireInfo(W.BATTERY_TYPE)
+check(bat.vanilla == true and #bat.loot == 0 and bat.craft == false, "電池：原版物品、不在本 MOD 的分佈表、不能製作")
+W.clientLists.drops, W.clientLists.dropCap, W.clientLists.lootItems, SB.AcquireGuide = nil, nil, {}, nil
+end
+
 -- ===== 小地圖閘門 =====
 local gate = registered.fn
 local ok, reason, dist = gate(0, "minimap", nil)
@@ -1439,6 +1481,91 @@ F.admin = true
 F.fire("OnServerCommand", W.MODULE, W.CMD_PLAN_WARN, { slot = "ext" })
 check(F.toasts[1] and F.toasts[1]:find("PlanTermsChanged", 1, true), "改價提醒：Toast")
 MinidoracatEconomy, W.econStatus, C.Pay.sheet, C.Pay.busy, SB.SlotExt = nil, nil, nil, {}, oldExt
+
+-- ===== 取得方式視窗（2026-10-15）：面板的按鈕排在功能清單後面、點「需要 X 模組」的膠囊選到那個模組、齒輪設定的入口；
+-- 開放程度 1 或框架沒有 NavList 時都不出現，開著的視窗自己關掉 =====
+;(function() -- 自己的函式作用域：主程式的 local 已接近 Lua 上限 200
+    local UI = F.installUI(17)
+    for _, k in ipairs({ "navList", "scrollPanel", "textWrap" }) do UI.CAPABILITIES[k] = true end
+    UI.Text = { wrap = function(s) return { s } end, fit = function(s) return s end }
+    local Widget = Element:derive("FakeGuideWidget")
+    function Widget:contentWidth() return self.width - 12 end
+    function Widget:scrollTo(el) self.scrolledTo = el end
+    function Widget:setYScroll(v) self.yscroll = v end
+    function Widget:setSelected(id, silent)
+        self.selected = id
+        if not silent and self.onSelect then self.onSelect(nil, id, self) end
+    end
+    function Widget:getSelected() return self.selected end
+    local function widget(o)
+        local e = Element.new(Widget, o.x or 0, o.y or 0, o.width or 100, o.height or 100)
+        for k, v in pairs(o) do if e[k] == nil then e[k] = v end end
+        return e
+    end
+    UI.ScrollPanel, UI.NavList = { new = widget }, { new = widget }
+    F.load("client/MinidoracatWatch_Guide.lua")
+    local G = MinidoracatWatchGuide
+    check(G.available(), "框架 rev 17＋NavList、開放程度 2：視窗開得了")
+    C.openPanel(0, watch)
+    local pg = F.lastPanel
+    pg:update()
+    local gb, last = pg.btnGuide, pg.feats[#pg.feats]
+    check(gb.visible and (gb.y > last.y or gb.x >= last.x + last.w), "面板：「取得方式」按鈕排在最後一個膠囊後面")
+    local inTargets = false
+    for _, t in ipairs(pg:keyboardTargets()) do if t == gb then inTargets = true end end
+    check(inTargets, "按鈕是框架按鈕：鍵盤與手把的焦點走得到")
+    local need = nil
+    for _, f in ipairs(pg.feats) do if f.need and not need then need = f end end
+    check(need and need.tip and need.tip:find("Acquire_More", 1, true), "膠囊說明最後一句：按一下看完整的取得方式")
+    pg:onMouseDown(need.x + 2, need.y + 2)
+    pg:onMouseUp(need.x + 2, need.y - 200)
+    check(G.win == nil, "在膠囊按下、移開才放開：不打開")
+    pg:onMouseDown(need.x + 2, need.y + 2)
+    pg:onMouseUp(need.x + 2, need.y + 2)
+    local want = W.modules[need.need].item
+    check(G.win ~= nil and G.current == want and G.nav.selected == want, "點膠囊：打開取得方式視窗、選到缺的模組")
+    local n, groups = 0, G.nav.groups
+    for _, g in ipairs(groups) do n = n + #g.items end
+    check(#groups == 6 and n == 24 and groups[6].items[1].id == W.BATTERY_TYPE, "左欄：六組 24 樣，最後是電池")
+    local function texts(t)
+        local out = {}
+        for _, o in ipairs((G.layout(t, 300))) do if o.text then out[#out + 1] = o.text end end
+        return table.concat(out, "\n")
+    end
+    local ecoText = texts(MOD("Eco"))
+    check(not ecoText:find("Tier_", 1, true) and ecoText:find("Guide_NoteMethods", 1, true)
+        and ecoText:find("Guide_ZombieNone", 1, true) and ecoText:find("Guide_CraftNone", 1, true),
+        "開放程度 2：不寫稀有度、寫這台伺服器不公開機率；節能核心殭屍不帶、不能製作")
+    SB.AcquireGuide = 3
+    W.clientLists.drops, W.clientLists.dropCap = { { group = "police", item = "mod:comm", chance = 2 } }, 1
+    local commText = texts(MOD("Comm"))
+    check(texts(MOD("Eco")):find("Tier_veryRare", 1, true) and commText:find("Guide_Pct|2", 1, true)
+        and commText:find("Guide_NoteCap|1", 1, true) and commText:find("Guide_NoteTier", 1, true),
+        "開放程度 3：稀有度、每隻的機率、每隻上限")
+    gb:forceClick()
+    check(G.win ~= nil and G.win.onTop and G.current == want, "開著時再按「取得方式」：同一個視窗拉到最上面")
+    local action = MinidoracatWatchSound.SECTION.actions[1]
+    check(action.enabled() == true and action.label == "IGUI_MinidoracatWatch_Guide_Open", "齒輪設定「地圖錶」分類：查看取得方式")
+    SB.AcquireGuide = 1
+    F.now = F.now + 1000
+    pg.scanAt = nil
+    pg:update()
+    check(not pg.btnGuide.visible and action.enabled() == false, "開放程度 1：面板按鈕與齒輪入口都不出現")
+    G.win:update()
+    check(G.win == nil, "開放程度 1：開著的取得方式視窗自己關掉")
+    pg:onMouseDown(need.x + 2, need.y + 2)
+    pg:onMouseUp(need.x + 2, need.y + 2)
+    check(G.win == nil, "開放程度 1：點膠囊也不開")
+    SB.AcquireGuide, W.clientLists.drops, W.clientLists.dropCap = nil, nil, nil
+    C.closePanel()
+    UI.CAPABILITIES.navList = false
+    F.reset()
+    check(not G.available() and not G.available(), "框架沒有 NavList：開不了")
+    local logs = 0
+    for _, l in ipairs(F.logs) do if l:find("no acquisition guide window", 1, true) then logs = logs + 1 end end
+    check(logs == 1, "框架太舊：只 log 一次")
+    F.installUI(15)
+end)()
 
 -- ===== UI 框架版本不足：不登記、不出錯 =====
 F.installUI(13)

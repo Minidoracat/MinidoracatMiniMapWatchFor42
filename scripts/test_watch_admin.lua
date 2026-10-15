@@ -159,7 +159,9 @@ do
         if k:find("Weight") or k:find("^Eco") then return "Cores" end
         if k:find("^Drain") or k:find("^Charge") or k:find("Hours$") or k == "LightDrain" or k == "NeedBattery"
             or k == "DeadMode" then return "Battery" end
-        if k:find("^Loot") or k:find("^Zombie") or k:find("Craft") or k == "NeedScrewdriver" then return "Acquire" end
+        if k:find("^Loot") or k:find("^Zombie") or k:find("Craft") or k == "NeedScrewdriver" or k == "AcquireGuide" then
+            return "Acquire"
+        end
         return "Features"
     end
     local order, pages, seq = {}, {}, {}
@@ -928,9 +930,132 @@ do
     check(grid() and label and mw(label.text) <= fx - 6 and fx == c3.WeightUnits1.x,
         "long labels are fitted and hints wrap: grid unchanged, nothing past the page edge")
     for _, k in ipairs(LONG) do TR["IGUI_MinidoracatWatch_Admin_" .. k] = savedTr[k] end
+    -- ===== 取得方式頁（2026-10-15）：最上面是玩家能看到的取得方式；最下面每樣物品一列倍率，名稱｜下拉｜結果對齊，
+    -- 開關關著的列停用、結果照草稿重算，改了變成差異與送出的 lootItems =====
+    AU.state = nil
+    local S4 = AU.build(0, F.player("admin"), st)
+    local ap, c4 = S4.panes.acquire, S4.ctrl
+    check(c4.AcquireGuide and c4.AcquireGuide.parent == ap and c4.AcquireGuide.y == 0 and c4.AcquireGuide.selected == 2,
+        "acquire tab: the guide level dropdown sits at the top, default 'where to get'")
+    local rows = S4.lootRows
+    local aligned = #rows == 23
+    for _, r in ipairs(rows) do
+        aligned = aligned and r.dd.parent == ap and r.dd.x == rows[1].dd.x and r.res.x == rows[1].res.x
+            and r.res.x >= r.dd.x + r.dd.width and r.res.x + mw(r.res.text) <= ap.width and r.dd.y > c4.NeedScrewdriver.y
+    end
+    check(aligned, "acquire tab: 23 item rows below the old controls, dropdowns and results in their own columns")
+    local function rowOf(t) for _, r in ipairs(rows) do if r.row.type == t then return r end end end
+    local ecoRow, carry = rowOf("MinidoracatWatch.Module_Eco"), rowOf("MinidoracatWatch.Module_Weight1")
+    check(ecoRow.res.text == "很稀有 · 2 處" and carry.dd.enabled == false and carry.res.text == "上面的開關關著"
+        and ecoRow.dd.enabled ~= false, "acquire tab: default results; a row whose loot switch is off is disabled")
+    ecoRow.dd.onChange(nil, 4)
+    check(S4.draft.loot["MinidoracatWatch.Module_Eco"] == 4 and ecoRow.res.text == "稀有 · 2 處",
+        "acquire tab: eco x4 lands in the draft and the result turns rare")
+    local ecoName = getItemNameFromFullType("MinidoracatWatch.Module_Eco")
+    local lines4 = M.diff(S4.base, S4.draft)
+    local p4 = M.payload(S4.base, S4.draft, 1, "r", lines4)
+    check(has(lines4, "「" .. ecoName .. "」的戰利品倍率：從 一般 ×1 改成 很多 ×4") and p4.lists.lootItems
+        and p4.lists.lootItems["MinidoracatWatch.Module_Eco"] == 4 and p4.sandbox == 0, "acquire tab: the change becomes a diff line and lootItems")
+    ecoRow.dd.onChange(nil, 0)
+    check(ecoRow.res.text == "不會出現", "acquire tab: x0 means it won't turn up")
+    ecoRow.dd.onChange(nil, 1)
+    check(S4.draft.loot["MinidoracatWatch.Module_Eco"] == nil and M.payload(S4.base, S4.draft, 1, "r", {}).lists.lootItems == nil,
+        "acquire tab: back to x1 removes the entry, nothing to send")
+    c4.LootModules:setChecked(false)
+    check(ecoRow.dd.enabled == false and ecoRow.res.text == "上面的開關關著", "acquire tab: switching modules off disables their rows")
     AU.state = nil
     MinidoracatUI = nil
     F.mode = "server"
+end
+
+-- ===== 11. 取得方式總覽（2026-10-15）：逐項倍率（設定檔 lootItems）與推給玩家的清單照開放程度裁切 =====
+do
+    F.mode = "server"
+    resetSandbox()
+    local ECO, LEDGER, GPS = "MinidoracatWatch.Module_Eco", "MinidoracatWatch.Module_Ledger", "MinidoracatWatch.Module_GPS"
+    local rev = Cfg.revision
+    local r = A.apply(admin, req({ lootItems = { [ECO] = 3 } }))
+    check(r.code == "invalid" and Cfg.get("lootItems")[ECO] == nil and Cfg.revision == rev, "lootItems: a factor outside the steps is refused")
+    r = A.apply(admin, req({ lootItems = { ["Base.Battery"] = 2 } }))
+    check(r.code == "invalid", "lootItems: an item without loot entries is refused")
+    r = A.apply(admin, req({ lootItems = { [ECO] = 4, [LEDGER] = 0, [GPS] = 1 } }))
+    check(r.ok and Cfg.get("lootItems")[ECO] == 4 and Cfg.get("lootItems")[LEDGER] == 0 and Cfg.get("lootItems")[GPS] == nil
+        and A.state().lootItems[ECO] == 4, "lootItems: valid factors live and reach the admin state; x1 is dropped")
+    -- 分佈表：倍率乘在數量之後；0 不放進表；設定檔改了才重排
+    local list = {}
+    for name in pairs(L.TABLES) do list[name] = { items = { "Base.Spoon", 5 } } end
+    ProceduralDistributions = { list = list }
+    local function weight(tbl, item)
+        local items = list[tbl].items
+        for i = 1, #items, 2 do if items[i] == item then return items[i + 1] end end
+        return nil
+    end
+    L.applied, L.appliedItems, parses = nil, nil, 0
+    L.sync(true)
+    check(parses == 1 and F.near(weight("ElectronicStoreMisc", ECO), 0.2) and weight("ElectronicStoreMisc", LEDGER) == nil
+        and weight("CrateElectronics", LEDGER) == nil and weight("ElectronicStoreMisc", GPS) == 0.5,
+        "loot tables: eco x4 (0.05 to 0.2), ledger x0 left out, others unchanged")
+    L.sync(true)
+    check(parses == 1, "loot tables: nothing changed, no reparse")
+    A.apply(admin, req({ lootItems = { [ECO] = 10 } }))
+    L.sync(true)
+    check(parses == 2 and F.near(weight("ElectronicStoreMisc", ECO), 0.5) and weight("ElectronicStoreMisc", LEDGER) == 1,
+        "loot tables: a settings file change reparses (eco x10, ledger back)")
+    -- 推給玩家的清單（開放程度預設 2）：殭屍類型與掉落物、不帶機率與每隻上限；逐項倍率只送「不出現」的
+    A.apply(admin, req({ lootItems = { [ECO] = 4, [LEDGER] = 0 } }))
+    local l2 = A.lists()
+    local leaked = false
+    for _, d in ipairs(l2.drops) do if d.chance ~= nil or d.outfits ~= nil then leaked = true end end
+    check(#l2.drops == 13 and not leaked and l2.dropCap == nil and l2.lootItems[LEDGER] == 0 and l2.lootItems[ECO] == nil
+        and l2.moduleDrains ~= nil, "level 2: drop rules without chances or cap; only the items that never turn up")
+    NATIVE["MinidoracatWatch.AcquireGuide"] = 3
+    local l3 = A.lists()
+    check(l3.drops[11].item == "mod:weight1" and l3.drops[11].chance == 0.5 and l3.dropCap == 1 and l3.lootItems[ECO] == 4,
+        "level 3: chances, the per-zombie cap and every factor")
+    NATIVE["MinidoracatWatch.AcquireGuide"] = 1
+    local l1 = A.lists()
+    check(l1.drops == nil and next(l1.lootItems) == nil and l1.dropCap == nil and l1.addonSlots ~= nil,
+        "level 1: nothing about obtaining items, the other lists intact")
+    NATIVE["MinidoracatWatch.AcquireGuide"] = 3
+    A.apply(admin, req({ zombieDrops = { { group = "custom", outfits = { "HazardSuit" }, item = "mod:eco", chance = 1 },
+        { group = "army", item = "battery", chance = 0 } } }))
+    local lc = A.lists()
+    check(#lc.drops == 1 and lc.drops[1].group == "custom" and lc.drops[1].outfits == nil,
+        "custom outfits are never sent; rules at 0% are skipped")
+    SB.ZombieDrops = false
+    check(A.lists().drops == nil, "zombie drops switched off: no rules sent")
+    SB.ZombieDrops = true
+    -- 開放程度一改（原生沙盒、原版介面改的不會 bump 設定檔）：下一次輪詢就重送
+    local function tick() F.now = F.now + A.POLL_MS + 1; F.fire("OnTickEvenPaused") end
+    tick()
+    F.reset()
+    tick()
+    local function pushed()
+        for _, c in ipairs(F.serverCmds) do if c.command == W.CMD_LISTS and c.broadcast then return c.args end end
+        return nil
+    end
+    check(pushed() == nil, "no change: no re-broadcast")
+    NATIVE["MinidoracatWatch.AcquireGuide"] = 2
+    tick()
+    local p2 = pushed()
+    check(p2 and p2.drops and p2.drops[1].chance == nil and p2.lootItems[ECO] == nil, "level lowered: re-broadcast without the odds")
+    -- 單機：玩家看的那份走同一個裁切，開放程度變了下一次輪詢就跟上
+    F.mode = "sp"
+    check(W.guideList("drops")[1].chance == nil and W.guideList("lootItems")[ECO] == nil, "single player: the view is cut the same way")
+    NATIVE["MinidoracatWatch.AcquireGuide"] = 3
+    tick()
+    check(W.guideList("drops")[1].chance == 1 and W.guideList("lootItems")[ECO] == 4, "single player: the view follows the level")
+    F.mode = "server"
+    -- 管理員模型：讀進倍率、一覽、驗證
+    local b = M.readBase(A.state())
+    local sum = M.summary(b, false)
+    check(b.loot[ECO] == 4 and b.loot[LEDGER] == 0 and has(sum, "各物品的戰利品倍率：已調整 2 項")
+        and has(sum, "玩家能看到的取得方式：取得方式與機率"), "admin model: factors read back; overview lines")
+    local bad = M.copy(b)
+    bad.loot[ECO] = 3
+    check(M.problems(bad) == 1, "admin model: a factor outside the steps blocks apply")
+    A.apply(admin, req({ lootItems = {}, zombieDrops = W.defaultDrops() }))
+    resetSandbox()
 end
 
 F.finish("test_watch_admin")

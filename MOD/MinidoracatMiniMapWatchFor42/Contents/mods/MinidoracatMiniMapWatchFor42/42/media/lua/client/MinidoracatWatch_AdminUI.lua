@@ -32,7 +32,19 @@ function AU.onLists(args)
             }
         end
     end
+    -- 玩家看的取得方式（伺服器已照開放程度裁切；沒送的欄位就是 nil：開放程度 1 沒有殭屍規則、2 沒有機率與每隻上限）
+    local loot, drops = {}, {}
+    for t, f in pairs(type(args.lootItems) == "table" and args.lootItems or {}) do
+        if type(t) == "string" and type(f) == "number" then loot[t] = f end
+    end
+    for _, r in ipairs(type(args.drops) == "table" and args.drops or {}) do
+        if type(r) == "table" and type(r.group) == "string" and type(r.item) == "string" then
+            drops[#drops + 1] = { group = r.group, item = r.item, chance = type(r.chance) == "number" and r.chance or nil }
+        end
+    end
     W.clientLists.moduleDrains, W.clientLists.addonSlots = drains, slots
+    W.clientLists.lootItems, W.clientLists.drops = loot, type(args.drops) == "table" and drops or nil
+    W.clientLists.dropCap = type(args.dropCap) == "number" and args.dropCap or nil
     W.invalidate()
 end
 
@@ -602,10 +614,48 @@ local function buildCores(S, p)
 end
 
 -- ===== 分類：取得方式 =====
+-- 各物品的戰利品倍率（設定檔 lootItems）：一列一樣，名稱｜倍率下拉｜結果（最常見的地點有多稀有、幾個地點）。
+-- 欄位照實際字寬排（pitfalls.md：寫死 x 時德文會疊字）；開關與結果在 AU.refresh 照草稿重算
+local function buildLootItems(S, p, y)
+    local w = p.width
+    text(p, T("LootItems"), 0, y, "text")
+    y = para(p, T("LootItems_desc"), 0, y + FH + 4, w) + 4
+    local groups = M.lootGroups()
+    local nameW, ddW = 0, 0
+    for _, g in ipairs(groups) do
+        for _, row in ipairs(g.rows) do nameW = math.max(nameW, measure(getItemNameFromFullType(row.type))) end
+    end
+    for _, o in ipairs(M.stepOptions()) do ddW = math.max(ddW, measure(o.label)) end
+    nameW = math.min(nameW + 12, math.floor(w * 0.4))
+    ddW = ddW + 40 -- 下拉的左右留白與箭頭
+    local resX = nameW + ddW + GAP * 2
+    S.lootRows = {}
+    for _, g in ipairs(groups) do
+        text(p, getText("IGUI_MinidoracatWatch_Guide_Group_" .. g.key), 0, y + 4, "textMuted")
+        y = y + FH + 8
+        for _, row in ipairs(g.rows) do
+            local t = row.type
+            local name = getItemNameFromFullType(t)
+            text(p, UI.Text.fit and UI.Text.fit(name, nameW - 6, FONT) or name, 0, y + (CH - FH) / 2, "text")
+            local dd = dropdown(S, p, nameW + GAP, y, ddW, M.stepOptions(), function() return S.draft.loot[t] or 1 end,
+                function(v) S.draft.loot[t] = v ~= 1 and v or nil end)
+            local res = text(p, "", resX, y + (CH - FH) / 2, "textMuted")
+            S.lootRows[#S.lootRows + 1] = { row = row, dd = dd, res = res }
+            y = y + ROW
+        end
+    end
+    return y
+end
+
 local function buildAcquire(S, p)
     local w = p.width
-    text(p, T("LootStyles"), 0, 0, "text")
-    local y = para(p, T("LootStyles_desc"), 0, FH + 4, w) + 4
+    -- 玩家能看到的取得方式（沙盒 AcquireGuide）：放最上面，下面的開關與倍率都會改變玩家看到的內容
+    local gl = M.sbLabel("AcquireGuide")
+    local gx = labeled(p, gl, 0, 0, math.min(math.max(measure(gl) + 16, 160), math.floor(w / 2)))
+    sbDropdown(S, p, gx, 0, 220, "AcquireGuide")
+    local y = para(p, T("Guide_desc"), 0, ROW + 2, w) + GAP
+    text(p, T("LootStyles"), 0, y, "text")
+    y = para(p, T("LootStyles_desc"), 0, y + FH + 4, w) + 4
     local cw = math.floor(w / 4)
     for i, st in ipairs(M.LOOT_STYLES) do
         local col, row = (i - 1) % 4, math.floor((i - 1) / 4)
@@ -639,7 +689,8 @@ local function buildAcquire(S, p)
     local _, why = AU.shopApi()
     S.shopBtn = button(p, w - bw, y, T("ShopBtn"), function() AU.openShop(S) end, "normal", bw)
     S.shopBtn:setEnabled(why == nil)
-    if why then para(p, T(why), 0, dy, w - bw - GAP, "errorText") end
+    if why then dy = para(p, T(why), 0, dy, w - bw - GAP, "errorText") end
+    buildLootItems(S, p, math.max(dy, y + CH) + GAP * 2)
 end
 
 -- ===== 分類：殭屍掉落 =====
@@ -873,6 +924,13 @@ function AU.refresh(S)
     gate(S, "CarHours", S.draft.sb.ChargeCar == true)
     gate(S, "HouseHours", S.draft.sb.ChargeHouse == true)
     for _, k in ipairs(WEIGHT_FIELDS) do gate(S, k, S.draft.sb.WeightEnabled == true) end
+    -- 各物品的戰利品倍率：上面的開關關著就停用；結果照草稿（數量 × 倍率）重算
+    local ap = S.panes.acquire
+    for _, r in ipairs(ap and S.lootRows or {}) do
+        r.dd:setEnabled(S.draft.sb[r.row.switch] == true)
+        local s = M.lootResultText(S.draft, r.row)
+        r.res.text = UI.Text.fit and UI.Text.fit(s, ap.width - r.res.x, FONT) or s
+    end
     local p = S.summaryPane
     local keep = {}
     for _, t in ipairs(p.texts) do if not t.summary then keep[#keep + 1] = t end end

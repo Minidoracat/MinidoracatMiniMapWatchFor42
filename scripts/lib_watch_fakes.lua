@@ -527,6 +527,9 @@ function F.installUI(rev)
     function Window:addToUIManager() self.inUI = true; F.lastPanel = self end
     function Window:removeFromUIManager() self.inUI = false end
     function Window:close() self:setVisible(false); if self.onClose then self.onClose(self) end end
+    function Window:bringToTop() self.onTop = true end
+    function Window:onMouseDown() return true end
+    function Window:onMouseUp() return true end
     function Window:keyboardTargets()
         local out = {}
         for _, c in ipairs(self.children or {}) do

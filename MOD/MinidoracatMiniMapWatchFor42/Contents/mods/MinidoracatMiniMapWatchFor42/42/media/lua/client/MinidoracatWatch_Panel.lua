@@ -167,19 +167,23 @@ local function moduleTip(def)
     return s .. " <LINE> " .. table.concat(wrap(desc, TIP_W), " <LINE> ")
 end
 
--- 功能清單「需要 X 模組」膠囊的滑過說明：去哪裡找、能不能製作（C.acquireLines），每句各自斷成 TIP_W 再以 <LINE> 接起來。
--- X＝W.PROVIDERS 的第一個（缺模組的提示也寫這個；導航的「定位模組或 GPS 導航儀」也算）
+-- 功能清單「需要 X 模組」膠囊的滑過說明：去哪裡找、哪些殭屍會帶、能不能製作（C.acquireLines），每句各自斷成 TIP_W 再以 <LINE>
+-- 接起來；「取得方式」視窗開得了時多一句「按一下看完整的取得方式」。X＝W.PROVIDERS 的第一個（缺模組的提示也寫這個；
+-- 導航的「定位模組或 GPS 導航儀」也算）。回 說明（沒有＝nil）, X 的模組 id（不是缺模組＝nil）
 local NEED = "IGUI_MinidoracatWatch_Reason_Need_"
 local function acquireTip(feature, reason)
     local providers = W.PROVIDERS[feature]
-    if not (providers and reason and string.sub(reason, 1, #NEED) == NEED) then return nil end
-    local lines = C.acquireLines(providers[1])
-    if not lines then return nil end
+    if not (providers and reason and string.sub(reason, 1, #NEED) == NEED) then return nil, nil end
+    local id = providers[1]
+    local lines = C.acquireLines(id) or {}
+    local G = MinidoracatWatchGuide
+    if G and G.available() then lines[#lines + 1] = getText("IGUI_MinidoracatWatch_Acquire_More") end
+    if #lines == 0 then return nil, id end
     local parts = {}
     for _, s in ipairs(lines) do
         for _, l in ipairs(wrap(s, TIP_W)) do parts[#parts + 1] = l end
     end
-    return table.concat(parts, " <LINE> ")
+    return table.concat(parts, " <LINE> "), id
 end
 
 -- 槽位狀態：empty／locked（未開啟）／lapsed（經濟系統的租約到期、槽位空著）／off（不開放）／active／paused（槽位失效）／
@@ -631,6 +635,8 @@ function M:build()
     -- 照明模組的開關（MinidoracatWatch_LightClient.lua）：戴著的錶裝了照明模組才出現；chip（§3.7：active＝燈開著）
     self.btnLight = button(getText("IGUI_MinidoracatWatch_LightOn"), "lightbulb", "chip", M.onLight)
     self.footBtns = { self.btnLight, self.btnScreen, self.btnRemove, self.btnInsert } -- 由右而左
+    -- 「取得方式」視窗（MinidoracatWatch_Guide.lua）：排在功能清單最後；鍵盤與手把照框架焦點按得到
+    self.btnGuide = button(getText("IGUI_MinidoracatWatch_Guide_Button"), "search", "normal", M.onGuide)
 end
 
 -- 皮膚：依錶款（嗶嗶腕機另看螢幕色）換 theme、版面與槽位外形；所有框架元件一起換
@@ -649,6 +655,7 @@ function M:applySkin(key)
     for _, b in ipairs(self.filterBtns) do b.theme = self.inspTheme end
     for _, b in ipairs(self.footBtns) do b.theme = self.footTheme end
     self.btnBanner.theme = self.theme
+    self.btnGuide.theme = self.theme
     -- 音效音量列（使用者 2026-10-09 裁定：面板底部也能調，和齒輪「地圖錶」分類、ESC 選項存同一份 ModOptions）。
     -- 框架 rev 17 才有 SliderRow（CAPABILITIES.sliderRow），不足就不放；滑桿的填色與圓鈕在建構時取色，換皮膚就重建。
     -- 用主 theme：放在面板本體（surface），不放電量列（ValuTech 銀色電量列上 text 是淺字）
@@ -681,6 +688,8 @@ function M:scan(player, watch, slot)
     self.hasBattery = C.bestBattery(player) ~= nil
     self.payUi = C.Pay.ui(player, watch, slot)
     self.actions = self:buildActions(player, watch, slot)
+    local G = MinidoracatWatchGuide
+    self.guideOk = G ~= nil and G.available() -- 「取得方式」按鈕與膠囊說明的「按一下」：先於 buildFeatures
     self.feats = self:buildFeatures()
     -- 負重列標題右邊（與檢視區「這支錶合計」）：這支錶的總加成；沒電寫「+0 格（沒電）」
     local c = watch and W.power(watch)
@@ -749,7 +758,8 @@ function M:buildActions(player, watch, slot)
     return out
 end
 
--- 功能清單：{ 標籤, 說明, 圖示, tip＝缺模組時的取得方式 }（可用＝勾、停用＝暫停、缺模組／沒開放＝叉）
+-- 功能清單：{ 標籤, 說明, 圖示, tip＝缺模組時的取得方式, need＝缺的模組 id（點膠囊打開取得方式視窗）}
+-- （可用＝勾、停用＝暫停、缺模組／沒開放＝叉）
 -- 伺服器的小地圖設定把這項功能整個關了（C.serverOff）時一律寫「伺服器未開放」：裝了模組也沒有作用，讓玩家與管理員知道要去開
 function M:buildFeatures()
     local out = {}
@@ -759,8 +769,9 @@ function M:buildFeatures()
         local icon = ok and "check" or (PAUSE_REASONS[reason] and "pause" or "close")
         local label, note = getText("IGUI_MinidoracatWatch_Feature_" .. f), (not ok and reason) and getText(reason) or nil
         local w = 10 + 16 + 5 + measure(label) + (note and 6 + measure(note) or 0) + 10
-        local tip = not ok and acquireTip(f, reason) or nil
-        out[#out + 1] = { label = label, note = note, icon = icon, ok = ok, w = w, tip = tip }
+        local tip, need = nil, nil
+        if not ok then tip, need = acquireTip(f, reason) end
+        out[#out + 1] = { label = label, note = note, icon = icon, ok = ok, w = w, tip = tip, need = need }
     end
     return out
 end
@@ -928,13 +939,25 @@ function M:arrange(player, w)
         self:placeActions(n, counts, y, width)
     end
     y = y + self.bodyH + GAP
-    -- 功能清單（膠囊，放不下換行）
+    -- 功能清單（膠囊，放不下換行）＋「取得方式」按鈕（開得了才出現，scan 判斷）：排在最後一個膠囊後面，放不下就換行；
+    -- 沒戴錶時膠囊不畫，按鈕從第一列開頭排
     self.featY = y
     local x, rows = PAD, 1
     for i, f in ipairs(self.feats or {}) do
         if i > 1 and x + f.w > width - PAD then x, rows = PAD, rows + 1 end
         f.x, f.y = x, y + (rows - 1) * (fh + 12)
         x = x + f.w + 6
+    end
+    local gb = self.btnGuide
+    local guide = player ~= nil and self.guideOk == true
+    gb:setVisible(guide)
+    if guide then
+        local row = 1
+        if w then row = rows else x = PAD end
+        if x > PAD and x + gb.width > width - PAD then x, row = PAD, row + 1 end
+        gb:setX(x)
+        gb:setY(y + (row - 1) * (fh + 12) + math.floor((fh + 8 - gb.height) / 2))
+        rows = math.max(rows, row)
     end
     y = y + rows * (fh + 12) + GAP
     -- 音效音量列：電量列上方；每幀對齊目前設定（齒輪、ESC 改的也跟上；值沒變時 setValue 不動作）
@@ -1192,19 +1215,23 @@ function M:drawFeatures(colors)
     end
 end
 
+-- 功能清單在 (x, y) 的膠囊（只比對 ≤7 個膠囊的範圍）；滑過說明與點擊共用
+function M:featAt(x, y)
+    local h = fontH() + 8
+    for _, f in ipairs(self.feats or {}) do
+        if f.x and x >= f.x and x < f.x + f.w and y >= f.y and y < f.y + h then return f end
+    end
+    return nil
+end
+
 -- 功能清單膠囊的滑過說明（buildFeatures 的 tip：缺模組時的取得方式）。膠囊是面板自己畫的，框架只有按鈕與控制項有
 -- tooltip，所以照原版按鈕的做法自己掛一個 ISToolTip（ISButton.lua:316-346）；它跟著滑鼠畫，不會擋住膠囊
--- （ISToolTip.lua:67-69）。只比對 ≤7 個膠囊的範圍，文字在 scan（250ms）就備好了
+-- （ISToolTip.lua:67-69）。文字在 scan（250ms）就備好了
 function M:updateFeatTip(shown)
     local hit = nil
     if shown and self:isMouseOver() then
-        local mx, my, h = self:getMouseX(), self:getMouseY(), fontH() + 8
-        for _, f in ipairs(self.feats or {}) do
-            if f.tip and f.x and mx >= f.x and mx < f.x + f.w and my >= f.y and my < f.y + h then
-                hit = f
-                break
-            end
-        end
+        local f = self:featAt(self:getMouseX(), self:getMouseY())
+        if f and f.tip then hit = f end
     end
     local tip = self.featTip
     if not hit then
@@ -1312,6 +1339,29 @@ end
 function M:onFilter(b)
     self.modFilter = b.internal ~= "all" and b.internal or nil
     self.scanAt = nil -- 下一幀依新的篩選重排模組按鈕
+end
+
+-- 「取得方式」按鈕：開視窗（選上次看的那樣，第一次是第一款錶）
+function M:onGuide()
+    local G = MinidoracatWatchGuide
+    if G then G.open(self.playerNum, nil) end
+end
+
+-- 點「需要 X 模組」的膠囊：開取得方式視窗、選到那個模組。按下與放開在同一個膠囊上才算（拖曳視窗、按下後移開都不算）
+function M:onMouseDown(x, y)
+    self._featDown = self:featAt(x, y)
+    return C.ui().Window.onMouseDown(self, x, y)
+end
+function M:onMouseUp(x, y)
+    local down = self._featDown
+    self._featDown = nil
+    local res = C.ui().Window.onMouseUp(self, x, y)
+    local player, w = self:target()
+    local G = MinidoracatWatchGuide
+    if down and down.need and player and w and self:featAt(x, y) == down and G and G.available() then
+        G.open(self.playerNum, W.modules[down.need] and W.modules[down.need].item or nil)
+    end
+    return res
 end
 
 -- 音效音量列的 onChange（拖曳、點擊、滾輪、方向鍵）：寫進 ModOptions、存檔並排試聽（MinidoracatWatch_Sound.lua）

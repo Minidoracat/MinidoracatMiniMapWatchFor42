@@ -1,6 +1,7 @@
 -- MinidoracatWatch_AdminModel.lua（client）：管理員設定視窗的資料與文字（Phase 4）。純函式為主，離線測試直接呼叫；
 -- 視窗在 MinidoracatWatch_AdminUI.lua，伺服器端在 server/MinidoracatWatch_Admin.lua。
--- 狀態（base／draft）＝{ sb = { 沙盒鍵 = 值 }, drops = { 掉落規則… }, drains = { 第三方模組 id = % }, addon = { 第三方槽位 id = 設定 } }。
+-- 狀態（base／draft）＝{ sb = { 沙盒鍵 = 值 }, drops = { 掉落規則… }, drains = { 第三方模組 id = % }, addon = { 第三方槽位 id = 設定 },
+-- loot = { 物品完整類型 = 逐項倍率（沒寫＝×1） } }。
 -- 「目前設定一覽」與「這次會改變什麼」都由同一份狀態算出（設計稿 admin.mjs summaryItems 的做法）。
 -- 本檔只能寫 ASCII 字串字面值（verify 第 16 項）：所有文字都經翻譯鍵 IGUI_MinidoracatWatch_Admin_*。
 require "MinidoracatWatch"
@@ -70,7 +71,8 @@ M.FIELDS = {
     { "DrainWeight2", I, 0, 1000, 200 }, { "DrainWeight3", I, 0, 1000, 300 }, { "LootWeight1", B, nil, nil, false },
     { "LootWeight2", B, nil, nil, false }, { "LootWeight3", B, nil, nil, false }, { "EcoKeepsMap", B, nil, nil, true },
     { "EcoEnduranceDrain", I, 0, 100, 25 }, { "EcoEnduranceRegen", I, 0, 300, 30 },
-    -- acquire
+    -- acquire（第一個是玩家能看到的取得方式，放在「取得方式」頁最上面）
+    { "AcquireGuide", E, 1, 3, 2 },
     { "LootValuTech", B, nil, nil, true }, { "LootPaws", B, nil, nil, true }, { "LootNexus", B, nil, nil, true },
     { "LootSpiffo", B, nil, nil, true }, { "LootRanger", B, nil, nil, true }, { "LootLuthex", B, nil, nil, true },
     { "LootBB3000", B, nil, nil, true }, { "LootWatchAmount", E, 1, 4, 3 }, { "LootModules", B, nil, nil, true },
@@ -137,15 +139,18 @@ local function copyDrops(list)
 end
 M.copyDrops = copyDrops
 
--- st＝伺服器的 adminState（或單機 W.Admin.state()）：rev、zombieDrops、moduleDrains、addonSlots
+-- st＝伺服器的 adminState（或單機 W.Admin.state()）：rev、zombieDrops、moduleDrains、addonSlots、lootItems
 function M.readBase(st)
-    local s = { sb = {}, drops = copyDrops(st and st.zombieDrops), drains = {}, addon = {} }
+    local s = { sb = {}, drops = copyDrops(st and st.zombieDrops), drains = {}, addon = {}, loot = {} }
     for _, f in ipairs(M.FIELDS) do s.sb[f[1]] = M.current(f[1]) end
     for id, v in pairs(st and st.moduleDrains or {}) do
         if type(id) == "string" and type(v) == "number" then s.drains[id] = v end
     end
     for id, e in pairs(st and st.addonSlots or {}) do
         if type(id) == "string" and type(e) == "table" and W.MODE_VALUE[e.mode] then s.addon[id] = M.copyEntry(e) end
+    end
+    for t, f in pairs(st and st.lootItems or {}) do
+        if type(t) == "string" and W.LOOT_STEP_SET[f] and f ~= 1 then s.loot[t] = f end
     end
     return s
 end
@@ -158,10 +163,11 @@ function M.copyEntry(e)
 end
 
 function M.copy(s)
-    local out = { sb = {}, drops = copyDrops(s.drops), drains = {}, addon = {} }
+    local out = { sb = {}, drops = copyDrops(s.drops), drains = {}, addon = {}, loot = {} }
     for k, v in pairs(s.sb) do out.sb[k] = v end
     for k, v in pairs(s.drains) do out.drains[k] = v end
     for k, e in pairs(s.addon) do out.addon[k] = M.copyEntry(e) end
+    for k, v in pairs(s.loot) do out.loot[k] = v end
     return out
 end
 
@@ -289,6 +295,62 @@ function M.itemOptions()
     return out
 end
 
+-- ===== 各物品的戰利品倍率（設定檔 lootItems；2026-10-15）=====
+-- 一列一樣有分佈的物品，照 W.lootEntries() 的順序分四組；switch＝那一列的戰利品開關（沙盒鍵）
+M.LOOT_GROUPS = { "watch", "module", "weight", "card" }
+function M.lootGroups()
+    local byKey = {}
+    for _, k in ipairs(M.LOOT_GROUPS) do byKey[k] = {} end
+    for _, e in ipairs(W.lootEntries()) do
+        local k = (e[1] == "LootModules" and "module") or (e[1] == "LootCards" and "card")
+            or (string.sub(e[1], 1, 10) == "LootWeight" and "weight") or "watch"
+        local rows = byKey[k]
+        rows[#rows + 1] = { type = e[2], switch = e[1], places = e[3] }
+    end
+    local out = {}
+    for i, k in ipairs(M.LOOT_GROUPS) do out[i] = { key = k, rows = byKey[k] } end
+    return out
+end
+-- 倍率的選項文字：W.LOOT_STEPS 的第 i 個＝Step_i（不出現、很少 ×0.25 … 非常多 ×10）
+function M.stepText(v)
+    for i, x in ipairs(W.LOOT_STEPS) do
+        if x == v then return T("Step_" .. i) end
+    end
+    return tostring(v)
+end
+function M.stepOptions()
+    local out = {}
+    for i, v in ipairs(W.LOOT_STEPS) do out[i] = { id = v, label = T("Step_" .. i) } end
+    return out
+end
+-- 一列在草稿下的結果（和玩家看到的稀有度同一套 W.lootTier）：回 稀有度, 地點數；不出現回 nil, 原因鍵
+-- （LootRowOff＝上面那個戰利品開關關著、LootRowZero＝倍率設成不出現）
+function M.lootResult(s, row)
+    if s.sb[row.switch] ~= true then return nil, "LootRowOff" end
+    local f = (W.LOOT_FACTORS[s.sb[W.LOOT_AMOUNT_OF[row.switch] or "LootWatchAmount"]] or 1) * (s.loot[row.type] or 1)
+    if f <= 0 then return nil, "LootRowZero" end
+    local best, n, seen = 0, 0, {}
+    for i = 1, #row.places, 2 do
+        local p = getText("IGUI_MinidoracatWatch_LootPlace_" .. row.places[i])
+        if not seen[p] then
+            seen[p] = true
+            n = n + 1
+        end
+        best = math.max(best, row.places[i + 1] * f)
+    end
+    return W.lootTier(best), n
+end
+function M.lootResultText(s, row)
+    local tier, n = M.lootResult(s, row)
+    if not tier then return T(n) end
+    return T("LootRes", getText("IGUI_MinidoracatWatch_Tier_" .. tier), tostring(n))
+end
+function M.lootTuned(s)
+    local n = 0
+    for _ in pairs(s.loot) do n = n + 1 end
+    return n
+end
+
 -- 續航試算（設計稿 runtimeHours／fmtH）：滿電小時 ÷（1＋Σ耗電%÷100，開燈再加照明%），節能核心 ×2
 M.SAMPLE_THREE = { "ledger", "gps", "scan" }
 M.SAMPLE_FULL = { "ledger", "gps", "light", "scan", "mildetect", "relay" }
@@ -385,6 +447,8 @@ function M.summary(s, econReady)
     else
         out[#out + 1] = T("Sum_LootNone")
     end
+    local tuned = M.lootTuned(s)
+    out[#out + 1] = T("Sum_Line", T("LootItems"), tuned > 0 and T("Sum_DrainsTuned", tostring(tuned)) or T("Sum_DrainsDefault"))
     out[#out + 1] = M.weightText(s)
     out[#out + 1] = M.ecoText(s)
     if s.sb.ZombieDrops then
@@ -392,6 +456,7 @@ function M.summary(s, econReady)
     else
         out[#out + 1] = T("Sum_DropsOff")
     end
+    out[#out + 1] = T("Sum_Line", M.sbLabel("AcquireGuide"), M.valueText("AcquireGuide", s.sb.AcquireGuide))
     return out
 end
 
@@ -476,6 +541,15 @@ function M.diff(a, b)
             end
         end
     end
+    -- 各物品的戰利品倍率：照列的順序，一樣一行
+    for _, g in ipairs(M.lootGroups()) do
+        for _, row in ipairs(g.rows) do
+            local x, y = a.loot[row.type] or 1, b.loot[row.type] or 1
+            if x ~= y then
+                lines[#lines + 1] = T("Diff_Line", T("LootDiff", getItemNameFromFullType(row.type)), M.stepText(x), M.stepText(y))
+            end
+        end
+    end
     -- 掉落規則：以句子比對（同一句出現幾次就算幾條）
     local count = {}
     for _, r in ipairs(a.drops) do
@@ -551,6 +625,9 @@ function M.problems(s)
     for _, v in pairs(s.drains) do
         if not (type(v) == "number" and v == math.floor(v) and v >= 0 and v <= 1000) then n = n + 1 end
     end
+    for _, v in pairs(s.loot) do
+        if not W.LOOT_STEP_SET[v] then n = n + 1 end
+    end
     return n
 end
 
@@ -595,6 +672,7 @@ function M.payload(a, b, rev, reason, changes)
     end
     if not mapEqual(a.drains, b.drains, eq) then lists.moduleDrains = b.drains end
     if not mapEqual(a.addon, b.addon, sameEntry) then lists.addonSlots = b.addon end
+    if not mapEqual(a.loot, b.loot, eq) then lists.lootItems = b.loot end
     return { expected = rev, reason = reason, changes = changes, lists = lists, sandbox = #M.sandboxChanges(a, b) }
 end
 

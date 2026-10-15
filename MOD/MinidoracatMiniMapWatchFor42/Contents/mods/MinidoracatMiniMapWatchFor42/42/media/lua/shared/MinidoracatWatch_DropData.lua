@@ -1,6 +1,6 @@
 -- MinidoracatWatch_DropData.lua（shared）：取得方式的資料——殭屍掉落規則（服裝分組、掉落物 id、預設規則）與戰利品分佈。
 -- 殭屍掉落：伺服器（server/MinidoracatWatch_Drops.lua 擲機率與驗證設定檔）與管理員視窗（client/MinidoracatWatch_AdminModel.lua
--- 下拉選單與句子）共用。戰利品：伺服器排分佈表（server/MinidoracatWatch_Loot.lua）與面板的取得方式（C.acquireLines）共用。
+-- 下拉選單與句子）共用。戰利品：伺服器排分佈表（server/MinidoracatWatch_Loot.lua）與玩家看的取得方式（C.acquireInfo）共用。
 -- 只放資料、不 require 其他檔（shared 依檔名順序在核心之後載入）。
 local W = MinidoracatWatchCore
 
@@ -111,4 +111,65 @@ local LOOT_DEFAULT_OFF = { LootWeight1 = true, LootWeight2 = true, LootWeight3 =
 function W.lootOn(key)
     if LOOT_DEFAULT_OFF[key] then return W.nativeSandbox(key, false) == true end
     return W.nativeSandbox(key, true) ~= false
+end
+
+-- 戰利品的數量（管理員視窗的「數量」）：每類一個 enum 沙盒，1 很少（×0.25）、2 少（×0.5）、3 一般（建議值）、4 多（×2），
+-- 乘在 W.lootEntries() 的機率上。伺服器排分佈表與玩家看的稀有度共用
+W.LOOT_AMOUNT_KEYS = { "LootWatchAmount", "LootModuleAmount", "LootCardAmount" }
+W.LOOT_AMOUNT_OF = { LootModules = "LootModuleAmount", LootCards = "LootCardAmount", LootWeight1 = "LootModuleAmount",
+    LootWeight2 = "LootModuleAmount", LootWeight3 = "LootModuleAmount" } -- 其餘（七款錶）＝LootWatchAmount
+W.LOOT_FACTORS = { 0.25, 0.5, 1, 2 }
+W.LOOT_AMOUNT_DEFAULT = { LootCardAmount = 1 } -- 解鎖卡預設「很少」（設計稿預設）；其餘「一般」
+function W.lootAmount(key)
+    local default = W.LOOT_AMOUNT_DEFAULT[key] or 3
+    local v = tonumber(W.nativeSandbox(key, default))
+    if v and W.LOOT_FACTORS[v] then return v end
+    return default
+end
+
+-- 各物品的戰利品倍率（管理員視窗「取得方式」頁、伺服器設定檔 lootItems 區段）：乘在類別數量之後；0＝不出現
+W.LOOT_STEPS = { 0, 0.25, 0.5, 1, 2, 4, 10 }
+W.LOOT_STEP_SET = {}
+for _, v in ipairs(W.LOOT_STEPS) do W.LOOT_STEP_SET[v] = true end
+
+-- ===== 取得方式總覽（2026-10-15 使用者裁定）=====
+-- 玩家能看到的取得方式（沙盒 AcquireGuide）：1 不開放、2 只列取得方式（地點、殭屍類型、製作）、3 再加稀有度與每隻的機率。
+-- 「取得方式」視窗與面板「需要 X 模組」的說明都照它；伺服器推給玩家的清單也照它裁切（server/MinidoracatWatch_Admin.lua
+-- 的 A.lists），開放程度不夠的欄位，玩家從封包也讀不到
+W.GUIDE_OFF, W.GUIDE_METHODS, W.GUIDE_RATES = 1, 2, 3
+function W.guideLevel()
+    local v = tonumber(W.nativeSandbox("AcquireGuide", W.GUIDE_METHODS))
+    if v == W.GUIDE_OFF or v == W.GUIDE_RATES then return v end
+    return W.GUIDE_METHODS
+end
+
+-- 一筆戰利品（W.lootEntries() 的一列）在玩家眼中的最後倍率：開關關著＝0；否則 類別數量 × 逐項倍率。
+-- 逐項倍率讀玩家看得到的那份（W.guideList：開放程度 2 只有「不出現」的物品，3 才有全部倍率）
+function W.lootFactor(e)
+    if not W.lootOn(e[1]) then return 0 end
+    local items = W.guideList("lootItems")
+    local f = items and items[e[2]]
+    return W.LOOT_FACTORS[W.lootAmount(W.LOOT_AMOUNT_OF[e[1]] or "LootWatchAmount")] * (type(f) == "number" and f or 1)
+end
+
+-- 容器的稀有度：w＝分佈表權重 × 最後倍率。門檻照預設表定：名錄 1 常見、通訊 0.5 少見、軍規偵測 0.3 稀有、節能 0.05 很稀有，
+-- 更低的（解鎖卡 0.1×0.25）極稀有。只拿來和其他地圖手錶物品比較，不換算成機率：原版還乘「其他」稀有度、擲骰次數，
+-- 殭屍多的地方每次擲骰另加固定的機率（ItemPickerJava.java:2091-2110），一個數字會誤導
+W.LOOT_TIERS = { { 1, "common" }, { 0.5, "uncommon" }, { 0.2, "rare" }, { 0.05, "veryRare" } }
+function W.lootTier(w)
+    for _, t in ipairs(W.LOOT_TIERS) do
+        if w >= t[1] then return t[2] end
+    end
+    return "scarce"
+end
+
+-- 掉落物 id → 物品完整類型（指定物品的那幾種）；watch:any、mod:any 由擲骰挑（伺服器 D.resolve），這裡回 nil。
+-- 伺服器擲掉落與玩家看的取得方式共用
+function W.dropItemType(id)
+    if id == "battery" then return W.BATTERY_TYPE end
+    local kind, rest = string.match(tostring(id), "^(%a+):([%w_]+)$")
+    if kind == "watch" then return W.STYLE_BY_ID[rest] and W.watchType(W.STYLE_BY_ID[rest]) or nil end
+    if kind == "mod" then return W.modules[rest] and W.modules[rest].item or nil end
+    if kind == "card" then return W.CARD_TYPES[rest] end
+    return nil
 end

@@ -121,9 +121,8 @@ function D.matches(rule, outfit)
     return gs ~= nil and gs[rule.group] == true
 end
 
--- 掉落物 id → 物品完整類型（any 類用 rand 挑）；nil＝這次啟動解析不到（例如第三方模組的物品沒登記）
+-- 掉落物 id → 物品完整類型（any 類用 rand 挑，其他照 shared W.dropItemType）；nil＝這次啟動解析不到（例如第三方模組的物品沒登記）
 function D.resolve(id, rand)
-    if id == "battery" then return W.BATTERY_TYPE end
     if id == "watch:any" then
         return W.watchType(D.STYLE_BY_ID[D.STYLE_IDS[math.floor(rand() * #D.STYLE_IDS) + 1]])
     end
@@ -131,11 +130,7 @@ function D.resolve(id, rand)
         local def = W.modules[D.GENERAL_MODULES[math.floor(rand() * #D.GENERAL_MODULES) + 1]]
         return def and def.item
     end
-    local kind, rest = string.match(id, "^(%a+):([%w_]+)$")
-    if kind == "watch" then return D.STYLE_BY_ID[rest] and W.watchType(D.STYLE_BY_ID[rest]) end
-    if kind == "mod" then return W.modules[rest] and W.modules[rest].item end
-    if kind == "card" then return W.CARD_TYPES[rest] end
-    return nil
+    return W.dropItemType(id)
 end
 
 -- 純函式：依規則順序擲機率（rand 回 [0,1)），掉到 cap 件就停。回物品完整類型的清單。

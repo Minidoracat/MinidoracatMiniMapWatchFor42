@@ -119,8 +119,34 @@ Cfg.section("moduleDrains", { default = function() return {} end, parse = A.pars
 Cfg.section("addonSlots", { default = function() return {} end, parse = A.parseSlots })
 
 -- ===== 推送清單（MP 伺服器）=====
+-- 第三方模組耗電與逐槽設定照原樣；玩家看的取得方式（2026-10-15）照開放程度裁切，開放程度不夠的欄位不送，
+-- 玩家從封包也讀不到：逐項倍率 3 全送、2 只送「不出現」（0）的物品、1 不送；殭屍掉落規則 2 起送殭屍類型與掉落物
+-- （機率 0 的不送，自訂服裝不送服裝清單），機率與每隻上限只在 3 送；掉落總開關關著就不送規則
 function A.lists()
-    return { moduleDrains = W.copyTable(Cfg.get("moduleDrains") or {}), addonSlots = W.copyTable(Cfg.get("addonSlots") or {}) }
+    local out = { moduleDrains = W.copyTable(Cfg.get("moduleDrains") or {}),
+        addonSlots = W.copyTable(Cfg.get("addonSlots") or {}), lootItems = {} }
+    local level = W.guideLevel()
+    if level == W.GUIDE_OFF then return out end
+    for t, f in pairs(Cfg.get("lootItems") or {}) do
+        if level == W.GUIDE_RATES or f == 0 then out.lootItems[t] = f end
+    end
+    if W.sandbox("ZombieDrops", true) == false then return out end
+    local rates = level == W.GUIDE_RATES
+    local drops = {}
+    for _, r in ipairs(Cfg.get("zombieDrops") or {}) do
+        if r.chance > 0 then
+            drops[#drops + 1] = { group = r.group, item = r.item, chance = rates and r.chance or nil }
+        end
+    end
+    out.drops = drops
+    if rates then out.dropCap = W.Drops.cap() end
+    return out
+end
+-- 單機玩家看的那份（W.guideList）：同一個裁切的快取，設定檔或開放程度變了才重算
+local view = nil
+function A.view()
+    if not view then view = A.lists() end
+    return view
 end
 function A.pushLists(player)
     if not isServer() then return end
@@ -134,8 +160,25 @@ function A.pushLists(player)
     end
 end
 Cfg.onBump = function()
+    view = nil
     if isServer() then A.pushLists() else W.invalidate() end
 end
+-- 開放程度、殭屍掉落的開關與每隻上限是原生沙盒：原版沙盒介面改的不會 bump 設定檔，所以每 2 秒比一次，變了就重送
+-- （單機只清快取）
+A.POLL_MS = 2000
+local lastSig, lastPoll = nil, nil
+function A.tick()
+    local now = getTimestampMs()
+    if lastPoll and now >= lastPoll and now - lastPoll < A.POLL_MS then return end
+    lastPoll = now
+    local sig = W.guideLevel() .. "|" .. tostring(W.sandbox("ZombieDrops", true) ~= false) .. "|" .. W.Drops.cap()
+    if lastSig ~= nil and sig ~= lastSig then
+        view = nil
+        A.pushLists()
+    end
+    lastSig = sig
+end
+Events.OnTickEvenPaused.Add(A.tick)
 
 -- ===== 讀取（管理員視窗開啟時）=====
 -- 先 poll：剛手改過的檔案也算進來（版本跟著 +1）
@@ -183,7 +226,7 @@ end
 -- ===== 套用 =====
 -- args＝{ expected = 版本, reason = 原因, changes = { "原本 → 改成" 文字… }, lists = { 區段名 = 原始值 }?, sandbox = 沙盒改了幾項 }
 -- 回 { ok = true, rev } 或 { ok = false, code = denied|bad_request|reason|conflict|invalid|write_failed, rev?, problems? }
-local LIST_SECTIONS = { zombieDrops = true, moduleDrains = true, addonSlots = true }
+local LIST_SECTIONS = { zombieDrops = true, moduleDrains = true, addonSlots = true, lootItems = true }
 function A.apply(player, args)
     local name = player and tostring(player:getUsername()) or "?"
     if not W.isSettingsAdmin(player) then

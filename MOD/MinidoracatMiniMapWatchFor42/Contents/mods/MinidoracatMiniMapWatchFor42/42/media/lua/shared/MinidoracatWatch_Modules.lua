@@ -65,11 +65,18 @@ W.CMD_LISTS_REQ = "listsReq"
 -- 管理員設定視窗（server/MinidoracatWatch_Admin.lua）：讀取 get → state、寫回 set → result
 W.CMD_ADMIN_GET, W.CMD_ADMIN_STATE = "adminGet", "adminState"
 W.CMD_ADMIN_SET, W.CMD_ADMIN_RESULT = "adminSet", "adminResult"
-W.clientLists = { moduleDrains = {}, addonSlots = {} }
+W.clientLists = { moduleDrains = {}, addonSlots = {}, lootItems = {} }
 function W.listValue(name)
     if isClient() then return W.clientLists[name] end
     local Cfg = W.Config
     return Cfg and Cfg.get(name) or nil
+end
+-- 玩家看的取得方式清單（lootItems＝逐項倍率、drops＝殭屍掉落規則、dropCap＝每隻最多幾件）：伺服器照開放程度裁切過的那份
+-- （W.guideLevel）。MP 客戶端讀伺服器推來的（W.clientLists）；單機走同一個裁切（W.Admin.view）。伺服器排分佈表不走這裡
+function W.guideList(name)
+    if isClient() then return W.clientLists[name] end
+    local A = W.Admin
+    return A and A.view()[name] or nil
 end
 W.MODE_VALUE = { free = 1, card = 2, econ = 3, off = 4 }
 -- 付費槽位的幣別：沙盒 Slot*Currency 1／2＝Economy 的幣別 id（EC.CURRENCY_ORDER）

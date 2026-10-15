@@ -172,6 +172,11 @@ Snd.SECTION = {
         default = false, get = Snd.scanPing, set = Snd.setScanPing },
         { label = "IGUI_MinidoracatWatch_ShowButton", tooltip = "IGUI_MinidoracatWatch_ShowButton_tooltip",
         default = true, get = Snd.showButtonOpt, set = Snd.setShowButton } },
+    -- 「取得方式」視窗（MinidoracatWatch_Guide.lua；settingsApiVersion 2 起有 actions）：沒戴錶也能從這裡開；
+    -- 伺服器不開放或 UI 框架太舊時停用
+    actions = { { label = "IGUI_MinidoracatWatch_Guide_Open", tooltip = "IGUI_MinidoracatWatch_Guide_Open_tooltip",
+        enabled = function() return MinidoracatWatchGuide ~= nil and MinidoracatWatchGuide.available() end,
+        run = function(pn) if MinidoracatWatchGuide then MinidoracatWatchGuide.open(pn, nil) end end } },
 }
 Snd.OWNER = W.MOD_ID .. ":player"
 
