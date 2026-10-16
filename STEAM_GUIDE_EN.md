@@ -257,7 +257,7 @@ Off by default (swap batteries instead). Admins can allow two ways to charge, bo
 [*] [b]Bonus[/b]: +1/+2/+3 units by default; one unit is about 12.5% of your carry capacity. All three give +6 units (about +75%).
 [*] [b]Drain[/b]: more than other modules, +100%/+200%/+300% each by default; pair them with a Power-Saver Core to last longer.
 [*] [b]When the bonus stops[/b]: a dead battery, taking the watch off, an invalid Carry Slot (e.g. the rental ended), or admins turning Carry Cores off. Capacity goes back to normal and a pop-up tells you how to restore it.
-[*] [b]Panel[/b]: the "Carry Cores" row shows the watch's total bonus; selecting a Carry Core also shows your character's current carry capacity.
+[*] [b]Panel[/b]: the "Carry Cores" row shows the watch's total bonus, followed by your character's current carry capacity while the watch is worn and charged, e.g. "+1 units · capacity 20".
 [*] [b]Getting them[/b]: by default only army zombies carry them, higher tiers are rarer, and they can't be crafted; see "Getting them".
 [/list]
 [h3]Power-Saver Core[/h3]
@@ -537,6 +537,11 @@ Check that:
 [*] The admin hasn't turned Carry Cores off or set that tier's bonus to 0
 [/list]
 If another mod sets carry capacity to a fixed value, its value wins.
+[h3]Carry capacity went up, but carrying feels the same?[/h3]
+[list]
+[*] The heavy-load level depends on how many times your capacity you carry: at 1.75 times it's already the worst level, so a few more units won't change it when you're far overloaded.
+[*] Your main inventory holds at most 50 (vanilla rule). Carry Cores don't let you carry more; they make the same weight less of a burden.
+[/list]
 [h3]Detector or Scanner installed, but nothing shows on the minimap?[/h3]
 [list]
 [*] The server's minimap settings may have zombie positions and heat, or vehicle and animal icons, turned off; the modules can't show them then.
