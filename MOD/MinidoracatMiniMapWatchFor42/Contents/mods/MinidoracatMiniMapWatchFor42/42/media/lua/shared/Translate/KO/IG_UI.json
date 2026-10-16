@@ -599,6 +599,7 @@
     "IGUI_MinidoracatWatch_WeightUnits": "+%1칸 (+%2%%)",
     "IGUI_MinidoracatWatch_WeightUnitsShort": "+%1칸",
     "IGUI_MinidoracatWatch_WeightRowDead": "+0칸 (전력 없음)",
+    "IGUI_MinidoracatWatch_WeightRowMax": "%1 · 최대 적재량 %2",
     "IGUI_MinidoracatWatch_WeightNow": "이 캐릭터의 현재 최대 적재량: %1",
     "IGUI_MinidoracatWatch_WeightNeeds": "착용 중이고 전력이 남아 있으며 열린 적재 슬롯에 장착되어 있어야 작동합니다",
     "IGUI_MinidoracatWatch_EcoNeeds": "착용 중이고 전력이 남아 있으며 열린 코어 슬롯에 장착되어 있어야 작동합니다",

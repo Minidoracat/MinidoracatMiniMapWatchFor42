@@ -937,8 +937,8 @@ sp(W.applyModuleChange, p, watch:getID(), "wt1", true, w1a:getID())
 sp(W.applyModuleChange, p, watch:getID(), "wt2", true, w2a:getID())
 tick()
 selectSlot("wt2")
-check(panel.weightText == "IGUI_MinidoracatWatch_WeightUnits|4|50",
-    "負重列標題：這支錶 +4 格（+50%）（負重核心 II 照沙盒 3 格）")
+check(panel.weightText == "IGUI_MinidoracatWatch_WeightRowMax|IGUI_MinidoracatWatch_WeightUnitsShort|4|12",
+    "負重列標題：這支錶 +4 格（負重核心 II 照沙盒 3 格），戴著、有電再接角色現在的負重上限")
 F.texts = {}
 sk:prerender()
 check(drew("IGUI_MinidoracatWatch_Tag_wt1") and drew("IGUI_MinidoracatWatch_Tag_wt2") and drew("IGUI_MinidoracatWatch_Tag_wt3")
@@ -996,8 +996,9 @@ panel.scanAt = nil
 panel:update()
 F.texts = {}
 panel:prerender()
-check(panel.weightText == "IGUI_MinidoracatWatch_WeightUnits|0|0" and drew("IGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainNone"),
-    "負重核心整個關閉：合計 0 格、不耗電")
+check(panel.weightText == "IGUI_MinidoracatWatch_WeightRowMax|IGUI_MinidoracatWatch_WeightUnitsShort|0|17.5"
+    and drew("IGUI_MinidoracatWatch_KV_Drain|IGUI_MinidoracatWatch_DrainNone"),
+    "負重核心整個關閉：合計 0 格、不耗電；標題的負重上限也讀 getMaxWeight（不從基數算）")
 SB.WeightEnabled = nil
 W.setCharge(watch, 0)
 tick()
@@ -1009,7 +1010,7 @@ local deadBatt, deadPause = iconCount("battery"), iconCount("pause")
 panel:prerender()
 check(deadBatt == 3 and deadPause == 0 and panel.weightText == "IGUI_MinidoracatWatch_WeightRowDead"
     and drew("IGUI_MinidoracatWatch_St_dead"),
-    "沒電：有模組的三格（標準槽 1、負重槽 I、II）畫電池徽章（不是暫停）、負重列寫 +0 格（沒電）、狀態寫沒電")
+    "沒電：有模組的三格（標準槽 1、負重槽 I、II）畫電池徽章（不是暫停）、負重列只寫 +0 格（沒電）不接上限、狀態寫沒電")
 W.setCharge(watch, 0.5)
 SB.SlotWt2 = 4
 tick()
@@ -1017,8 +1018,18 @@ panel.scanAt = nil
 panel:update()
 F.icons = {}
 sk:prerender()
-check(iconCount("pause") == 1 and iconCount("battery") == 0 and panel.weightText == "IGUI_MinidoracatWatch_WeightUnits|1|12.5",
+check(iconCount("pause") == 1 and iconCount("battery") == 0
+    and panel.weightText == "IGUI_MinidoracatWatch_WeightRowMax|IGUI_MinidoracatWatch_WeightUnitsShort|1|17.5",
     "負重槽 II 不開放：那一格畫暫停徽章、合計只剩 I 的 1 格")
+local spare = give(F.LEFT)
+W.setCharge(spare, 0.5)
+panel.watchItem, panel.scanAt = spare, nil
+panel:update()
+check(panel.weightText == "IGUI_MinidoracatWatch_WeightUnitsShort|0",
+    "背包裡那支（沒戴著）：負重列只寫這支錶的格數，不接角色的負重上限（上限不含它的加成）")
+p.inv:DoRemoveItem(spare)
+panel.watchItem, panel.scanAt = nil, nil
+panel:update()
 sk.cur = slotIndex("wt1")
 check(sk:onFocusKey(Keyboard.KEY_UP) and sk.cur <= 6, "負重列 ↑ 回到六格")
 watch:getModData()[W.SLOTS_KEY].wt1, watch:getModData()[W.SLOTS_KEY].wt2 = nil, nil

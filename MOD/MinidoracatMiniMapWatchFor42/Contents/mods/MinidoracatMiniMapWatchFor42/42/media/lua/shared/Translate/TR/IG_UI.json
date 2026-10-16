@@ -599,6 +599,7 @@
     "IGUI_MinidoracatWatch_WeightUnits": "+%1 birim (+%%%2)",
     "IGUI_MinidoracatWatch_WeightUnitsShort": "+%1 birim",
     "IGUI_MinidoracatWatch_WeightRowDead": "+0 birim (güç yok)",
+    "IGUI_MinidoracatWatch_WeightRowMax": "%1 · kapasite %2",
     "IGUI_MinidoracatWatch_WeightNow": "Bu karakterin şu anki taşıma kapasitesi: %1",
     "IGUI_MinidoracatWatch_WeightNeeds": "Yalnızca saat takılı ve şarjlıyken, açık bir Taşıma Yuvasında çalışır",
     "IGUI_MinidoracatWatch_EcoNeeds": "Yalnızca saat takılı ve şarjlıyken, açık bir Çekirdek Yuvasında çalışır",

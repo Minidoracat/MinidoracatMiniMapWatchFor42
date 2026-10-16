@@ -599,6 +599,7 @@
     "IGUI_MinidoracatWatch_WeightUnits": "+%1 units (+%2%%)",
     "IGUI_MinidoracatWatch_WeightUnitsShort": "+%1 units",
     "IGUI_MinidoracatWatch_WeightRowDead": "+0 units (no power)",
+    "IGUI_MinidoracatWatch_WeightRowMax": "%1 · capacity %2",
     "IGUI_MinidoracatWatch_WeightNow": "This character's carry capacity now: %1",
     "IGUI_MinidoracatWatch_WeightNeeds": "Works only while worn, powered, and installed in an open Carry Slot",
     "IGUI_MinidoracatWatch_EcoNeeds": "Works only while worn, powered, and installed in an open Core Slot",

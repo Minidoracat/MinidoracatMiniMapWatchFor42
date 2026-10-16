@@ -669,6 +669,12 @@ function M:applySkin(key)
     end
 end
 
+-- 角色現在的負重上限：引擎同步來的 getMaxWeight（客戶端的 maxWeightBase 不同步，不拿它算）；負重列標題與檢視區共用
+local function maxWeightText(player)
+    local mw = player:getMaxWeight()
+    return mw == math.floor(mw) and tostring(math.floor(mw)) or string.format("%.1f", mw)
+end
+
 -- 背包與錶的掃描（解鎖卡、電池、孤立槽位、付費檢視、動作按鈕、功能清單）每 250ms 一次，不在每幀翻背包
 function M:scan(player, watch, slot)
     local now = getTimestampMs()
@@ -691,16 +697,26 @@ function M:scan(player, watch, slot)
     local G = MinidoracatWatchGuide
     self.guideOk = G ~= nil and G.available() -- 「取得方式」按鈕與膠囊說明的「按一下」：先於 buildFeatures
     self.feats = self:buildFeatures()
-    -- 負重列標題右邊（與檢視區「這支錶合計」）：這支錶的總加成；沒電寫「+0 格（沒電）」
+    -- 負重列標題右邊（與檢視區「這支錶合計」）：這支錶的總加成；沒電寫「+0 格（沒電）」。戴著、有電時再接角色現在的
+    -- 負重上限，看得出核心實際加了多少。背包裡那支不接（上限不含它的加成）；沒電不接（西葡德文在翻譯包字型下會超過左欄）
     local c = watch and W.power(watch)
     self.weightUnits = C.watchWeight(player, watch)
     self.weightText = nil
     if watch then
-        self.weightText = (c and c > 0) and C.unitsText(self.weightUnits) or getText("IGUI_MinidoracatWatch_WeightRowDead")
+        if c and c > 0 then
+            local units = getText("IGUI_MinidoracatWatch_WeightUnitsShort", tostring(self.weightUnits))
+            self.weightText = watch == C.watchOf(self.playerNum)
+                and getText("IGUI_MinidoracatWatch_WeightRowMax", units, maxWeightText(player)) or units
+        else
+            self.weightText = getText("IGUI_MinidoracatWatch_WeightRowDead")
+        end
     end
-    -- 一行放不下就把總加成換到第二行（ES、PTBR 的「負重核心」很長）。用最寬的情況判斷（三顆全裝、或沒電），數字變了版面不跳
-    local most = W.weightUnits(1) + W.weightUnits(2) + W.weightUnits(3)
-    local widest = math.max(measure(C.unitsText(most)), measure(getText("IGUI_MinidoracatWatch_WeightRowDead")))
+    -- 一行放不下就把總加成換到第二行（ES、PTBR 的「負重核心」很長）。用最寬的情況判斷（三顆全裝接三位數上限、或沒電），
+    -- 數字變了版面不跳
+    local most = getText("IGUI_MinidoracatWatch_WeightUnitsShort",
+        tostring(W.weightUnits(1) + W.weightUnits(2) + W.weightUnits(3)))
+    local widest = math.max(measure(getText("IGUI_MinidoracatWatch_WeightRowMax", most, "999")),
+        measure(getText("IGUI_MinidoracatWatch_WeightRowDead")))
     self.weightWrap = measure(getText("IGUI_MinidoracatWatch_WeightCores")) + 8 + widest > LEFT_W
     self.ecoLines = C.ecoLines() -- 檢視區每幀畫，這裡先算好
     self:refreshFocusLabel()
@@ -1189,11 +1205,9 @@ function M:drawInspector(UI, player, watch, slot)
         y = y + kh + 6
     end
     y = y + 2
-    -- 角色現在的負重上限：引擎同步來的 getMaxWeight（客戶端的 maxWeightBase 不同步，不拿它算）
+    -- 角色現在的負重上限（maxWeightText）
     if tier then
-        local mw = player:getMaxWeight()
-        local s = mw == math.floor(mw) and tostring(math.floor(mw)) or string.format("%.1f", mw)
-        y = para(self, getText("IGUI_MinidoracatWatch_WeightNow", s), x, y, width, colors.textMuted) + 6
+        y = para(self, getText("IGUI_MinidoracatWatch_WeightNow", maxWeightText(player)), x, y, width, colors.textMuted) + 6
     end
     if slot.orphan then
         y = box(self, theme, x, y, width, getText("IGUI_MinidoracatWatch_Desc_Orphan"), "warning", "warn")

@@ -599,6 +599,7 @@
     "IGUI_MinidoracatWatch_WeightUnits": "+%1 jedn. (+%2%%)",
     "IGUI_MinidoracatWatch_WeightUnitsShort": "+%1 jedn.",
     "IGUI_MinidoracatWatch_WeightRowDead": "+0 jedn. (brak energii)",
+    "IGUI_MinidoracatWatch_WeightRowMax": "%1 · udźwig %2",
     "IGUI_MinidoracatWatch_WeightNow": "Obecny udźwig tej postaci: %1",
     "IGUI_MinidoracatWatch_WeightNeeds": "Działa tylko, gdy zegarek jest noszony i zasilany, a rdzeń jest w otwartym Gnieździe udźwigu",
     "IGUI_MinidoracatWatch_EcoNeeds": "Działa tylko, gdy zegarek jest noszony i zasilany, a rdzeń jest w otwartym Gnieździe rdzenia",

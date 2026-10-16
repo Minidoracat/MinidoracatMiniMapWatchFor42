@@ -599,6 +599,7 @@
     "IGUI_MinidoracatWatch_WeightUnits": "+%1 単位（+%2%%）",
     "IGUI_MinidoracatWatch_WeightUnitsShort": "+%1 単位",
     "IGUI_MinidoracatWatch_WeightRowDead": "+0 単位（電池切れ）",
+    "IGUI_MinidoracatWatch_WeightRowMax": "%1 · 積載量 %2",
     "IGUI_MinidoracatWatch_WeightNow": "このキャラクターの現在の積載量：%1",
     "IGUI_MinidoracatWatch_WeightNeeds": "着けていて電池があり、開放された積載スロットに装着しているときだけ機能します",
     "IGUI_MinidoracatWatch_EcoNeeds": "着けていて電池があり、開放されたコアスロットに装着しているときだけ機能します",

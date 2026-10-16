@@ -599,6 +599,7 @@
     "IGUI_MinidoracatWatch_WeightUnits": "+%1 unités (+%2%%)",
     "IGUI_MinidoracatWatch_WeightUnitsShort": "+%1 unités",
     "IGUI_MinidoracatWatch_WeightRowDead": "+0 unité (pile vide)",
+    "IGUI_MinidoracatWatch_WeightRowMax": "%1 · limite %2",
     "IGUI_MinidoracatWatch_WeightNow": "Limite de poids actuelle de ce personnage : %1",
     "IGUI_MinidoracatWatch_WeightNeeds": "Fonctionne seulement si la montre est portée et chargée, et le noyau installé dans un emplacement portage ouvert",
     "IGUI_MinidoracatWatch_EcoNeeds": "Fonctionne seulement si la montre est portée et chargée, et le noyau installé dans un emplacement noyau ouvert",

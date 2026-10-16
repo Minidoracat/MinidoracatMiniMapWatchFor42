@@ -599,6 +599,7 @@
     "IGUI_MinidoracatWatch_WeightUnits": "+%1 pontos (+%2%%)",
     "IGUI_MinidoracatWatch_WeightUnitsShort": "+%1 pontos",
     "IGUI_MinidoracatWatch_WeightRowDead": "+0 pontos (sem energia)",
+    "IGUI_MinidoracatWatch_WeightRowMax": "%1 · capacidade %2",
     "IGUI_MinidoracatWatch_WeightNow": "Capacidade de carga atual deste personagem: %1",
     "IGUI_MinidoracatWatch_WeightNeeds": "Só funciona no pulso, com energia e instalado num Espaço de Carga aberto",
     "IGUI_MinidoracatWatch_EcoNeeds": "Só funciona no pulso, com energia e instalado num Espaço de Núcleo aberto",

@@ -599,6 +599,7 @@
     "IGUI_MinidoracatWatch_WeightUnits": "+%1 格（+%2%%）",
     "IGUI_MinidoracatWatch_WeightUnitsShort": "+%1 格",
     "IGUI_MinidoracatWatch_WeightRowDead": "+0 格（没电）",
+    "IGUI_MinidoracatWatch_WeightRowMax": "%1 · 负重上限 %2",
     "IGUI_MinidoracatWatch_WeightNow": "这个角色目前的负重上限：%1",
     "IGUI_MinidoracatWatch_WeightNeeds": "要戴着、有电，并且装在有效的负重槽才有作用",
     "IGUI_MinidoracatWatch_EcoNeeds": "要戴着、有电，并且装在有效的核心槽才有作用",
