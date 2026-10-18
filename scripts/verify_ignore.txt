@@ -1,0 +1,9 @@
+# 逐一查證後豁免的 finding（每行一個子字串樣式）。新增條目前必須先查證，並在上一行註明依據。
+
+# 以下四檔傳進去的 fullType 只會是本 MOD 的錶（W.watchType）、模組（Module_*／第三方登記的手錶模組）、
+# 解鎖卡（W.CARD_TYPES）與 W.BATTERY_TYPE＝Base.Battery（原版腳本沒有 VehicleType，不是車用電瓶），都沒有車型；
+# 來源：W.lootEntries（shared/MinidoracatWatch_DropData.lua）、G.groupTypes（Guide.lua）、W.cardType
+getItemNameFromFullType in client/MinidoracatWatch_AdminModel.lua:
+getItemNameFromFullType in client/MinidoracatWatch_AdminUI.lua:
+getItemNameFromFullType in client/MinidoracatWatch_Client.lua:
+getItemNameFromFullType in client/MinidoracatWatch_Guide.lua:

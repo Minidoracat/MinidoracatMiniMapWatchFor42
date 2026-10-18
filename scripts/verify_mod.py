@@ -47,6 +47,9 @@
                           OnTest 有 Lua 實作、四語 Recipes.json；任一錯誤整條配方靜默消失
  19. 七款錶資產完整        — 每款左右手物品、自己的 clothing xml＋GUID、模型與貼圖檔、圖示、四語說明、全名不含 Classic、
                           自製圖示不帶 Color*（會被染色）
+ 20. client 物品名稱用 getItemName — getItemNameFromFullType 只回翻譯表的物品名；原版背包顯示車輛零件時再接上車型，
+                          getItemName 照同一規則（LuaManager.java:8745-8763）。BigGasTank1／2／3 因此都顯示「油箱 (大型)」
+                          （Economy、UIFor42 2026-10-18）。不拿來顯示或不會出現車輛零件的用法寫進 verify_ignore.txt 並註明查證依據
 
 新增檢查時：同步把對應的坑記進 AGENTS.md 踩坑錄，並依「踩坑進化協議」回流到
 pz-mod-template（見 AGENTS.md）。
@@ -1084,6 +1087,26 @@ for _script in _tests:
         continue
     _ok, _info = lua_test_verdict(_lua_bin, f"scripts/{_script}", REPO)
     ok(f"{_gate}：{_info}") if _ok else fail(_gate, _info)
+
+# ---- 20. client 顯示物品名稱用 getItemName ----
+# getItemNameFromFullType 只回翻譯表的物品名；原版背包顯示車輛零件時再接上車型，getItemName 照同一規則
+# （LuaManager.java:8745-8763；getItemNameFromFullType 在 :8579-8583）。BigGasTank1／2／3 因此都顯示「油箱 (大型)」
+# （Economy、UIFor42 物品挑選器 2026-10-18，家族 pitfalls.md「UI」）。不拿來顯示、或那裡不會出現車輛零件的用法：
+# 把 finding 寫進 scripts/verify_ignore.txt（寫到檔名加冒號就好，不寫行號），上一行用 # 註明查證依據。
+_LONG_COMMENT = re.compile(r"--\[(=*)\[.*?\]\1\]", re.DOTALL)
+_PLAIN_NAME = re.compile(r"(?<!\w)getItemNameFromFullType\b")
+plain_names = []
+for f in LUA_FILES:
+    lua_rel = os.path.relpath(f, REPO).replace(os.sep, "/").split("/lua/", 1)[-1]
+    if not lua_rel.startswith("client/"):
+        continue
+    with open(f, encoding="utf-8", errors="replace") as fh:
+        src = _LONG_COMMENT.sub(lambda mm: "\n" * mm.group().count("\n"), fh.read())
+    for lineno, line in enumerate(src.split("\n"), 1):
+        if _PLAIN_NAME.search(line.split("--", 1)[0]):
+            plain_names.append(f"getItemNameFromFullType in {lua_rel}:{lineno}")
+_t = "client 顯示物品名稱用 getItemName（getItemNameFromFullType 沒有車型）"
+fail(_t, plain_names) if plain_names else ok(_t)
 
 # ---- 總結 ----
 print()
