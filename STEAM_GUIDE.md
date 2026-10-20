@@ -78,7 +78,7 @@ https://steamcommunity.com/sharedfiles/filedetails/?id=3816406671
 [/list]
 [/list]
 [h3]製作模組[/h3]
-不必學配方；需要螺絲起子、桌面與電學 3 級（等級可調）。
+不必學配方；需要螺絲起子、桌面與電學 3 級（等級可調）。管理員關閉「允許製作模組」或「啟用地圖手錶」時，合成清單不會出現這些配方。
 [table]
 [tr][th]模組[/th][th]材料[/th][/tr]
 [tr][td]名錄模組[/td][td]電話簿＋電子零件×2[/td][/tr]

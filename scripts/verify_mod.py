@@ -44,7 +44,7 @@
                           luac 與標準 Lua 測試都照 UTF-8 處理、攔不住。只掃字串，註解不限
  17. Lua 單元測試          — scripts/test_*.lua 自動全跑（非零碼＝FAIL）；PATH 沒有 lua 則 SKIP
  18. craftRecipe 腳本      — module Base、輸入 token（mode／flags／tags 照 InputScript 的 throw 路徑）、物品引用存在、
-                          OnTest 有 Lua 實作、四語 Recipes.json；任一錯誤整條配方靜默消失
+                          OnTest 有 Lua 實作、OnAddToMenu 是 Lua 的全域函式、四語 Recipes.json；任一錯誤整條配方靜默消失
  19. 七款錶資產完整        — 每款左右手物品、自己的 clothing xml＋GUID、模型與貼圖檔、圖示、四語說明、全名不含 Classic、
                           自製圖示不帶 Color*（會被染色）
  20. client 物品名稱用 getItemName — getItemNameFromFullType 只回翻譯表的物品名；原版背包顯示車輛零件時再接上車型，
@@ -818,7 +818,8 @@ fail("Lua 字串字面值只有 ASCII（玩家文字放翻譯檔）", bad) if ba
 # 不認得的 token 當下 throw（:687、:762）；flags 走 InputFlag.valueOf，無 trim、大小寫敏感（:744-748）。任一 throw
 # 整條配方消失、玩家端零訊息。配方必須在 module Base（短名引用只查 Base，家族 pitfalls.md「CraftRecipe 學習管線」）；
 # 引用的物品要真的存在（本 MOD 的看 scripts、Base.* 看原版 scripts，找不到原版就只驗本 MOD）；OnTest 的「表.函式」
-# 要有 Lua 實作；配方名在四語 Recipes.json 都有翻譯（Translator.getRecipeName，Translator.java:691-699）。
+# 要有 Lua 實作；OnAddToMenu 經 callLuaBool 只用全域名稱查（LuaManager.java:5745-5746），點號或查不到＝配方永遠不列出；
+# 配方名在四語 Recipes.json 都有翻譯（Translator.getRecipeName，Translator.java:691-699）。
 # 名單抄 AutoDrive verify_mod.py（42.20.4 InputFlag.java 逐字）；引擎升版新增 flag 時這裡會假紅——補名單即可。
 VALID_ITEM_MODES = {"use", "keep", "destroy", "useprop1", "useprop2", "keepprop1", "keepprop2", "prop1", "prop2"}
 INPUT_FLAGS = {
@@ -921,6 +922,9 @@ for m in MEDIA_DIRS:
             if ot and not re.search(rf"function\s+{re.escape(ot.group(1))}\s*\(|{re.escape(ot.group(1))}\s*=\s*function",
                                     _lua_src):
                 recipe_bad.append(f"{where}：OnTest {ot.group(1)} 在 Lua 裡找不到")
+            om = re.search(r"(?m)^\s*OnAddToMenu\s*=\s*([\w.]+)\s*,", body)
+            if om and ("." in om.group(1) or not re.search(rf"(?m)^function\s+{re.escape(om.group(1))}\s*\(", _lua_src)):
+                recipe_bad.append(f"{where}：OnAddToMenu {om.group(1)} 要是 Lua 裡的全域函式（不能有點號）")
             for k in ("inputs", "outputs"):
                 sm = re.search(rf"(?ms)^\s*{k}\s*\{{(.*?)^\s*\}}", body)
                 if not sm:
@@ -960,7 +964,7 @@ for m in MEDIA_DIRS:
             with open(rp, encoding="utf-8") as fh:
                 keys = set(json.load(fh))
         recipe_bad += [f"{lang}/Recipes.json 缺 {n}" for n in recipe_names if n not in keys]
-_rl = f"craftRecipe 腳本（{len(recipe_names)} 條：module Base、輸入 token、物品引用、OnTest、四語配方名" + \
+_rl = f"craftRecipe 腳本（{len(recipe_names)} 條：module Base、輸入 token、物品引用、OnTest、OnAddToMenu、四語配方名" + \
       ("" if _vanilla_items is not None else "；找不到原版 scripts，Base.* 未驗") + "）"
 fail(_rl, recipe_bad) if recipe_bad else ok(_rl)
 

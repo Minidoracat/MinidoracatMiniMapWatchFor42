@@ -1,6 +1,7 @@
 -- 地圖錶取得方式（Phase 5，伺服器／單機）：殭屍掉落的機率與上限（固定種子）、服裝分組對應原版 clothing.xml、
 -- 伺服器設定檔（缺檔寫預設、壞檔保留上一份、逐條驗證、區段各自獨立）、戰利品開關（開局與改沙盒後重排、不重複、
--- 照明模組在表上、負重核心每顆一個開關且預設關、表名都在原版 ProceduralDistributions）、配方 OnTest、嗶嗶腕機螢幕（伺服器廣播、單機重建模型）。
+-- 照明模組在表上、負重核心每顆一個開關且預設關、表名都在原版 ProceduralDistributions）、配方 OnTest 與 OnAddToMenu（含 Neat Crafting 的清單）、
+-- 嗶嗶腕機螢幕（伺服器廣播、單機重建模型）。
 -- 原版檔案（PZ_PATH，預設 D:/SteamLibrary/steamapps/common/ProjectZomboid）不在時，對照原版的檢查改用假資料並註明。
 -- 用法（repo 根目錄）：lua scripts/test_watch_acquire.lua
 local F = dofile("scripts/lib_watch_fakes.lua")
@@ -430,16 +431,36 @@ do
     check(#missing == 0, "每張分佈表都有地點名稱（缺：" .. table.concat(missing, ",") .. "）")
 end
 
--- ===== 配方 OnTest =====
+-- ===== 配方 OnTest 與 OnAddToMenu =====
 check(MinidoracatWatch_Recipe == nil, "配方 OnTest 在 shared 檔，尚未載入")
 F.load("shared/MinidoracatWatch_Recipe.lua")
-check(MinidoracatWatch_Recipe.canCraft() == true, "預設可以製作")
+check(MinidoracatWatch_Recipe.canCraft() == true and MinidoracatWatch_recipeShown() == true, "預設可以製作、列在合成清單")
 SB.AllowCraft = false
-check(MinidoracatWatch_Recipe.canCraft() == false, "沙盒關閉製作：不能做")
+check(MinidoracatWatch_Recipe.canCraft() == false and MinidoracatWatch_recipeShown() == false, "沙盒關閉製作：不能做、不列在合成清單")
 SB.AllowCraft = nil
 SB.Enabled = false
-check(MinidoracatWatch_Recipe.canCraft() == false, "地圖錶系統關閉：不能做")
+check(MinidoracatWatch_Recipe.canCraft() == false and MinidoracatWatch_recipeShown() == false, "地圖錶系統關閉：不能做、不列在合成清單")
 SB.Enabled = true
+-- Neat Crafting 自己畫清單、不問 OnAddToMenu：遊戲開始時包 NC_FilterBar:shouldIncludeRecipe，只替這三條配方代問
+do
+    local answer = true   -- Neat Crafting 自己的篩選（只看能做、已知等）怎麼回答
+    NC_FilterBar = { shouldIncludeRecipe = function() return answer end }
+    F.fire("OnGameStart")
+    local NC = NC_FilterBar
+    local function fake(hook) return { getOnAddToMenu = function() return hook end } end
+    local ours, plain, other = fake("MinidoracatWatch_recipeShown"), fake(nil), fake("OtherMod_recipeShown")
+    check(NC:shouldIncludeRecipe(ours) == true and NC:shouldIncludeRecipe(plain) == true, "Neat Crafting：預設照它自己的篩選列出")
+    SB.AllowCraft = false
+    check(NC:shouldIncludeRecipe(ours) == false and NC:shouldIncludeRecipe(plain) == true and NC:shouldIncludeRecipe(other) == true,
+        "Neat Crafting：沙盒關閉製作，只有地圖錶的配方不列")
+    SB.AllowCraft = nil
+    SB.Enabled = false
+    check(NC:shouldIncludeRecipe(ours) == false, "Neat Crafting：地圖錶系統關閉，地圖錶的配方不列")
+    SB.Enabled = true
+    answer = false
+    check(NC:shouldIncludeRecipe(ours) == false and NC:shouldIncludeRecipe(plain) == false, "Neat Crafting 自己的篩選說不列：照樣不列")
+    NC_FilterBar = nil
+end
 -- 電學等級（CraftLevel）：執行期改配方的 SkillRequired（clearRequiredSkills＋addRequiredSkill），變了才改
 do
     local R = MinidoracatWatch_Recipe

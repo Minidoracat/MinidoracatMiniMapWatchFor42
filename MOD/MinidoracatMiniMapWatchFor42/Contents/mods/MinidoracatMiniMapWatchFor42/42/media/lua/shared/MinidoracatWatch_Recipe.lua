@@ -18,6 +18,31 @@ function MinidoracatWatch_Recipe.canCraft() -- verify 第 18 項依這個寫法�
     return W.enabled() and W.sandbox("AllowCraft", true) ~= false
 end
 
+-- 同一批配方的 OnAddToMenu：做不了就不列出。只靠 OnTest 的話，合成視窗連材料都不放進輸入，每格顯示 0、
+-- 只寫「缺少必需物品」，玩家以為缺材料（家族 pitfalls.md「CraftRecipe」；2026-10-19 Knox Pass 玩家回報同一個畫面）。
+-- 引擎經 callLuaBool 只用全域名稱查（LuaManager.java:5745-5746），所以是全域函式；
+-- 原版清單與圖示兩種排法都問它（ISRecipeScrollingListBox.lua:344-348、ISTiledIconPanel.lua:193-197）
+function MinidoracatWatch_recipeShown()
+    return MinidoracatWatch_Recipe.canCraft()
+end
+
+-- Neat Crafting（Workshop 3502080466）自己畫清單、不問 OnAddToMenu，每條清單路徑都經 NC_FilterBar:shouldIncludeRecipe
+-- （1.7.4 的 NC_FilterBar.lua:351、562、608、630），所以替 OnAddToMenu 是上面那個函式的配方代問。
+-- 它是 client 檔、比本檔晚載入，遊戲開始才包（同 PackThrow Recipes.lua、Knox Pass Core.lua）
+function MinidoracatWatch_Recipe.wrapNeatCrafting()
+    local F = NC_FilterBar
+    if type(F) ~= "table" or type(F.shouldIncludeRecipe) ~= "function" or F.minidoracatWatchFilter then return false end
+    local orig = F.shouldIncludeRecipe
+    F.shouldIncludeRecipe = function(self, recipe)
+        if recipe ~= nil and recipe:getOnAddToMenu() == "MinidoracatWatch_recipeShown"
+            and not MinidoracatWatch_Recipe.canCraft() then return false end
+        return orig(self, recipe)
+    end
+    F.minidoracatWatchFilter = true
+    return true
+end
+Events.OnGameStart.Add(MinidoracatWatch_Recipe.wrapNeatCrafting)
+
 -- 模組 id → 配方名（media/scripts/MinidoracatWatch_recipes.txt）；面板的取得方式也查這張表
 R.RECIPES = { ledger = "CraftMinidoracatWatchLedger", comm = "CraftMinidoracatWatchComm", light = "CraftMinidoracatWatchLight" }
 R.POLL_MS = 2000

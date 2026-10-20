@@ -78,7 +78,7 @@ The rest of this chapter shows the defaults. Where to loot each watch is under "
 [/list]
 [/list]
 [h3]Crafting modules[/h3]
-No recipe to learn; needs a screwdriver, a surface and Electrical 3 (adjustable).
+No recipe to learn; needs a screwdriver, a surface and Electrical 3 (adjustable). When an admin turns off "Allow crafting modules" or "Enable map watch", these recipes don't show in the crafting list.
 [table]
 [tr][th]Module[/th][th]Materials[/th][/tr]
 [tr][td]Directory Module[/td][td]Phonebook + 2 Scrap Electronics[/td][/tr]
