@@ -339,16 +339,17 @@ end
 Events.OnTick.Add(C.poll)
 Events.OnCreatePlayer.Add(function() W.clearStatus() end) -- 重生是新的 IsoPlayer：舊的快取不留
 
--- ===== 家族工具列（Dock，UI 框架 API rev 13；電池圖示要 rev 14 的 Icons battery）=====
+-- ===== 家族工具列（Dock，UI 框架 API rev 13；退路的電池圖示要 rev 14 的 Icons battery）=====
 -- 回呼可能每幀被叫：不建 table。框架缺席、版本不足或登記失敗＝沒有工具列按鈕，面板仍可從錶的右鍵選單開啟；
 -- 玩家在「選項 → MODS」關掉 ShowButton 也一樣（快取與套用在 MinidoracatWatch_Sound.lua）。
--- 圖示畫法在 MinidoracatWatch_Panel.lua（C.drawBattery）、配色是預設 theme（MinidoracatWatch_Skins.lua）：呼叫時才取。
+-- 圖示畫法在 MinidoracatWatch_Panel.lua（C.drawDockBattery：原色殼＋電量，缺圖退回 C.drawBattery）、配色是預設 theme
+-- （MinidoracatWatch_Skins.lua）：呼叫時才取。不用 spec 的 icon 欄位：那是靜態圖，畫不出電量。
 local DOCK_SPEC = {
     id = "minimapwatch",
     order = 12,
     label = function() return getText("IGUI_MinidoracatWatch_DockLabel") end,
     drawIcon = function(btn, x, y, size)
-        C.drawBattery(btn, x, y, size, C.watchOf(0), C.Skins.defaultTheme(C.ui()))
+        C.drawDockBattery(btn, x, y, size, C.watchOf(0), C.Skins.defaultTheme(C.ui()))
     end,
     getStatus = function() return C.statusText(C.watchOf(0), getSpecificPlayer(0)) end,
     getState = function()

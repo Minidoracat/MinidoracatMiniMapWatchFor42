@@ -537,9 +537,60 @@ check(dockSpec.getState() == nil and dockSpec.getBadge() == 0
     and dockSpec.getStatus() == "IGUI_MinidoracatWatch_Status_NoBatteryNeeded", "不需要電池：Dock 不警示、說明不需要電池")
 SB.NeedBattery = nil
 W.setCharge(watch, 0.5)
-F.draws, F.icons, F.fills = 0, {}, {}
-dockSpec.drawIcon(setmetatable({}, Element), 0, 0, 28)
-check(F.icons[1] == "battery" and F.draws >= 2, "drawIcon：框架 Icons 的電池＋內框電量（不自己畫外框）")
+-- 工具列電池：原色殼（白色頂點色）＋窗口內電量；窗口 64px 座標 x 14..48、y 25..38（28px 時往內取整成 x 7..20、y 11..16）
+do
+    local SHELL = "tex:media/ui/MinidoracatWatch/dock_battery_shell.png"
+    local shells, rects = {}, {}
+    local el = setmetatable({}, Element)
+    function el:drawTextureScaled(t, x, y, w, h, a, r, g, b) shells[#shells + 1] = { t = t, x = x, y = y, w = w, h = h, a = a, r = r, g = g, b = b } end
+    function el:drawRect(x, y, w, h, a, r, g, b) rects[#rects + 1] = { x = x, y = y, w = w, h = h, a = a, r = r, g = g, b = b } end
+    local th = { colors = { text = { r = 0.9, g = 0.9, b = 0.9 }, accent = { r = 0, g = 1, b = 0 }, warnStrong = { r = 1, g = 0.5, b = 0 },
+        errorText = { r = 1, g = 0, b = 0 } } }
+    local function draw(w, size)
+        shells, rects, F.icons = {}, {}, {}
+        C.drawDockBattery(el, 100, 200, size or 28, w, th)
+        return shells[1], rects[1]
+    end
+    local function inWindow(r, size)
+        local k = (size or 28) / 64
+        return r.x >= 100 + 14 * k and r.x + r.w <= 100 + 49 * k and r.y >= 200 + 25 * k and r.y + r.h <= 200 + 39 * k
+    end
+    C.dockShellTex = nil
+    W.setCharge(watch, 0.7)
+    local s, r = draw(watch)
+    check(s and s.t == SHELL and s.x == 100 and s.y == 200 and s.w == 28 and s.h == 28 and s.a == 1 and s.r == 1 and s.g == 1 and s.b == 1
+        and #F.icons == 0, "工具列電池：原色殼（白色頂點色、不染色）蓋滿圖示格，不畫框架的白色電池")
+    check(r and #rects == 1 and r.x == 107 and r.y == 211 and r.w == math.floor(14 * 0.7) and r.h == 6 and r.g == 1 and r.r == 0
+        and inWindow(r), "70%：窗口內寬度 ×0.7、accent 色")
+    s, r = draw(watch, 64)
+    check(r.x == 114 and r.y == 225 and r.w == math.floor(35 * 0.7) and r.h == 14 and inWindow(r, 64), "64px：窗口剛好是 x 14..48、y 25..38")
+    W.setCharge(watch, 0.1)
+    s, r = draw(watch)
+    check(r and r.r == 1 and r.g == 0.5 and r.w == 1 and inWindow(r), "低電：warnStrong 色、至少 1px")
+    W.setCharge(watch, 0)
+    s, r = draw(watch)
+    check(r and r.r == 1 and r.g == 0 and r.a == 0.5 and r.w == 14 and r.h == 6 and inWindow(r), "沒電：整格 errorText 半透明")
+    s, r = draw(nil)
+    check(s and s.a == 0.4 and r == nil, "沒錶：殼 alpha 0.4、不畫電量")
+    W.setCharge(watch, 0.5)
+    shells = {}
+    dockSpec.drawIcon(el, 0, 0, 28)
+    check(shells[1] and shells[1].t == SHELL, "Dock drawIcon 走工具列電池")
+    -- 貼圖讀不到：記住失敗，之後都退回舊畫法（框架 Icons battery＋內框電量）
+    local realGet, tries = getTexture, 0
+    getTexture = function() tries = tries + 1; return nil end
+    C.dockShellTex = nil
+    s, r = draw(watch)
+    draw(watch)
+    check(s == nil and F.icons[1] == "battery" and r and tries == 1 and C.dockShellTex == false,
+        "缺圖：退回 Icons battery＋電量，只讀一次貼圖")
+    getTexture = function() error("boom") end
+    C.dockShellTex = nil
+    s = draw(watch)
+    check(s == nil and F.icons[1] == "battery", "getTexture 丟錯：一樣退回舊畫法")
+    getTexture = realGet
+    C.dockShellTex = nil
+end
 check(dockSpec.isActive() == false, "面板未開")
 dockSpec.onClick()
 check(dockSpec.isActive() == true, "點按鈕開面板")
@@ -701,8 +752,13 @@ selectSlot("std1")
 check(panel.sel == 1, "點槽位＝選取")
 check(acts() == "remove" and act("remove").icon == "screwdriver", "有模組的槽位：只有「拆下模組」（螺絲起子圖示）")
 F.draws, F.icons = 0, {}
+local realBatt, realDock, nBatt, nDock = C.drawBattery, C.drawDockBattery, 0, 0
+C.drawBattery = function(...) nBatt = nBatt + 1; return realBatt(...) end
+C.drawDockBattery = function(...) nDock = nDock + 1; return realDock(...) end
 panel:prerender()
 panel.sockets:prerender()
+C.drawBattery, C.drawDockBattery = realBatt, realDock
+check(nBatt >= 1 and nDock == 0, "標題列電量膠囊照舊用 Icons 電池（不用工具列的原色殼）")
 check(F.draws >= 40, "面板畫出錶面、槽位、檢視區、功能清單與電量列（" .. F.draws .. " 次繪製）")
 local iconSet = {}
 for _, k in ipairs(F.icons) do iconSet[k] = true end

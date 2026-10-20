@@ -274,7 +274,7 @@ local function shapeOf(UI, theme, part)
     return part == "title" and "roundTop" or nil
 end
 
--- 電池圖示（Dock 與標題列共用；不配置 table）：Icons battery 外框＋內框填電量（32px 座標 x 6..23、y 12..20）；
+-- 電池圖示（標題列；工具列缺圖時的退路，見 C.drawDockBattery；不配置 table）：Icons battery 外框＋內框填電量（32px 座標 x 6..23、y 12..20）；
 -- 不需要電池時畫滿格（W.power）
 function C.drawBattery(el, x, y, size, watch, theme)
     local UI, colors = C.ui(), theme.colors
@@ -282,6 +282,30 @@ function C.drawBattery(el, x, y, size, watch, theme)
     UI.Icons.draw(el, "battery", x, y, size, colors.text, watch and 1 or 0.4)
     local k = size / 32
     local ix, iy, iw, ih = x + math.floor(6 * k), y + math.floor(12 * k), math.floor(17 * k), math.max(1, math.floor(8 * k))
+    if c and c > 0 then
+        rect(el, ix, iy, math.max(1, math.floor(iw * c)), ih, c <= W.LOW_CHARGE and colors.warnStrong or colors.accent)
+    elseif watch then
+        rect(el, ix, iy, iw, ih, colors.errorText, 0.5)
+    end
+end
+
+-- 工具列（Dock）的電池：原色金屬殼 dock_battery_shell.png（不染色）＋正中央透明窗口填電量（64px 座標 x 14..48、y 25..38 含頭尾，
+-- 取整往窗口內縮）；電量寬度、顏色與沒電樣式同 C.drawBattery。貼圖第一次用到才讀並快取在 C.dockShellTex
+-- （nil＝還沒讀、false＝讀不到）；讀不到就一直退回 C.drawBattery。不配置 table。
+function C.drawDockBattery(el, x, y, size, watch, theme)
+    local tex = C.dockShellTex
+    if tex == nil then
+        local ok, t = pcall(getTexture, TEX_DIR .. "dock_battery_shell.png")
+        tex = ok and t or false
+        C.dockShellTex = tex
+    end
+    if not tex then return C.drawBattery(el, x, y, size, watch, theme) end
+    local colors = theme.colors
+    local c = watch and W.power(watch)
+    el:drawTextureScaled(tex, x, y, size, size, watch and 1 or 0.4, 1, 1, 1)
+    local k = size / 64
+    local ix, iy = x + math.ceil(14 * k), y + math.ceil(25 * k)
+    local iw, ih = x + math.floor(49 * k) - ix, math.max(1, y + math.floor(39 * k) - iy)
     if c and c > 0 then
         rect(el, ix, iy, math.max(1, math.floor(iw * c)), ih, c <= W.LOW_CHARGE and colors.warnStrong or colors.accent)
     elseif watch then
