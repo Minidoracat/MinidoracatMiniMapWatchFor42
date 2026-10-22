@@ -5,6 +5,8 @@
     "Sandbox_MinidoracatWatchAcquire": "Minidoracat Reloj de mapa - Obtención",
     "Sandbox_MinidoracatWatch_Enabled": "Activar reloj de mapa",
     "Sandbox_MinidoracatWatch_Enabled_tooltip": "Si está desactivado, el minimapa sigue abierto sin reloj y los relojes de mapa no consumen pila.",
+    "Sandbox_MinidoracatWatch_SoloDefaults": "Ajustes predeterminados para un jugador",
+    "Sandbox_MinidoracatWatch_SoloDefaults_tooltip": "Solo en partidas de un jugador, la primera vez que una partida guardada carga el reloj de mapa: las opciones que siguen en su valor predeterminado pasan a valores para un jugador (el minimapa no requiere reloj, los espacios de pago son gratis, no aparecen tarjetas de desbloqueo). Las opciones que cambiaste al crear el mundo se quedan como están. No tiene efecto en servidores multijugador.",
     "Sandbox_MinidoracatWatch_MinimapRule": "Regla del minimapa",
     "Sandbox_MinidoracatWatch_MinimapRule_tooltip": "Sin reloj: el minimapa sigue abierto.\nRequiere reloj: lleva puesto un reloj de mapa con carga.\nMinimapa desactivado: nadie puede abrir el minimapa.",
     "Sandbox_MinidoracatWatch_MinimapRule_option1": "Sin reloj",

@@ -5,6 +5,8 @@
     "Sandbox_MinidoracatWatchAcquire": "Minidoracat Часы с картой - Получение",
     "Sandbox_MinidoracatWatch_Enabled": "Включить часы с картой",
     "Sandbox_MinidoracatWatch_Enabled_tooltip": "Если выключено, мини-карта открыта и без часов, а часы с картой не разряжаются.",
+    "Sandbox_MinidoracatWatch_SoloDefaults": "Настройки для одиночной игры",
+    "Sandbox_MinidoracatWatch_SoloDefaults_tooltip": "Только в одиночной игре, при первой загрузке сохранения с часами с картой: параметры, которые ещё на значении по умолчанию, переключаются на значения для одиночной игры (мини-карте часы не нужны, платные ячейки бесплатны, карты разблокировки не появляются). Параметры, изменённые при создании мира, остаются как есть. На многопользовательских серверах не действует.",
     "Sandbox_MinidoracatWatch_MinimapRule": "Правило мини-карты",
     "Sandbox_MinidoracatWatch_MinimapRule_tooltip": "Часы не нужны: мини-карта остаётся открытой.\nНужны часы: наденьте заряженные часы с картой.\nМини-карта выкл.: никто не может открыть мини-карту.",
     "Sandbox_MinidoracatWatch_MinimapRule_option1": "Часы не нужны",

@@ -120,6 +120,34 @@ function C.registerGate()
 end
 Events.OnGameStart.Add(C.registerGate)
 
+-- 單人設定（server/MinidoracatWatch_Admin.lua 的 A.applySolo，2026-10-22）：這次載入真的改了值，進遊戲後跳一次 Toast
+-- （停 10 秒），只列真的改了的那幾類。只有單機會改（同一個 Lua 狀態），所以直接讀 W.soloApplied（改了的沙盒鍵）
+C.SOLO_PARTS = { { "MinimapRule", "Minimap" }, { "Slot", "Slots" }, { "LootCards", "Cards" } }
+function C.soloText(keys)
+    local parts = {}
+    for _, p in ipairs(C.SOLO_PARTS) do
+        for _, k in ipairs(keys) do
+            if k:sub(1, #p[1]) == p[1] then
+                parts[#parts + 1] = getText("IGUI_MinidoracatWatch_Solo_" .. p[2])
+                break
+            end
+        end
+    end
+    return getText("IGUI_MinidoracatWatch_Solo_Body", table.concat(parts, getText("IGUI_MinidoracatWatch_ListSep")))
+end
+local function soloNotice()
+    local player = getSpecificPlayer(0)
+    if not player then return end -- 玩家還沒在場：下一個 tick 再試
+    Events.OnTick.Remove(soloNotice)
+    local keys = W.soloApplied
+    W.soloApplied = nil
+    if keys then C.toast(player, C.soloText(keys), getText("IGUI_MinidoracatWatch_Solo_Title"), 10000) end
+end
+function C.soloStart()
+    if W.soloApplied then Events.OnTick.Add(soloNotice) end
+end
+Events.OnGameStart.Add(C.soloStart)
+
 -- ===== 文字 =====
 -- 這支錶目前的滿電續航（小時）：滿電小時數 ÷ 耗電倍率（模組、節能核心）
 function C.fullRuntime(player, watch)

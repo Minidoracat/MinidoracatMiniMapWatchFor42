@@ -5,6 +5,8 @@
     "Sandbox_MinidoracatWatchAcquire": "Minidoracat Zegarek z mapą - Zdobywanie",
     "Sandbox_MinidoracatWatch_Enabled": "Włącz zegarek z mapą",
     "Sandbox_MinidoracatWatch_Enabled_tooltip": "Gdy wyłączone, minimapa jest dostępna bez zegarka, a zegarki z mapą nie zużywają baterii.",
+    "Sandbox_MinidoracatWatch_SoloDefaults": "Domyślne ustawienia dla jednego gracza",
+    "Sandbox_MinidoracatWatch_SoloDefaults_tooltip": "Tylko w grze jednoosobowej, przy pierwszym wczytaniu zapisu z zegarkiem z mapą: opcje, które nadal mają wartość domyślną, zmieniają się na wartości dla jednego gracza (minimapa nie wymaga zegarka, płatne gniazda są darmowe, karty odblokowania się nie pojawiają). Opcje zmienione przy tworzeniu świata pozostają bez zmian. Nie działa na serwerach wieloosobowych.",
     "Sandbox_MinidoracatWatch_MinimapRule": "Zasada minimapy",
     "Sandbox_MinidoracatWatch_MinimapRule_tooltip": "Bez zegarka: minimapa jest zawsze dostępna.\nWymaga zegarka: noś zegarek z mapą, który ma ładunek.\nMinimapa wył.: nikt nie może otworzyć minimapy.",
     "Sandbox_MinidoracatWatch_MinimapRule_option1": "Bez zegarka",

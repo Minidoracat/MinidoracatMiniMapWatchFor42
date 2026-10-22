@@ -5,6 +5,8 @@
     "Sandbox_MinidoracatWatchAcquire": "Minidoracat Harita Saati - Edinme",
     "Sandbox_MinidoracatWatch_Enabled": "Harita saatini etkinleştir",
     "Sandbox_MinidoracatWatch_Enabled_tooltip": "Kapalıyken mini harita saat olmadan açık kalır ve harita saatlerinin pili azalmaz.",
+    "Sandbox_MinidoracatWatch_SoloDefaults": "Tek oyunculu varsayılanlar",
+    "Sandbox_MinidoracatWatch_SoloDefaults_tooltip": "Yalnızca tek oyunculu oyunda, bir kayıt Harita Saati ile ilk kez yüklendiğinde: hâlâ varsayılan değerdeki seçenekler tek oyunculu değerlere geçer (mini harita saat gerektirmez, ücretli yuvalar ücretsizdir, kilit açma kartları çıkmaz). Dünyayı oluştururken değiştirdiğiniz seçenekler olduğu gibi kalır. Çok oyunculu sunucularda etkisi yoktur.",
     "Sandbox_MinidoracatWatch_MinimapRule": "Mini harita kuralı",
     "Sandbox_MinidoracatWatch_MinimapRule_tooltip": "Saat gerekmez: mini harita açık kalır.\nSaat gerekli: şarjı olan bir harita saati takın.\nMini harita kapalı: kimse mini haritayı açamaz.",
     "Sandbox_MinidoracatWatch_MinimapRule_option1": "Saat gerekmez",

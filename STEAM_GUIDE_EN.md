@@ -23,6 +23,7 @@ https://steamcommunity.com/sharedfiles/filedetails/?id=3816406671
 {{img:03-minimap-en.jpg}}
 [list]
 [*] [b]Default rule[/b]: the minimap needs a worn, charged map watch.
+[*] [b]Single player[/b]: the first time a save loads with Map Watch, it switches to single-player settings: the minimap needs no watch, paid slots are free and unlock cards don't appear; other features still need their modules.
 [*] [b]Feature modules[/b]: features like resource points and navigation also need their module.
 [*] [b]Never restricted[/b]: the world map, search and your own coordinates; category search for resource points needs no module.
 [*] [b]Fully open[/b]: without this mod, or with "Enable map watch" off, the minimap stays fully open and watches don't drain.
@@ -271,7 +272,7 @@ Off by default (swap batteries instead). Admins can allow two ways to charge, bo
 [list]
 [*] [b]Which slots[/b]: Expansion, Advanced, Core, Carry Slots I–III and add-on slots.
 [*] [b]Four access types[/b] (set per slot type): Free, Unlock Card, Economy, Disabled.
-[*] [b]Defaults[/b]: Economy for Expansion, Advanced, Core and the three Carry Slots; Free for add-on slots.
+[*] [b]Defaults[/b]: Economy for Expansion, Advanced, Core and the three Carry Slots; Free for add-on slots. In single player, all of them start Free.
 [*] [b]Tied to your account[/b]: all access (card, purchase, rental) works on any watch.
 [/list]
 [h3]Unlock cards[/h3]
@@ -297,7 +298,7 @@ Off by default (swap batteries instead). Admins can allow two ways to charge, bo
 [/list]
 [h3]When Economy isn't available[/h3]
 [list]
-[*] [b]No Economy, an outdated one, or single player[/b]: Economy slots use unlock cards instead; the panel explains.
+[*] [b]No Economy, an outdated one, or single player[/b]: Economy slots use unlock cards instead; the panel explains. Single player starts with them Free.
 [*] [b]Split-screen players 2–4[/b] (multiplayer): no paid access and no unlock cards.
 [/list]
 === ⚙️ Player settings
@@ -332,7 +333,7 @@ Off by default (swap batteries instead). Admins can allow two ways to charge, bo
 [*] [b]Who sees it[/b]: admins and moderators (not gm or players); always in single player.
 [*] [b]Seven pages[/b]:
 [list]
-[*] Overview: presets Relaxed / Standard (recommended) / Hardcore, and current settings
+[*] Overview: presets Relaxed / Standard (recommended) / Hardcore, plus Single-player (listed first) in single player, and current settings
 [*] Features, Slots & Prices, Battery, Obtaining, Zombie Drops
 [*] Cores: Carry Cores on/off, each tier's bonus, drain and whether it appears as loot; the Power-Saver Core's endurance bonuses and keeping the minimap on a dead battery
 [/list]
@@ -399,6 +400,7 @@ The sandbox options are on the five "Minidoracat Map Watch" pages.
 [table]
 [tr][th]Option[/th][th]Default[/th][/tr]
 [tr][td]Enable map watch[/td][td]On[/td][/tr]
+[tr][td]Single-player defaults[/td][td]On: the first time a single-player save loads, options still at their default switch to no watch for the minimap, free paid slots and no unlock cards as loot[/td][/tr]
 [tr][td]Minimap rule[/td][td]Watch required[/td][/tr]
 [tr][td]Feature rules: resource points, navigation (incl. the direction arrow), faction sharing, vehicles & animals, zombie positions, light[/td][td]Module required[/td][/tr]
 [/table]
@@ -570,10 +572,17 @@ Check that:
 [*] Yes, they're tied to your account.
 [*] The modules stay on the old watch, so move them over.
 [/list]
+[h3]Why does the minimap work without a watch in single player?[/h3]
+[list]
+[*] The first time a single-player save loads with Map Watch (a new world, or an old save that just added this mod), it switches to single-player settings: the minimap needs no watch, paid slots are free and unlock cards don't appear. A notice in game lists what changed.
+[*] Only options still at their default change; ones you set when creating the world stay. Other features still need their modules, and battery settings don't change.
+[*] Saves that already had Map Watch aren't changed; to switch, press "Single-player" on the Overview page of the Map Watch settings window.
+[*] To play by the multiplayer rules: turn off "Single-player defaults" in the sandbox when creating the world, or change the settings back later.
+[/list]
 [h3]Paid slots in single player?[/h3]
 [list]
-[*] There's no Economy payment; Economy slots use unlock cards.
-[*] Or set them to Free in the settings window.
+[*] They're free by default in single player.
+[*] If you switch them back to Economy, there's no Economy payment in single player, so they use unlock cards; also turn on "Unlock cards appear as loot".
 [/list]
 [h3]Can I charge batteries with the watch?[/h3]
 [list]

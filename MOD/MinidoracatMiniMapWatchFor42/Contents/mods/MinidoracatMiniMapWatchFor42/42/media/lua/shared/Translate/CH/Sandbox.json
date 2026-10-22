@@ -5,6 +5,8 @@
     "Sandbox_MinidoracatWatchAcquire": "Minidoracat 地圖手錶 - 取得方式",
     "Sandbox_MinidoracatWatch_Enabled": "啟用地圖手錶",
     "Sandbox_MinidoracatWatch_Enabled_tooltip": "關閉後小地圖照舊開放、不需要戴錶，地圖手錶也不會耗電。",
+    "Sandbox_MinidoracatWatch_SoloDefaults": "單人遊戲自動改用單人設定",
+    "Sandbox_MinidoracatWatch_SoloDefaults_tooltip": "只在單人遊戲、存檔第一次載入地圖手錶時套用：還是預設值的選項改成適合單人的值（小地圖不需要錶、付費槽位免費開放、不出現解鎖卡）。建立世界時改過的選項不動。多人伺服器沒有作用。",
     "Sandbox_MinidoracatWatch_MinimapRule": "小地圖規則",
     "Sandbox_MinidoracatWatch_MinimapRule_tooltip": "不需要錶：照舊開放。\n戴錶才能用：要戴著有電的地圖手錶。\n關閉小地圖：所有人都不能開小地圖。",
     "Sandbox_MinidoracatWatch_MinimapRule_option1": "不需要錶",

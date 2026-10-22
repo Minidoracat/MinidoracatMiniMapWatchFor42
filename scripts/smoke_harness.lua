@@ -565,6 +565,41 @@ check(l1 and l1.drops == nil and next(l1.lootItems) == nil, "改成 1：重送�
 SBG.AcquireGuide = nil
 adminCmd(boss, W.CMD_ADMIN_SET, { expected = W.Config.revision, reason = "smoke", changes = { "reset" }, lists = { lootItems = {} } })
 
+F.print("情境十六：單人設定（2026-10-22）→ 單人新存檔第一次載入時，還是多人預設值的項目改成單人值："
+    .. "沒戴錶也能開小地圖、擴充槽與負重槽免費開放、不掉解鎖卡；專用伺服器與玩過地圖手錶的存檔不動")
+local SBS = SandboxVars.MinidoracatWatch
+local savedSolo = {}
+for _, e in ipairs(W.SOLO_PROFILE) do savedSolo[e.key] = SBS[e.key]; SBS[e.key] = e.mp end
+-- 原生沙盒替身：值就是 SandboxVars（單機 set＋toLua 之後兩邊相同）；單機的設定資料夾要存檔名
+getSandboxOptions = function()
+    return {
+        getOptionByName = function(_, n)
+            local k = n:match("^MinidoracatWatch%.(.+)$")
+            if k == nil or SBS[k] == nil then return nil end
+            return { getValue = function() return SBS[k] end }
+        end,
+        set = function(_, n, v) SBS[n:match("^MinidoracatWatch%.(.+)$")] = v end,
+        toLua = function() end,
+    }
+end
+getWorld = getWorld or function() return { getWorld = function() return "smoke" end } end
+F.fire("OnInitGlobalModData", true)
+check(W.minimapRule() == W.RULE_WATCH and W.soloApplied == nil, "專用伺服器（自架 Host 也是）：新世界照樣不改")
+F.mode = "sp"
+F.fire("OnInitGlobalModData", true)
+local solo = F.player("solo", 0)
+check(W.minimapDecision(W.enabled(), W.minimapRule(), false, nil, false) == true and W.slotValid(solo, W.slotById.ext)
+    and W.slotValid(solo, W.slotById.wt1) and not W.lootOn("LootCards") and W.soloApplied ~= nil,
+    "單人新存檔：沒戴錶也能開小地圖，擴充槽、負重槽免費開放，不掉解鎖卡")
+W.soloApplied = nil
+SBS.MinimapRule = 2 -- 玩家之後自己改回「戴錶才能用」
+ModData.getOrCreate(W.SEEN_TABLE)
+F.fire("OnInitGlobalModData", false)
+check(W.minimapRule() == W.RULE_WATCH and W.soloApplied == nil, "重新載入（玩過地圖手錶的存檔）：不再套用，玩家改的留著")
+F.mode = "server"
+getSandboxOptions = nil
+for _, e in ipairs(W.SOLO_PROFILE) do SBS[e.key] = savedSolo[e.key] end
+
 F.print()
 if F.failures > 0 then
     F.print(F.failures .. " 項失敗")

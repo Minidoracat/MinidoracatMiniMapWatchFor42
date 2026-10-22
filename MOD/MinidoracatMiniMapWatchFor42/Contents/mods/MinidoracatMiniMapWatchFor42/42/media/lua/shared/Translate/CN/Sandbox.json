@@ -5,6 +5,8 @@
     "Sandbox_MinidoracatWatchAcquire": "Minidoracat 地图手表 - 获取方式",
     "Sandbox_MinidoracatWatch_Enabled": "启用地图手表",
     "Sandbox_MinidoracatWatch_Enabled_tooltip": "关闭后小地图照旧开放、不需要戴表，地图手表也不会耗电。",
+    "Sandbox_MinidoracatWatch_SoloDefaults": "单人游戏自动改用单人设置",
+    "Sandbox_MinidoracatWatch_SoloDefaults_tooltip": "只在单人游戏、存档第一次加载地图手表时应用：仍是默认值的选项改为适合单人的值（小地图不需要表、付费槽位免费开放、不出现解锁卡）。创建世界时改过的选项不动。多人服务器没有作用。",
     "Sandbox_MinidoracatWatch_MinimapRule": "小地图规则",
     "Sandbox_MinidoracatWatch_MinimapRule_tooltip": "不需要表：照旧开放。\n戴表才能用：要戴着有电的地图手表。\n关闭小地图：所有人都不能打开小地图。",
     "Sandbox_MinidoracatWatch_MinimapRule_option1": "不需要表",

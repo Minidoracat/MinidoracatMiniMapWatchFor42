@@ -4,6 +4,7 @@
 [hr][/hr]
 
 Wear a map watch to use the minimap, and install modules to unlock navigation, zombie detection and more.
+In singleplayer, the first load switches to singleplayer settings: the minimap works without a watch, paid slots are free, and unlock cards no longer appear. Multiplayer servers follow the admin's settings.
 Without this mod installed, the minimap stays fully available as before. Works in singleplayer and multiplayer.
 
 [h2]📦 Requirements[/h2]
@@ -17,7 +18,7 @@ Without this mod installed, the minimap stays fully available as before. Works i
 
 [h2]🚀 Quick start[/h2]
 [olist]
-[*] Loot a map watch or take one from a zombie, then wear it to use the minimap
+[*] Loot a map watch or take one from a zombie, then wear it to use the minimap (singleplayer needs no watch by default)
 [*] Click the "Map Watch" button in the family toolbar to open the panel, or right-click the watch and choose "Open Map Watch"
 [*] Drag modules onto the panel's slots to install them and unlock more features
 [*] When the battery runs out, press "Insert Battery" or "Replace Battery" in the panel
@@ -31,7 +32,7 @@ Without this mod installed, the minimap stays fully available as before. Works i
 [*] [b]Carry and Power-Saver Cores[/b]: army zombies sometimes carry Carry Cores that let you carry more, and the Power-Saver Core saves power and endurance
 [*] [b]Battery and charging[/b]: drains in real time, and admins can allow charging in vehicles or powered buildings
 [*] [b]Status at a glance[/b]: the title bar shows the battery, and important events like a low battery pop up
-[*] [b]Paid slots[/b]: buy or rent them with Economy, or use unlock cards without it
+[*] [b]Paid slots[/b]: buy or rent them with Economy, or use unlock cards without it; free by default in singleplayer
 [*] [b]Admin settings[/b]: tune features, slots, batteries and how watches are obtained in one window
 [/list]
 📖 [b]Getting watches, modules, battery and server settings:[/b] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3816991145]Map Watch Guide[/url]

@@ -8,6 +8,11 @@ VERSION = 1,
 option MinidoracatWatch.Enabled
 {type = boolean, default = true, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_Enabled,}
 
+/* 單人遊戲第一次載入地圖手錶時，把還是多人預設值的選項改成單人設定（W.SOLO_PROFILE，server/MinidoracatWatch_Admin.lua 的
+   A.applySolo）；玩家建立世界時改過的不動。只在建立世界時有意義，設定視窗不放；多人伺服器沒有作用（2026-10-22 使用者裁定） */
+option MinidoracatWatch.SoloDefaults
+{type = boolean, default = true, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_SoloDefaults,}
+
 /* 小地圖規則：1 不需要錶、2 戴錶才能用、3 關閉小地圖 */
 option MinidoracatWatch.MinimapRule
 {type = enum, numValues = 3, default = 2, page = MinidoracatWatchFeatures, translation = MinidoracatWatch_MinimapRule,}

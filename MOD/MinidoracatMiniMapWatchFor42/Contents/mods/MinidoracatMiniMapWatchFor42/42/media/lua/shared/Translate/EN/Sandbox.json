@@ -5,6 +5,8 @@
     "Sandbox_MinidoracatWatchAcquire": "Minidoracat Map Watch - Obtaining",
     "Sandbox_MinidoracatWatch_Enabled": "Enable map watch",
     "Sandbox_MinidoracatWatch_Enabled_tooltip": "When off, the minimap stays open without a watch and map watches don't drain.",
+    "Sandbox_MinidoracatWatch_SoloDefaults": "Single-player defaults",
+    "Sandbox_MinidoracatWatch_SoloDefaults_tooltip": "Single player only, the first time a save loads with Map Watch: options still at their default switch to single-player values (the minimap needs no watch, paid slots are free, unlock cards don't appear). Options you changed when creating the world stay as they are. No effect on multiplayer servers.",
     "Sandbox_MinidoracatWatch_MinimapRule": "Minimap rule",
     "Sandbox_MinidoracatWatch_MinimapRule_tooltip": "No watch needed: the minimap stays open.\nWatch required: wear a map watch with charge.\nMinimap off: nobody can open the minimap.",
     "Sandbox_MinidoracatWatch_MinimapRule_option1": "No watch needed",

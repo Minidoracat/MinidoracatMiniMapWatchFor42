@@ -5,6 +5,8 @@
     "Sandbox_MinidoracatWatchAcquire": "Minidoracat Montre-carte - Obtention",
     "Sandbox_MinidoracatWatch_Enabled": "Activer la montre-carte",
     "Sandbox_MinidoracatWatch_Enabled_tooltip": "Si désactivé, la mini-carte reste ouverte sans montre et les montres-cartes ne se déchargent pas.",
+    "Sandbox_MinidoracatWatch_SoloDefaults": "Valeurs par défaut en solo",
+    "Sandbox_MinidoracatWatch_SoloDefaults_tooltip": "En solo uniquement, la première fois qu'une sauvegarde se charge avec la montre-carte : les options encore à leur valeur par défaut passent à des valeurs adaptées au solo (la mini-carte ne nécessite pas de montre, les emplacements payants sont gratuits, les cartes de déverrouillage n'apparaissent pas). Les options modifiées lors de la création du monde restent inchangées. Aucun effet sur les serveurs multijoueurs.",
     "Sandbox_MinidoracatWatch_MinimapRule": "Règle de la mini-carte",
     "Sandbox_MinidoracatWatch_MinimapRule_tooltip": "Sans montre : la mini-carte reste ouverte.\nMontre requise : portez une montre-carte chargée.\nMini-carte désactivée : personne ne peut ouvrir la mini-carte.",
     "Sandbox_MinidoracatWatch_MinimapRule_option1": "Sans montre",

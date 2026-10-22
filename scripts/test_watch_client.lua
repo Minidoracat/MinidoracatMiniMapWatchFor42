@@ -1644,4 +1644,29 @@ MinidoracatUI = nil
 F.load("client/MinidoracatWatch_Client.lua")
 check(MinidoracatWatchClient.docked == false, "沒有 UI 框架：照樣載入")
 
+-- ===== 單人設定的通知（2026-10-22）：這次載入改了值，進遊戲後跳一次 Toast（停 10 秒），只列改了的那幾類 =====
+do
+    F.installUI(15) -- 上一段把框架拿掉了
+    local body = C.soloText({ "SlotExt", "MinimapRule", "SlotWt2", "LootCards" })
+    local a, b, c = body:find("Solo_Minimap", 1, true), body:find("Solo_Slots", 1, true), body:find("Solo_Cards", 1, true)
+    check(body:find("IGUI_MinidoracatWatch_Solo_Body|", 1, true) == 1 and a and b and c and a < b and b < c
+        and select(2, body:gsub("Solo_Slots", "")) == 1, "通知內文：小地圖、槽位、解鎖卡照固定順序，槽位只寫一次")
+    check(not C.soloText({ "SlotAdv" }):find("Solo_Minimap", 1, true), "只改了槽位：不寫小地圖")
+    local shown = {}
+    local realShow = C.ui().Toast.show
+    C.ui().Toast.show = function(o) shown[#shown + 1] = o end
+    W.soloApplied = { "MinimapRule" }
+    C.soloStart()
+    F.fire("OnTick")
+    F.fire("OnTick")
+    check(#shown == 1 and shown[1].holdMs == 10000 and shown[1].title == "IGUI_MinidoracatWatch_Solo_Title"
+        and shown[1].message:find("Solo_Minimap", 1, true) ~= nil and W.soloApplied == nil,
+        "改了值：進遊戲跳一次、停 10 秒，之後不再跳")
+    shown = {}
+    C.soloStart()
+    F.fire("OnTick")
+    check(#shown == 0, "沒改任何值：不跳")
+    C.ui().Toast.show = realShow
+end
+
 F.finish("test_watch_client")

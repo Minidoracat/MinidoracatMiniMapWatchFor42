@@ -5,6 +5,8 @@
     "Sandbox_MinidoracatWatchAcquire": "Minidoracat マップウォッチ - 入手方法",
     "Sandbox_MinidoracatWatch_Enabled": "マップウォッチを有効にする",
     "Sandbox_MinidoracatWatch_Enabled_tooltip": "オフにすると、ウォッチなしでミニマップを使え、マップウォッチの電池も減りません。",
+    "Sandbox_MinidoracatWatch_SoloDefaults": "シングルプレイ用の設定を自動で適用",
+    "Sandbox_MinidoracatWatch_SoloDefaults_tooltip": "シングルプレイで、セーブデータが初めてマップウォッチを読み込んだときだけ適用されます：まだ初期設定のままの項目をシングルプレイ向けの値に変えます（ミニマップはウォッチ不要、有料スロットは無料で開放、アンロックカードは出現しない）。ワールド作成時に変更した項目はそのままです。マルチプレイのサーバーでは効果がありません。",
     "Sandbox_MinidoracatWatch_MinimapRule": "ミニマップのルール",
     "Sandbox_MinidoracatWatch_MinimapRule_tooltip": "ウォッチ不要：これまで通り使えます。\nウォッチ必須：電池のあるマップウォッチを着ける必要があります。\nミニマップ無効：誰もミニマップを開けません。",
     "Sandbox_MinidoracatWatch_MinimapRule_option1": "ウォッチ不要",

@@ -121,12 +121,12 @@ function F.item(fullType)
 end
 -- 物品類型不存在時 instanceItem 回 nil（InventoryItemFactory.CreateItem）：測試把類型放進 missingTypes
 F.missingTypes = {}
--- 全域 ModData（ModData.java:20）
+-- 全域 ModData（ModData.java:16-22）
 F.globalModData = {}
 ModData = { getOrCreate = function(tag)
     F.globalModData[tag] = F.globalModData[tag] or {}
     return F.globalModData[tag]
-end }
+end, exists = function(tag) return F.globalModData[tag] ~= nil end }
 F.RIGHT = "MinidoracatWatch.MapWatch_ValuTech_Right"
 F.LEFT = "MinidoracatWatch.MapWatch_ValuTech_Left"
 function instanceItem(fullType)

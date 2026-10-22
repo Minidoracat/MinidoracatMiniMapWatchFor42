@@ -362,9 +362,10 @@ local function buildOverview(S, p)
     y = para(p, T("Enable_desc"), 0, y + CH + 2, w) + GAP
     text(p, T("Presets"), 0, y, "text")
     y = para(p, T("Presets_desc"), 0, y + FH + 4, w) + 4
-    local cw = math.floor((w - 2 * GAP) / 3)
+    local presets = M.presets() -- 單人遊戲多一個「單人」：一列四個
+    local cw = math.floor((w - (#presets - 1) * GAP) / #presets)
     local maxY = y
-    for i, id in ipairs(M.PRESETS) do
+    for i, id in ipairs(presets) do
         local x = (i - 1) * (cw + GAP)
         button(p, x, y, T("Preset_" .. id), function()
             M.applyPreset(S.draft, id)

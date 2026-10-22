@@ -5,6 +5,8 @@
     "Sandbox_MinidoracatWatchAcquire": "Minidoracat Kartenuhr - Beschaffung",
     "Sandbox_MinidoracatWatch_Enabled": "Kartenuhr aktivieren",
     "Sandbox_MinidoracatWatch_Enabled_tooltip": "Wenn aus, bleibt die Minimap ohne Uhr offen und Kartenuhren entladen sich nicht.",
+    "Sandbox_MinidoracatWatch_SoloDefaults": "Einzelspieler-Standardwerte",
+    "Sandbox_MinidoracatWatch_SoloDefaults_tooltip": "Nur im Einzelspielermodus, wenn ein Spielstand zum ersten Mal mit der Kartenuhr geladen wird: Optionen, die noch auf ihrem Standardwert stehen, wechseln auf Einzelspieler-Werte (die Minimap braucht keine Uhr, bezahlte Slots sind kostenlos, Freischaltkarten erscheinen nicht). Optionen, die du beim Erstellen der Welt geändert hast, bleiben unverändert. Keine Wirkung auf Mehrspieler-Servern.",
     "Sandbox_MinidoracatWatch_MinimapRule": "Minimap-Regel",
     "Sandbox_MinidoracatWatch_MinimapRule_tooltip": "Keine Uhr nötig: Die Minimap bleibt offen.\nUhr nötig: Trage eine geladene Kartenuhr.\nMinimap aus: Niemand kann die Minimap öffnen.",
     "Sandbox_MinidoracatWatch_MinimapRule_option1": "Keine Uhr nötig",

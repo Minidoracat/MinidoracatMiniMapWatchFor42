@@ -1058,4 +1058,83 @@ do
     resetSandbox()
 end
 
+-- ===== 12. 單人設定（2026-10-22）：單人存檔第一次載入時，還是多人預設值的項目改成單人值 =====
+do
+    local AUDIT = "MinidoracatWatch/sp_Muldraugh__KY/" .. A.AUDIT_FILE
+    local function nat(k) return NATIVE["MinidoracatWatch." .. k] end
+    local function load(isNew, seen)
+        F.globalModData[W.SEEN_TABLE] = seen and {} or nil
+        W.soloApplied, FS[AUDIT], toLuaCalls = nil, nil, 0
+        F.fire("OnInitGlobalModData", isNew)
+    end
+    local bad = {}
+    for _, e in ipairs(W.SOLO_PROFILE) do
+        local o = options[e.key]
+        if not o or o.default ~= e.mp then bad[#bad + 1] = e.key .. " mp" end
+        if e.sp == e.mp or type(e.sp) ~= type(e.mp) or (o and o.type == "enum" and (e.sp < 1 or e.sp > o.numValues)) then
+            bad[#bad + 1] = e.key .. " sp"
+        end
+    end
+    check(#bad == 0 and #W.SOLO_PROFILE == 8, "solo profile: mp is the sandbox default, sp is a valid other value: "
+        .. table.concat(bad, ", "))
+
+    F.mode = "sp"
+    resetSandbox()
+    load(true, false)
+    local all = true
+    for _, e in ipairs(W.SOLO_PROFILE) do
+        if nat(e.key) ~= e.sp or SB[e.key] ~= e.sp then all = false end
+    end
+    check(all and toLuaCalls == 1 and #W.soloApplied == 8, "new single-player world: every profile option switches, SandboxVars follows")
+    check(W.minimapDecision(W.enabled(), W.minimapRule(), false, nil, false) == true and W.slotMode(W.slotById.ext) == "free"
+        and W.slotMode(W.slotById.wt3) == "free" and W.lootOn("LootCards") == false,
+        "after it: minimap without a watch, paid slots free, no unlock cards in loot")
+    local log = FS[AUDIT] or ""
+    check(log:find("] single-player (revision", 1, true) ~= nil and log:find("  - MinimapRule: 2 -> 1", 1, true) ~= nil
+        and log:find("  - LootCards: true -> false", 1, true) ~= nil, "audit log names each change")
+
+    resetSandbox()
+    NATIVE["MinidoracatWatch.MinimapRule"], NATIVE["MinidoracatWatch.SlotExt"] = 3, 2
+    load(true, false)
+    check(nat("MinimapRule") == 3 and nat("SlotExt") == 2 and nat("SlotAdv") == 1 and nat("LootCards") == false
+        and #W.soloApplied == 6, "options changed when creating the world stay as they are")
+    resetSandbox()
+    load(false, false)
+    check(nat("MinimapRule") == 1 and W.soloApplied ~= nil, "save that never had the mod (no seen table): applies")
+    resetSandbox()
+    load(false, true)
+    check(nat("MinimapRule") == 2 and nat("SlotExt") == 3 and W.soloApplied == nil and toLuaCalls == 0 and FS[AUDIT] == nil,
+        "save that already ran the mod: untouched")
+    resetSandbox()
+    NATIVE["MinidoracatWatch.SoloDefaults"] = false
+    load(true, false)
+    check(nat("MinimapRule") == 2 and W.soloApplied == nil, "SoloDefaults off: untouched")
+    resetSandbox()
+    SB.Enabled = false
+    load(true, false)
+    check(nat("MinimapRule") == 2 and W.soloApplied == nil, "map watch disabled: untouched")
+    resetSandbox()
+    for _, e in ipairs(W.SOLO_PROFILE) do NATIVE["MinidoracatWatch." .. e.key] = e.sp end
+    load(true, false)
+    check(W.soloApplied == nil and toLuaCalls == 0 and FS[AUDIT] == nil, "nothing left to change: no toLua, no log, no notice")
+    resetSandbox()
+    F.mode = "server"
+    load(true, false)
+    check(nat("MinimapRule") == 2 and W.soloApplied == nil and FS[AUDIT] == nil, "dedicated server (Host too): untouched")
+
+    -- 快速套用「單人」：只在單人遊戲列出、排第一個；按下去全部改成單人值，其他不動
+    F.mode = "sp"
+    check(#M.presets() == 4 and M.presets()[1] == "solo", "single player: four presets, solo first")
+    F.mode = "client"
+    check(#M.presets() == 3 and M.presets()[1] == "easy", "multiplayer client: the three presets as before")
+    F.mode = "server"
+    local d = M.copy(base)
+    d.sb.MinimapRule, d.sb.SlotExt, d.sb.FullHours = 3, 2, 48
+    check(M.applyPreset(d, "solo") and d.sb.MinimapRule == 1 and d.sb.SlotExt == 1 and d.sb.SlotWt3 == 1
+        and d.sb.LootCards == false and d.sb.FullHours == 48 and d.sb.RuleNav == 3,
+        "preset solo: every profile option to its single-player value, nothing else")
+    check(M.T("Preset_solo_desc"):find("小地圖不需要錶", 1, true) ~= nil, "preset solo text (real CH translation)")
+    resetSandbox()
+end
+
 F.finish("test_watch_admin")

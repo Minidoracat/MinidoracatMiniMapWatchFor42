@@ -130,6 +130,21 @@ function W.acceptsCard(slot)
     return mode == "card" or (mode == "econ" and W.slotCardAlso(slot))
 end
 
+-- ===== 單人設定（2026-10-22 使用者裁定）=====
+-- 單人存檔第一次載入地圖手錶時，沙盒值還是 mp（多人預設）的項目改成 sp；玩家建立世界時改過的不動
+-- （server/MinidoracatWatch_Admin.lua 的 A.applySolo）。設定視窗的「單人」快速套用（AdminModel M.applyPreset）也讀這份。
+-- mp 必須等於 sandbox-options.txt 的預設值（test_watch_admin.lua 對照）。
+W.SOLO_PROFILE = {
+    { key = "MinimapRule", mp = 2, sp = 1 },        -- 戴錶才能用 → 不需要錶
+    { key = "SlotExt", mp = 3, sp = 1 },            -- 經濟系統 → 免費開放（單人沒有 Economy，會退回解鎖卡）
+    { key = "SlotAdv", mp = 3, sp = 1 },
+    { key = "SlotCore", mp = 3, sp = 1 },
+    { key = "SlotWt1", mp = 3, sp = 1 },
+    { key = "SlotWt2", mp = 3, sp = 1 },
+    { key = "SlotWt3", mp = 3, sp = 1 },
+    { key = "LootCards", mp = true, sp = false },   -- 槽位免費後，解鎖卡沒有用途
+}
+
 function W.needScrewdriver() return W.sandbox("NeedScrewdriver", true) ~= false end
 
 function W.radius(key, default)

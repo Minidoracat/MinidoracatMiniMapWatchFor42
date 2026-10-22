@@ -17,7 +17,7 @@ M.T = T
 local B, I, E = "bool", "int", "enum"
 M.FIELDS = {
     -- features
-    { "Enabled", B, nil, nil, true }, { "MinimapRule", E, 1, 3, 2 },
+    { "Enabled", B, nil, nil, true }, { "SoloDefaults", B, nil, nil, true }, { "MinimapRule", E, 1, 3, 2 },
     { "RulePoi", E, 1, 4, 3 }, { "RuleNav", E, 1, 4, 3 }, { "RuleShare", E, 1, 4, 3 }, { "RuleScan", E, 1, 4, 3 },
     { "RuleZombie", E, 1, 4, 3 }, { "RuleLight", E, 1, 2, 1 }, { "ScanRadius", I, 1, 1000, 60 },
     { "DetectRadius", I, 1, 1000, 40 }, { "MilDetectRadius", I, 1, 1000, 80 }, { "CommRange", I, 1, 50000, 2000 },
@@ -105,6 +105,13 @@ M.DRAINS = { { "ledger", "DrainLedger" }, { "gps", "DrainGPS" }, { "comm", "Drai
     { "longcomm", "DrainLongComm" }, { "relay", "DrainRelay" } }
 M.LOOT_STYLES = { "ValuTech", "Paws", "Nexus", "Spiffo", "Ranger", "Luthex", "BB3000" } -- 沙盒 Loot<款>
 M.PRESETS = { "easy", "standard", "hard" }
+-- 「單人」（W.SOLO_PROFILE）只在單人遊戲列出，排第一個（2026-10-22 使用者裁定）；開視窗時才判斷：
+-- 主選單時 isClient() 也是 false，載入檔案時算不準
+local WITH_SOLO = { "solo", "easy", "standard", "hard" }
+function M.presets()
+    if not isClient() and not isServer() then return WITH_SOLO end
+    return M.PRESETS
+end
 
 -- ===== 讀目前的值 =====
 -- 原生沙盒值優先（單機的原版沙盒介面只 set 原生選項、不更新 SandboxVars，SandboxOptions.java:572-582）
@@ -576,6 +583,10 @@ end
 
 -- ===== 快速方案（設計稿 PRESETS）=====
 function M.applyPreset(s, id)
+    if id == "solo" then -- 單人：W.SOLO_PROFILE 全部改成單人值（管理員自己按的，不看現在是不是多人預設）
+        for _, e in ipairs(W.SOLO_PROFILE) do s.sb[e.key] = e.sp end
+        return true
+    end
     local hours = { easy = 168, standard = 72, hard = 24 }
     if not hours[id] then return false end
     s.sb.FullHours = hours[id]

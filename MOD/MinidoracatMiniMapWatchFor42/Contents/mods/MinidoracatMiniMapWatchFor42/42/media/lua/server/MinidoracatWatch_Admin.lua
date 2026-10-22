@@ -223,6 +223,34 @@ function A.audit(name, rev, reason, changes)
     return ok
 end
 
+-- ===== 單人設定（2026-10-22 使用者裁定）=====
+-- 單人存檔第一次載入地圖手錶時（新世界，或存檔裡還沒有地圖手錶每秒建立的 W.SEEN_TABLE＝這次才加入本 MOD），
+-- 把沙盒值還是多人預設的項目改成單人設定（W.SOLO_PROFILE）；玩家建立世界時改過的不動，沙盒 SoloDefaults 關掉就不做。
+-- 玩過地圖手錶的單人存檔不動（使用者裁定；要改就用設定視窗的「單人」快速套用）；專用伺服器與自架（Host）不套用。
+-- OnInitGlobalModData 的參數＝新世界（GlobalModData.java:51-55；沒有 map_ver.bin、也不是 MP 客戶端，
+-- GameLoadingState.java:234-256）；這時存檔的沙盒已經載入（SandboxOptions.load 在 IsoWorld.java:1896，
+-- GlobalModData.init 在 :2009）。寫法同設定視窗的單機套用（AdminModel M.applySandbox）：set＋toLua，存檔時寫進 map_sand.bin。
+function A.applySolo(isNewGame)
+    if isServer() or not W.enabled() or W.nativeSandbox("SoloDefaults", true) == false then return end
+    if isNewGame ~= true and ModData.exists(W.SEEN_TABLE) then return end
+    local opts = getSandboxOptions()
+    local keys, lines = {}, {}
+    for _, e in ipairs(W.SOLO_PROFILE) do
+        local name = "MinidoracatWatch." .. e.key
+        local o = opts:getOptionByName(name)
+        if o and o:getValue() == e.mp then
+            opts:set(name, e.sp)
+            keys[#keys + 1] = e.key
+            lines[#lines + 1] = e.key .. ": " .. tostring(e.mp) .. " -> " .. tostring(e.sp)
+        end
+    end
+    if #keys == 0 then return end
+    opts:toLua()
+    W.soloApplied = keys -- 用戶端進遊戲後跳一次 Toast（client/MinidoracatWatch_Client.lua）
+    A.audit("single-player", Cfg.revision, "single-player defaults on first load", lines)
+end
+Events.OnInitGlobalModData.Add(A.applySolo)
+
 -- ===== 套用 =====
 -- args＝{ expected = 版本, reason = 原因, changes = { "原本 → 改成" 文字… }, lists = { 區段名 = 原始值 }?, sandbox = 沙盒改了幾項 }
 -- 回 { ok = true, rev } 或 { ok = false, code = denied|bad_request|reason|conflict|invalid|write_failed, rev?, problems? }
