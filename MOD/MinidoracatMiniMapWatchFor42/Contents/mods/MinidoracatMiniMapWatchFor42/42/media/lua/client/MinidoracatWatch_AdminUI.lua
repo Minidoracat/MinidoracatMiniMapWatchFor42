@@ -362,18 +362,29 @@ local function buildOverview(S, p)
     y = para(p, T("Enable_desc"), 0, y + CH + 2, w) + GAP
     text(p, T("Presets"), 0, y, "text")
     y = para(p, T("Presets_desc"), 0, y + FH + 4, w) + 4
-    local presets = M.presets() -- 單人遊戲多一個「單人」：一列四個
-    local cw = math.floor((w - (#presets - 1) * GAP) / #presets)
-    local maxY = y
+    local presets = M.presets() -- 單人遊戲多一個「單人」，排第一個
+    -- 一列排得下就排一列；有標題放不下就每列兩個，免得按鈕截字（家族翻譯包字型的英文「Standard (recommended)」
+    -- 約 199px，四欄每格只剩約 183px）。20＝框架按鈕左右內距（UI 框架 Controls.lua PAD_X）
+    local cols = #presets
+    local cw = math.floor((w - (cols - 1) * GAP) / cols)
+    for _, id in ipairs(presets) do
+        if cols > 2 and measure(T("Preset_" .. id)) + 20 > cw then
+            cols = 2
+            cw = math.floor((w - GAP) / 2)
+        end
+    end
+    local rowY, maxY = y, y
     for i, id in ipairs(presets) do
-        local x = (i - 1) * (cw + GAP)
-        button(p, x, y, T("Preset_" .. id), function()
+        local col = (i - 1) % cols
+        if col == 0 and i > 1 then rowY = maxY + GAP end
+        local x = col * (cw + GAP)
+        button(p, x, rowY, T("Preset_" .. id), function()
             M.applyPreset(S.draft, id)
             AU.syncAll(S)
             S.msg = T("PresetApplied", T("Preset_" .. id))
             changed(S)
         end, id == "standard" and "primary" or "normal", cw)
-        maxY = math.max(maxY, para(p, T("Preset_" .. id .. "_desc"), x, y + CH + 4, cw))
+        maxY = math.max(maxY, para(p, T("Preset_" .. id .. "_desc"), x, rowY + CH + 4, cw))
     end
     y = maxY + GAP
     text(p, T("Summary"), 0, y, "text")

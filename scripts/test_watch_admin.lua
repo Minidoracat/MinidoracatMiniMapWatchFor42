@@ -963,6 +963,32 @@ do
         "acquire tab: back to x1 removes the entry, nothing to send")
     c4.LootModules:setChecked(false)
     check(ecoRow.dd.enabled == false and ecoRow.res.text == "上面的開關關著", "acquire tab: switching modules off disables their rows")
+    -- ===== 總覽的快速套用（2026-10-22）：單人遊戲四個方案，「單人」排第一；標題都放得下就排一列，
+    -- 最長的放不下就每列兩個，不讓按鈕截字（家族翻譯包字型的英文「Standard (recommended)」比四欄的格子寬）=====
+    local function presetButtons()
+        AU.state = nil
+        local S5 = AU.build(0, F.player("admin"), st)
+        local ids, out = {}, {}
+        for _, id in ipairs(M.presets()) do ids[M.T("Preset_" .. id)] = id end
+        for _, b in ipairs(S5.panes.overview:getChildren()) do
+            if ids[b.title] then out[#out + 1] = { id = ids[b.title], x = b.x, y = b.y } end
+        end
+        return out, S5.panes.overview.width
+    end
+    local one, pw = presetButtons()
+    local step = math.floor((pw - 3 * 8) / 4) + 8 -- AdminUI GAP＝8
+    local oneRow = #one == 4 and one[1].id == "solo"
+    for i, b in ipairs(one) do oneRow = oneRow and b.y == one[1].y and b.x == (i - 1) * step end
+    check(oneRow, "overview: single player gets four presets, single-player first, in one row when every title fits")
+    local stdKey = "IGUI_MinidoracatWatch_Admin_Preset_standard"
+    local savedStd = TR[stdKey]
+    TR[stdKey] = string.rep("標", math.floor(pw / 28) + 1) -- 比四欄的格子寬（替身每字 7px）
+    local two = presetButtons()
+    TR[stdKey] = savedStd
+    local half = math.floor((pw - 8) / 2) + 8
+    check(#two == 4 and two[1].x == 0 and two[2].x == half and two[3].x == 0 and two[4].x == half
+        and two[1].y == two[2].y and two[3].y == two[4].y and two[3].y > two[1].y,
+        "overview: a title too wide for four columns puts two presets per row")
     AU.state = nil
     MinidoracatUI = nil
     F.mode = "server"
