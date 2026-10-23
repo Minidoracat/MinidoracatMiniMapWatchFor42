@@ -35,6 +35,19 @@ if PZAPI and PZAPI.ModOptions then
     -- 穿長袖時顯示地圖手錶（預設勾；使用者 2026-10-23 裁定玩家能自己調）
     opts:addTickBox("OverSleeve", "IGUI_MinidoracatWatch_OverSleeve", true,
         "IGUI_MinidoracatWatch_OverSleeve_tooltip")
+    -- 原版主選單套用可能把 ModOptions.ini 清成 0 byte：讓 UI 框架（rev 23 modOptionsBackup）從它的備份補回。
+    -- 放 OnGameBoot：載入時框架檔不一定先跑（本檔沒 require 框架）；OnGameBoot 仍早於 MainOptions:create 的 load，
+    -- 補回的值會被那次 load 套上（多人進服 ResetLua 也是先 OnGameBoot 再 OnMainMenuEnter，Core.java:3962-3963）
+    Events.OnGameBoot.Add(function()
+        local UI = MinidoracatUI and MinidoracatUI.v1
+        if UI and UI.API_MAJOR == 1 and type(UI.API_REVISION) == "number" and UI.API_REVISION >= 23
+                and UI.CAPABILITIES and UI.CAPABILITIES.modOptionsBackup and UI.ModOptionsBackup then
+            local restored = UI.ModOptionsBackup.protect(opts)
+            if type(restored) == "number" and restored > 0 then
+                W.log("restored " .. restored .. " settings from the backup (ModOptions.ini was wiped)")
+            end
+        end
+    end)
 end
 
 local function opt(id, default)

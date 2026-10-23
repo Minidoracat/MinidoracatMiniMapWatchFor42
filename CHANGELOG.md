@@ -12,6 +12,14 @@
 
 格式基於 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/)，版本號遵循 `{PZ版本}-{主版本}.{次版本}.{修訂}` 格式。
 
+## [Unreleased]
+
+### 修正
+
+- **在主選單的「選項」按了套用之後，地圖手錶的設定進遊戲全部回到預設**（音量、定時掃描提示音、工具列按鈕、穿長袖時顯示地圖手錶）：這是原版的問題，在某些情況下主選單套用會把所有 MOD 的設定清空。現在會自動補回你上次的設定。需要 Minidoracat UI Library 更新到含這項修正的版本後才生效；更新前照舊會被清空。
+
+> 技術要點：設定建好後呼叫 UI 框架的 `UI.ModOptionsBackup.protect`（rev 23，旗標 `modOptionsBackup`）；備份檔在 `Zomboid/Lua/MinidoracatUI/ModOptions_MinidoracatWatch.ini`，補回時 console 會印一行 `restored N settings from the backup`。
+
 ## [42.21.0-0.7.0] - 2026-10-23
 
 ### 變更
