@@ -629,10 +629,14 @@ do
         "襯衫袖子是貼圖：顯示組照原模型、不換套袖")
     check(B.exclusive[L.LEFT .. "|" .. L.LEFT_COVERED] and B.exclusive[L.RIGHT .. "|" .. L.RIGHT_COVERED]
         and not B.exclusive[L.LEFT .. "|" .. L.RIGHT_COVERED], "同一隻手的兩組互斥，左右手不互斥")
+    -- 走路不打斷的表在 OnInitGlobalModData 才補：載入時被別的 MOD 整張換掉也留得住；跑兩次不重複、不動別人的
+    ISWearClothing.WalkBodyLocations = { ItemBodyLocation.LEFT_WRIST }
+    W.wristRules(); W.wristRules()
     local walk = {}
-    for _, v in ipairs(ISWearClothing.WalkBodyLocations) do walk[v] = true end
-    check(walk[L.LEFT] and walk[L.LEFT_COVERED] and walk[L.RIGHT] and walk[L.RIGHT_COVERED],
-        "四個部位都在走路不打斷的表裡（照原版手腕）")
+    for _, v in ipairs(ISWearClothing.WalkBodyLocations) do walk[v] = (walk[v] or 0) + 1 end
+    check(walk[L.LEFT] == 1 and walk[L.LEFT_COVERED] == 1 and walk[L.RIGHT] == 1 and walk[L.RIGHT_COVERED] == 1
+        and walk[ItemBodyLocation.LEFT_WRIST] == 1 and #ISWearClothing.WalkBodyLocations == 5,
+        "走路不打斷：表被整張換掉後照樣補上四個部位（照原版手腕），跑兩次不重複")
 
     -- 互斥：一般照原版手腕；Pack Mule 的手錶選項開著時照它對原版錶的規則
     local function ex(a, b) return B.exclusive[a .. "|" .. b] == true end

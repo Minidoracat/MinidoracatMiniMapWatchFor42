@@ -60,19 +60,25 @@ do
         G:setHideModel(ItemBodyLocation[k], L.LEFT_COVERED); G:setHideModel(ItemBodyLocation[k], L.RIGHT_COVERED)
     end
     G:setExclusive(L.LEFT, L.LEFT_COVERED); G:setExclusive(L.RIGHT, L.RIGHT_COVERED)
-    -- 原版手腕在這張表裡：戴上、拿下、換手時走路不會打斷（ISWearClothing.lua:176-213；換手與拿下也查它）
-    local walk = ISWearClothing.WalkBodyLocations
-    for _, k in ipairs(W.LOC_ORDER) do walk[#walk + 1] = L[k] end
 end
 
 -- 互斥要看沙盒，放在 OnInitGlobalModData（伺服器、客戶端、單機都會跑：IsoWorld.java:2009 → GlobalModData.java:54；
 -- 載入世界前 BodyLocations.reset 清掉整組再由各檔重建，IngameState.java:990，規則不會跨存檔累積）。
+-- 走路不打斷的部位表也在這裡補（原版手腕在表裡：戴上、拿下、換手時走路不會打斷，ISWearClothing.lua:176-213）。
+-- 有 MOD 在載入時把整張表換掉（Equip Clothing While Moving，Workshop 3446510982，它的檔案比我們晚執行），載入時加的
+-- 會被洗掉；這個事件在所有 Lua 載入之後。同一個 Lua 狀態可能跑不只一次，已經在表裡的不重複加。
 -- 一般：照原版手腕，和同一隻手的原版手腕（原版錶、手環）只能戴一個、和前臂護具互斥（BodyLocations.lua:580-581）。
 -- Pack Mule（Workshop 3540903327）的「手錶」選項開著：它把原版錶搬到 Mule:LEFT_WATCH／RIGHT_WATCH，可以和護臂一起戴
 -- （NewParams_Mule.lua:94-131）。地圖手錶照它對原版錶的規則：和它的手錶位同一隻手只能戴一支、不和護臂互斥；
 -- 它的 Exclusion1 開著時，再和它的手環位與原版手腕互斥（NewParams_Mule.lua:133-146）。
 function W.wristRules()
     local G, L, M = BodyLocations.getGroup("Human"), W.LOC, MuleBodyLocations
+    local walk = ISWearClothing.WalkBodyLocations
+    for _, k in ipairs(W.LOC_ORDER) do
+        local found = false
+        for i = 1, #walk do found = found or walk[i] == L[k] end
+        if not found then walk[#walk + 1] = L[k] end
+    end
     local sb = SandboxVars and SandboxVars.B42PackMule
     local mule = M ~= nil and M.LEFT_WATCH ~= nil and M.RIGHT_WATCH ~= nil and sb ~= nil and sb.Watch == true
     local sides = {
