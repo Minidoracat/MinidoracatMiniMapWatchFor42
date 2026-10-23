@@ -629,6 +629,8 @@
     "IGUI_MinidoracatWatch_Sound_ScanPing_old": "Daha yeni bir Minidoracat MiniMap gerekir: bu sürüm sinyal sesini çalmaz.",
     "IGUI_MinidoracatWatch_ShowButton": "Harita Saati düğmesini göster",
     "IGUI_MinidoracatWatch_ShowButton_tooltip": "Tıklandığında Harita Saati panelini açıp kapatan ekran düğmesi. Mod ailesi araç çubuğunda durur. Gizliyken paneli açmak için envanterinizdeki harita saatine sağ tıklayıp \"Harita Saatini Aç\" seçeneğini seçin.",
+    "IGUI_MinidoracatWatch_OverSleeve": "Harita Saatlerini uzun kolların üstünde göster",
+    "IGUI_MinidoracatWatch_OverSleeve_tooltip": "Açık: Harita Saati kolun üstüne takılır, ceket ya da kazakla da görünür. Kapalı: uzun kollar onu orijinal oyundaki saatler gibi örter. Yalnızca sizin ekranınızı değiştirir, tüm Harita Saatlerine uygulanır.",
     "IGUI_MinidoracatWatch_Admin_Shop": "Ekonomi Merkezi mağazası",
     "IGUI_MinidoracatWatch_Admin_Shop_desc": "Harita saatlerini, modülleri ve pilleri Ekonomi Merkezi'nde satışa koyun, böylece oyuncular satın alabilir. Bu, Ekonomi Merkezi mağaza sayfasını henüz satılmayan her eşya için bir taslakla açar; fiyatları siz belirlersiniz ve siz uygulayana kadar hiçbir şey satışa çıkmaz.",
     "IGUI_MinidoracatWatch_Admin_ShopBtn": "Ekonomi Merkezi'nde Sat",

@@ -418,6 +418,54 @@ gearTick.set(true)
 check(spec4.isAvailable() == true and gearTick.get() == true and F.dockRefreshes == 2
     and iniHas("tickbox|MinidoracatWatch|ShowButton|true"), "齒輪勾回來：立刻恢復、寫回 ModOptions.ini")
 
+-- ===== 穿長袖時顯示地圖手錶（OverSleeve，同一頁，預設勾）=====
+-- 只換本機的物品腳本部位（W.setWristCovered）；有改才讓本機玩家與 MP 遠端玩家重組模型
+local L = W.LOC
+local function wrists()
+    local sm, show, covered = getScriptManager(), 0, 0
+    for _, s in ipairs(W.STYLES) do
+        for _, side in ipairs({ "Left", "Right" }) do
+            local loc = sm:FindItem("MinidoracatWatch.MapWatch_" .. s .. "_" .. side):getBodyLocation()
+            if loc == L[side:upper()] then show = show + 1 elseif loc == L[side:upper() .. "_COVERED"] then covered = covered + 1 end
+        end
+    end
+    return show == 14 and "show" or covered == 14 and "covered" or "mixed"
+end
+local function resets() return (alice.resets or 0) + (bob.resets or 0) * 100 end
+local page4 = MO4.Dict.MinidoracatWatch
+local sleeveOpt = page4:getOption("OverSleeve")
+local sleeveTick = MinidoracatWatchSound.SECTION.ticks[3]
+check(sleeveOpt and sleeveOpt.type == "tickbox" and sleeveOpt.value == true and wrists() == "show"
+    and sleeveTick and sleeveTick.label == "IGUI_MinidoracatWatch_OverSleeve" and sleeveTick.default == true
+    and sleeveTick.get() == true, "預設勾：MODS 頁與齒輪分類都有，錶戴在袖子外（顯示組）")
+local r0 = resets()
+sleeveOpt:setValue(false)
+check(wrists() == "show" and resets() == r0, "MODS 頁取消勾選、還沒按套用：不變")
+page4:apply()
+check(wrists() == "covered" and resets() == r0 + 101, "按套用：七款左右手都換到蓋住組，分割畫面兩位玩家各重組一次模型")
+page4:apply()
+check(resets() == r0 + 101, "再按一次套用（沒改）：不重組")
+sleeveTick.set(true)
+check(wrists() == "show" and sleeveTick.get() == true and resets() == r0 + 202
+    and iniHas("tickbox|MinidoracatWatch|OverSleeve|true"), "齒輪勾回來：立刻換回顯示組、重組、寫回 ModOptions.ini")
+local remote = F.player("dora", 9)
+table.remove(F.players) -- 遠端玩家不是本機分割畫面的玩家
+local savedOnline = getOnlinePlayers
+getOnlinePlayers = function() return F.javaList({ remote }) end
+sleeveTick.set(false)
+check(wrists() == "covered" and remote.resets == 1 and iniHas("tickbox|MinidoracatWatch|OverSleeve|false"),
+    "MP：其他玩家的地圖手錶也照自己的設定，遠端玩家一起重組")
+getOnlinePlayers = savedOnline
+local MO5 = installModOptions() -- 下次啟動：設定是取消勾選
+F.load("client/MinidoracatWatch_Sound.lua")
+check(MinidoracatWatchSound.overSleeve() == true, "讀檔前是預設（勾）")
+MO5:load()
+W.setWristCovered(false) -- 重開遊戲時物品腳本是重讀的（顯示組）
+F.fire("OnGameStart")
+check(MinidoracatWatchSound.overSleeve() == false and wrists() == "covered", "進遊戲：讀回取消勾選，換到蓋住組")
+MinidoracatWatchSound.setOverSleeve(true)
+check(wrists() == "show", "勾回來")
+
 -- ===== 面板的音效音量列（框架 rev 17 SliderRow；和齒輪分類、ESC 頁同一份 ModOptions）=====
 function getCore() return { getScreenWidth = function() return 1920 end, getScreenHeight = function() return 1080 end } end
 function getTextManager() return { MeasureStringX = function(_, _, s) return #s * 7 end, getFontHeight = function() return 16 end } end

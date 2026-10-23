@@ -2,6 +2,8 @@
 <clothingItem>
 	<m_MaleModel>media\models_X\Static\Clothes\MinidoracatWatch_Luthex_M_Right.x</m_MaleModel>
 	<m_FemaleModel>media\models_X\Static\Clothes\MinidoracatWatch_Luthex_F_Right.x</m_FemaleModel>
+	<m_AltMaleModel>media\models_X\Static\Clothes\MinidoracatWatch_Luthex_M_Right_ALT.x</m_AltMaleModel>
+	<m_AltFemaleModel>media\models_X\Static\Clothes\MinidoracatWatch_Luthex_F_Right_ALT.x</m_AltFemaleModel>
 	<m_GUID>11175e10-433f-4128-b332-00235ab39e8b</m_GUID>
 	<m_Static>true</m_Static>
 	<m_AllowRandomHue>false</m_AllowRandomHue>

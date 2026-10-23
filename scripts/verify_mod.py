@@ -973,7 +973,11 @@ fail(_rl, recipe_bad) if recipe_bad else ok(_rl)
 # 原版錶變成地圖錶，ScriptManager.java:1883-1892）、xml 的 GUID 登記在 42/media/fileGuidTable.xml（OutfitManager 依
 # GUID 載入）、模型與 textureChoices 貼圖檔存在、圖示貼圖存在、說明有四語翻譯、物品全名不含 Classic
 # （AlarmClockClothing.java:54-66 會當成指針錶）。自製圖示的物品不可寫 ColorRed/Green/Blue（UIElement.java:548-551 染色）。
+# BodyLocation 是 42/media/registries.lua 註冊的 MinidoracatWatch:<Left|Right>Wrist（原版手腕會被長袖藏起來，
+# BodyLocations.lua:596-627；沒註冊的 id 解析成 null，錶戴不上）；xml 要有套袖模型 m_AltMaleModel／m_AltFemaleModel
+# （穿 3D 袖子外衣時引擎改畫它，PopTemplateManager.isItemModelAlt；缺了錶帶會埋進袖子裡）。
 asset_bad, n_styles = [], 0
+_reg_re = re.compile(r'ItemBodyLocation\.register\("([^"]+)"\)')
 for m in MEDIA_DIRS:
     core = os.path.join(m, "lua", "shared", "MinidoracatWatch.lua")
     if not os.path.isfile(core):
@@ -990,6 +994,11 @@ for m in MEDIA_DIRS:
             txt = re.sub(r"/\*.*?\*/", "", fh.read(), flags=re.S)
         for module, name, body in script_blocks(txt, "item"):
             item_bodies[f"{module}.{name}"] = body
+    reg_path = os.path.join(m, "registries.lua")
+    registered = set()
+    if os.path.isfile(reg_path):
+        with open(reg_path, encoding="utf-8") as fh:
+            registered = {r.lower() for r in _reg_re.findall(fh.read())}
     guids = {}
     guid_path = os.path.join(m, "fileGuidTable.xml")
     if os.path.isfile(guid_path):
@@ -1021,11 +1030,13 @@ for m in MEDIA_DIRS:
                 continue
             want = {"ClothingItem": f"MinidoracatWatch_{s}_{side}", "Icon": f"MinidoracatWatch_{s}",
                     "ClothingItemExtra": f"MinidoracatWatch.MapWatch_{s}_{other}",
-                    "Tooltip": f"Tooltip_MinidoracatWatch_{s}", "BodyLocation": f"base:{side.lower()}wrist"}
+                    "Tooltip": f"Tooltip_MinidoracatWatch_{s}", "BodyLocation": f"MinidoracatWatch:{side}Wrist"}
             for k, v in want.items():
                 got = re.search(rf"(?m)^\s*{k}\s*=\s*([^,\r\n]+)", body)
                 if not got or got.group(1).strip() != v:
                     asset_bad.append(f"{full}：{k} 應為 {v}（實得 {got.group(1).strip() if got else '未宣告'}）")
+            if f"minidoracatwatch:{side.lower()}wrist" not in registered:
+                asset_bad.append(f"{full}：部位 MinidoracatWatch:{side}Wrist 沒有在 42/media/registries.lua 註冊")
             xml_rel = f"media/clothing/clothingItems/MinidoracatWatch_{s}_{side}.xml"
             xml_path = os.path.join(m, "clothing", "clothingItems", f"MinidoracatWatch_{s}_{side}.xml")
             if not os.path.isfile(xml_path):
@@ -1036,7 +1047,10 @@ for m in MEDIA_DIRS:
             g = re.search(r"<m_GUID>([^<]+)</m_GUID>", x)
             if not g or guids.get(xml_rel) != g.group(1):
                 asset_bad.append(f"{xml_rel}：GUID 沒有登記在 42/media/fileGuidTable.xml（或不一致）")
-            for mdl in re.findall(r"<m_(?:Male|Female)Model>([^<]+)</m_(?:Male|Female)Model>", x):
+            for tag in ("m_AltMaleModel", "m_AltFemaleModel"):
+                if f"<{tag}>" not in x:
+                    asset_bad.append(f"{xml_rel}：缺套袖模型 <{tag}>（長袖外衣會蓋住錶帶）")
+            for mdl in re.findall(r"<m_(?:Alt)?(?:Male|Female)Model>([^<]+)</m_(?:Alt)?(?:Male|Female)Model>", x):
                 rel = mdl.replace("\\", "/")
                 if not rel.startswith("media/") or not os.path.isfile(os.path.join(m, rel[len("media/"):])):
                     asset_bad.append(f"{xml_rel}：模型 {mdl} 不在本 MOD")
@@ -1051,7 +1065,7 @@ for m in MEDIA_DIRS:
             asset_bad.append(f"{full}：自製圖示不可再寫 ColorRed/Green/Blue（會被染色）")
         if icon and not tex("Item_" + icon.group(1)):
             asset_bad.append(f"{full}：圖示 textures/Item_{icon.group(1)}.png 不存在")
-_al = f"七款錶資產完整（{n_styles} 款 × 左右手：物品、clothing xml、GUID、模型、貼圖、圖示、說明）"
+_al = f"七款錶資產完整（{n_styles} 款 × 左右手：物品、部位、clothing xml、GUID、模型與套袖模型、貼圖、圖示、說明）"
 fail(_al, asset_bad) if asset_bad else ok(_al)
 
 # ---- 17. Lua 單元測試（scripts/test_*.lua 自動全跑）----

@@ -10,6 +10,8 @@
 
 產物（直接寫進 MOD 的 42/media/）：
     models_X/Static/Clothes/MinidoracatWatch_<款>_<M|F>_<Left|Right>.x   手腕模型（掛 Bip01_{L,R}_Forearm，靜態）
+    models_X/Static/Clothes/MinidoracatWatch_<款>_<M|F>_<Left|Right>_ALT.x  套袖模型：穿 3D 袖子的外衣時換用（xml 的
+        m_AltMaleModel／m_AltFemaleModel），錶帶套在袖子外
     textures/MinidoracatWatch_<款>.png（嗶嗶腕機另有 _Amber）             模型貼圖 256×256
     textures/Item_MinidoracatWatch_<款>.png（嗶嗶腕機另有 _Amber）、_Module_<模組>.png、_UnlockCard_<等級>.png   32×32 物品欄圖示
 中間產物與預覽（不進 MOD、不進版控）：temp/watch-art/（verify.txt、icons_sheet.png、blender/*.png）
@@ -40,6 +42,16 @@ PREFIX = "MinidoracatWatch"
 SIDES = {"L": "Left", "R": "Right"}
 # 錶帶花紋取設計稿上方錶帶 y 0..STRAP_CROP（不要切到錶殼／貓耳）
 STRAP_CROP = {"Paws": 42, "BB3000": 46}
+# 套袖（_ALT）要包住的原版袖子（Skinned/Clothes/*.x，只讀尺寸、不複製進 MOD，同手臂）：「日常」外套／毛衣／連帽衫／大衣／連身工作服。
+# 故意不納入：男性西裝外套、禮服外套、Shell Suit 運動外套、防護衣、Spiffo 布偶裝、吉利服、法官袍，女性防護衣、西裝外套、禮服外套、
+# 吉利服、法官袍——它們的袖子更粗，照它們做會讓錶在一般袖子上浮起來；穿這些時錶帶在袖子裡、只露錶面。
+# 背心類（羊皮背心、毛衣背心）與婚紗沒有前臂網格。
+SLEEVES = {
+    "M": ["Bob_CoatArmy", "Bob_Jacket", "Bob_JacketLeather", "Bob_BoilerSuit", "Bob_HoodieDOWN", "Bob_HoodieUP", "Bob_JacketLong",
+          "Bob_JacketPadded", "Bob_JacketPaddedDOWN", "Bob_JacketVarsity", "Bob_Jumper", "Bob_LongCoat"],
+    "F": ["Kate_CoatArmy", "Kate_Jacket", "Kate_JacketLeather", "Kate_JacketPadded", "Kate_JacketPaddedDOWN", "Kate_JacketShellSuit",
+          "Kate_BoilerSuit", "Kate_HoodieDOWN", "Kate_HoodieUP", "Kate_JacketLong", "Kate_JacketVarsity", "Kate_Jumper", "Kate_LongCoat"],
+}
 
 # 模組：設計稿 data.mjs MODULES 的類別（一般／進階／核心）→ TIERS 顏色；圖示顏色沿用目前物品腳本的 ColorRed/Green/Blue。
 # 負重核心（負重槽 wt）：設計稿 temp/weight-core-design/plan.html 的琥珀色；三階同色，靠圖示下方 1／2／3 顆點分（不單靠顏色）。
@@ -169,6 +181,12 @@ def main():
                                        check=True, capture_output=True, text=True, encoding="utf-8").stdout)
     arms = {g: wm.read_arm(os.path.join(a.pz, "media", "models_X", "Skinned", f"{body}.x"))
             for g, body in (("M", "MaleBody"), ("F", "FemaleBody"))}
+    skinned = os.path.join(a.pz, "media", "models_X", "Skinned", "Clothes")
+    files = {f.lower(): f for f in os.listdir(skinned)}  # 原版檔名大小寫不一（Kate_HoodieDown.x）
+    missing = [n for ns in SLEEVES.values() for n in ns if n.lower() + ".x" not in files]
+    if missing:
+        sys.exit(f"missing sleeve meshes in {skinned}: {', '.join(missing)}")
+    sleeves = {g: [wm.read_sleeve(os.path.join(skinned, files[n.lower() + ".x"])) for n in ns] for g, ns in SLEEVES.items()}
     clothes = os.path.join(MEDIA, "models_X", "Static", "Clothes")
     tex_dir = os.path.join(MEDIA, "textures")
     os.makedirs(clothes, exist_ok=True)
@@ -179,19 +197,20 @@ def main():
         perim = None
         for g in ("M", "F"):
             for s, side in SIDES.items():
-                mesh, info = wm.build(sid, g, s, arms[g])
-                name = f"{PREFIX}_{sid}_{g}_{side}"
-                path = os.path.join(clothes, name + ".x")
-                wm.write_x(mesh, path, name, f"{PREFIX}_{sid}.png")
-                V, F, UV = wm.read_x(path)  # 讀回：三角形數、範圍、UV 都在 0..1
-                lo, hi = info["bbox"]
-                assert len(F) == info["tris"] and F.max() < len(V), name
-                assert np.allclose(V.min(0), lo, atol=2e-6) and np.allclose(V.max(0), hi, atol=2e-6), name
-                assert UV.min() >= 0 and UV.max() <= 1, name
-                if g == "M" and s == "L":
-                    perim = perimeter((0.0,) + wm._interp(info["sections"], st.get("xc", wm.WATCH_XC)))
-                verify.append(f"{name}: tris={info['tris']} arm-in-strap={info['worst']:.2f} "
-                              f"bbox=({', '.join(f'{v:.4f}' for v in lo)})..({', '.join(f'{v:.4f}' for v in hi)})")
+                for alt, sl, what in (("", None, "arm"), ("_ALT", sleeves[g], "sleeve")):
+                    mesh, info = wm.build(sid, g, s, arms[g], sl)
+                    name = f"{PREFIX}_{sid}_{g}_{side}{alt}"
+                    path = os.path.join(clothes, name + ".x")
+                    wm.write_x(mesh, path, name, f"{PREFIX}_{sid}.png")
+                    V, F, UV = wm.read_x(path)  # 讀回：三角形數、範圍、UV 都在 0..1
+                    lo, hi = info["bbox"]
+                    assert len(F) == info["tris"] and F.max() < len(V), name
+                    assert np.allclose(V.min(0), lo, atol=2e-6) and np.allclose(V.max(0), hi, atol=2e-6), name
+                    assert UV.min() >= 0 and UV.max() <= 1, name
+                    if g == "M" and s == "L" and not alt:
+                        perim = perimeter((0.0,) + wm._interp(info["sections"], st.get("xc", wm.WATCH_XC)))
+                    verify.append(f"{name}: tris={info['tris']} {what}-in-strap={info['worst']:.2f} "
+                                  f"bbox=({', '.join(f'{v:.4f}' for v in lo)})..({', '.join(f'{v:.4f}' for v in hi)})")
         texture(sid, st["svg"], design, perim).save(os.path.join(tex_dir, f"{PREFIX}_{sid}.png"))
         for alt, svg_id in st.get("svg_alt", {}).items():
             texture(sid, svg_id, design, perim).save(os.path.join(tex_dir, f"{PREFIX}_{sid}_{alt}.png"))

@@ -629,6 +629,8 @@
     "IGUI_MinidoracatWatch_Sound_ScanPing_old": "Braucht eine neuere Minidoracat MiniMap: Diese Version spielt den Ping nicht ab.",
     "IGUI_MinidoracatWatch_ShowButton": "Kartenuhr-Knopf zeigen",
     "IGUI_MinidoracatWatch_ShowButton_tooltip": "Ein Bildschirmknopf, der das Kartenuhr-Fenster per Klick öffnet oder schließt. Er sitzt in der Mod-Familienleiste. Ist er ausgeblendet, klicke mit rechts auf die Kartenuhr im Inventar und wähle \"Kartenuhr öffnen\", um das Fenster zu öffnen.",
+    "IGUI_MinidoracatWatch_OverSleeve": "Kartenuhren über langen Ärmeln zeigen",
+    "IGUI_MinidoracatWatch_OverSleeve_tooltip": "An: Die Kartenuhr sitzt über dem Ärmel und bleibt mit Jacke oder Pullover sichtbar. Aus: Lange Ärmel verdecken sie wie Uhren aus dem Grundspiel. Ändert nur deine Ansicht, für alle Kartenuhren.",
     "IGUI_MinidoracatWatch_Admin_Shop": "Wirtschaftszentrum-Laden",
     "IGUI_MinidoracatWatch_Admin_Shop_desc": "Biete Kartenuhren, Module und Batterien im Wirtschaftszentrum zum Kauf an. Das öffnet die Ladenseite des Wirtschaftszentrums mit einem Entwurf für jeden Gegenstand, der dort noch nicht verkauft wird; du legst die Preise fest, und nichts geht in den Verkauf, bevor du anwendest.",
     "IGUI_MinidoracatWatch_Admin_ShopBtn": "Im Wirtschaftszentrum verkaufen",

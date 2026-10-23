@@ -14,7 +14,7 @@ function getTextManager()
     return { MeasureStringX = function(_, f, s) return f == UIFont.NewSmall and 0 or #s * 7 end, getFontHeight = function() return 16 end }
 end
 function getScriptManager()
-    return { FindItem = function() return { getNormalTexture = function() return "tex" end } end }
+    return { FindItem = function(_, t) return F.scriptItem(t, { getNormalTexture = function() return "tex" end }) end }
 end
 ISMouseDrag = {}
 ISContextMenu = { getNew = function() return {} end }

@@ -31,27 +31,89 @@ end
 -- 戰利品、殭屍掉落產生的那一隻：左手（原版分佈表也只放 WristWatch_Left_*；嗶嗶腕機照原作戴左前臂）
 function W.watchType(style) return "MinidoracatWatch.MapWatch_" .. style .. "_Left" end
 
--- ===== Pack Mule 相容（Workshop 3540903327）=====
--- Pack Mule 的「手錶」選項把原版手錶搬到它自己的 Mule:LEFT_WATCH／RIGHT_WATCH（NewParams_Mule.lua:94-129、
--- registries.lua:5-6），這兩個部位不和前臂護具互斥；地圖手錶留在原版手腕時，戴上就會換下同一隻手的護臂
--- （BodyLocations.lua:580-581）。選項開著時照它對原版錶的做法搬過去，同樣在 OnInitGlobalModData（伺服器、客戶端、
--- 單機都會跑：IsoWorld.java:2009 → GlobalModData.java:54）。部位每次都從物品腳本讀（InventoryItem.java:4086-4088），
--- 背包裡的錶立即生效；已經戴著的錶留在存檔記的部位（IsoPlayer.java:1255-1259），拿下再戴或換手一次才換。
-function W.packMuleWatchSlots()
-    local locs = MuleBodyLocations
+-- ===== 手腕部位與長袖（2026-10-23 使用者裁定：長袖不再藏起地圖手錶，3D 袖子換成套在袖外的模型，玩家可改回被蓋住）=====
+-- 部位在 media/registries.lua 註冊（原版手腕被長袖藏起來的規則刪不掉，原因見該檔）。兩組：
+-- W.LOC.LEFT／RIGHT 不會被長袖藏起來，穿 3D 袖子的外衣時改畫 clothing xml 的 m_AltMaleModel／m_AltFemaleModel
+-- （套袖模型；PopTemplateManager.isItemModelAlt，原版護臂同法 BodyLocations.lua:901-920）；
+-- *_COVERED 跟原版手腕一樣被長袖藏起來。物品腳本平常指向前一組，玩家選項「穿長袖時顯示地圖手錶」關掉時，那台電腦把
+-- 腳本換到後一組（W.setWristCovered）。引擎畫每個角色都用本機物品腳本的部位查這兩種規則（isItemModelHidden／
+-- isItemModelAlt 取 visual 的腳本物品，不看實際戴在哪個部位），兩組的穿戴互斥相同，只差畫法。
+require "NPCs/BodyLocations"
+require "TimedActions/ISWearClothing"
+W.LOC = MinidoracatWatchLocations
+-- 原版會藏起手腕的 13 種外衣（BodyLocations.lua:596-627）。SHIRT 的袖子是畫在身上的貼圖（原版 28 件長袖襯衫都沒有模型），
+-- 錶本來就疊在袖子上，不換模型；其餘 12 種是 3D 袖子，錶帶會埋進袖子裡，換成套袖模型。
+W.SLEEVE_TEXTURE = { "SHIRT" }
+W.SLEEVE_MODEL = { "BATH_ROBE", "FULL_ROBE", "FULL_SUIT", "FULL_SUIT_HEAD", "FULL_TOP", "JACKET", "JACKET_SUIT",
+    "JACKET_BULKY", "JACKET_HAT_BULKY", "SWEATER", "SWEATER_HAT", "BOILERSUIT" }
+W.LOC_ORDER = { "LEFT", "LEFT_COVERED", "RIGHT", "RIGHT_COVERED" }
+do
+    local G, L = BodyLocations.getGroup("Human"), W.LOC
+    -- 左手兩個排在右手前面：WornItems 依部位順序排列（WornItems.java:53-82），W.wornWatch 兩支都戴時取左手那支
+    for _, k in ipairs(W.LOC_ORDER) do G:getOrCreateLocation(L[k]) end
+    for _, k in ipairs(W.SLEEVE_MODEL) do
+        local sleeve = ItemBodyLocation[k]
+        G:setAltModel(sleeve, L.LEFT); G:setAltModel(sleeve, L.RIGHT)
+        G:setHideModel(sleeve, L.LEFT_COVERED); G:setHideModel(sleeve, L.RIGHT_COVERED)
+    end
+    for _, k in ipairs(W.SLEEVE_TEXTURE) do
+        G:setHideModel(ItemBodyLocation[k], L.LEFT_COVERED); G:setHideModel(ItemBodyLocation[k], L.RIGHT_COVERED)
+    end
+    G:setExclusive(L.LEFT, L.LEFT_COVERED); G:setExclusive(L.RIGHT, L.RIGHT_COVERED)
+    -- 原版手腕在這張表裡：戴上、拿下、換手時走路不會打斷（ISWearClothing.lua:176-213；換手與拿下也查它）
+    local walk = ISWearClothing.WalkBodyLocations
+    for _, k in ipairs(W.LOC_ORDER) do walk[#walk + 1] = L[k] end
+end
+
+-- 互斥要看沙盒，放在 OnInitGlobalModData（伺服器、客戶端、單機都會跑：IsoWorld.java:2009 → GlobalModData.java:54；
+-- 載入世界前 BodyLocations.reset 清掉整組再由各檔重建，IngameState.java:990，規則不會跨存檔累積）。
+-- 一般：照原版手腕，和同一隻手的原版手腕（原版錶、手環）只能戴一個、和前臂護具互斥（BodyLocations.lua:580-581）。
+-- Pack Mule（Workshop 3540903327）的「手錶」選項開著：它把原版錶搬到 Mule:LEFT_WATCH／RIGHT_WATCH，可以和護臂一起戴
+-- （NewParams_Mule.lua:94-131）。地圖手錶照它對原版錶的規則：和它的手錶位同一隻手只能戴一支、不和護臂互斥；
+-- 它的 Exclusion1 開著時，再和它的手環位與原版手腕互斥（NewParams_Mule.lua:133-146）。
+function W.wristRules()
+    local G, L, M = BodyLocations.getGroup("Human"), W.LOC, MuleBodyLocations
     local sb = SandboxVars and SandboxVars.B42PackMule
-    if not (locs and locs.LEFT_WATCH and locs.RIGHT_WATCH and sb and sb.Watch == true) then return false end
-    local sm = getScriptManager()
-    for _, s in ipairs(W.STYLES) do
-        for side, loc in pairs({ Left = locs.LEFT_WATCH, Right = locs.RIGHT_WATCH }) do
-            local item = sm:FindItem("MinidoracatWatch.MapWatch_" .. s .. "_" .. side)
-            if item then item:setBodyLocation(loc) end
+    local mule = M ~= nil and M.LEFT_WATCH ~= nil and M.RIGHT_WATCH ~= nil and sb ~= nil and sb.Watch == true
+    local sides = {
+        { L.LEFT, L.LEFT_COVERED, ItemBodyLocation.LEFT_WRIST, ItemBodyLocation.FORE_ARM_LEFT,
+            mule and M.LEFT_WATCH, mule and M.LEFT_BRACELET },
+        { L.RIGHT, L.RIGHT_COVERED, ItemBodyLocation.RIGHT_WRIST, ItemBodyLocation.FORE_ARM_RIGHT,
+            mule and M.RIGHT_WATCH, mule and M.RIGHT_BRACELET },
+    }
+    for _, s in ipairs(sides) do
+        for i = 1, 2 do
+            if mule then
+                G:setExclusive(s[i], s[5])
+                if sb.Exclusion1 == true and s[6] then
+                    G:setExclusive(s[i], s[6]); G:setExclusive(s[i], s[3])
+                end
+            else
+                G:setExclusive(s[i], s[3]); G:setExclusive(s[i], s[4])
+            end
         end
     end
-    W.log("Pack Mule watch slots: map watches moved to its watch locations")
-    return true
+    if mule then W.log("Pack Mule watch slots: map watches follow its watch rules") end
+    return mule
 end
-Events.OnInitGlobalModData.Add(W.packMuleWatchSlots)
+Events.OnInitGlobalModData.Add(W.wristRules)
+
+-- 物品腳本指向哪一組部位（玩家選項，client MinidoracatWatch_Sound.lua）。只換這台電腦的腳本：MP 時穿到哪個部位照伺服器
+-- 那份腳本（ISWearClothing:complete 在伺服器跑）；收到的穿戴同步部位和本機腳本不同時，引擎照封包的部位重新放上
+-- （SyncClothingPacket.process:192-211）。部位每次都從腳本讀（InventoryItem.java:4086-4088），已經戴著的錶留在原部位，
+-- 畫法立刻照新的腳本部位。不快取：比對腳本現況，回傳有沒有改。
+function W.setWristCovered(covered)
+    local left = covered and W.LOC.LEFT_COVERED or W.LOC.LEFT
+    local right = covered and W.LOC.RIGHT_COVERED or W.LOC.RIGHT
+    local sm, changed = getScriptManager(), false
+    for _, s in ipairs(W.STYLES) do
+        local l = sm:FindItem("MinidoracatWatch.MapWatch_" .. s .. "_Left")
+        local r = sm:FindItem("MinidoracatWatch.MapWatch_" .. s .. "_Right")
+        if l and l:getBodyLocation() ~= left then l:setBodyLocation(left); changed = true end
+        if r and r:getBodyLocation() ~= right then r:setBodyLocation(right); changed = true end
+    end
+    return changed
+end
 
 W.SETTLE_MS = 60000 -- 每分鐘把累積的耗電寫進 modData 並同步一次
 -- 單一 tick 最多計入的時間：伺服器卡頓、系統時鐘往前跳、單機在沒有 tick 的時段都只算這麼多。
@@ -202,8 +264,9 @@ function W.minimapDecision(enabled, rule, hasWatch, charge, keepDead)
 end
 
 -- 身上第一支（except 以外的）地圖錶與總支數。WornItems 依 BodyLocationGroup 順序排列
--- （WornItems.java:53-82），原版左腕排在右腕前（BodyLocations.lua:32-33），Pack Mule 的手錶部位也是左在右前
--- （BodyLocations_Mule.lua:7-8），所以兩支都戴時生效的是左手那支——規則固定、不看戴上的先後。不配置 table。
+-- （WornItems.java:53-82），地圖手錶的部位左手兩個排在右手前（W.LOC_ORDER），所以兩支都戴時生效的是左手那支——
+-- 規則固定、不看戴上的先後。更新前就戴著、留在原版手腕或 Pack Mule 手錶位的錶，兩支都在舊部位時同樣左在右前
+-- （BodyLocations.lua:32-33、BodyLocations_Mule.lua:7-8）；新舊部位各一支時看部位順序。不配置 table。
 function W.wornWatch(player, except)
     local worn = player:getWornItems()
     local first, count = nil, 0

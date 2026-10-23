@@ -629,6 +629,8 @@
     "IGUI_MinidoracatWatch_Sound_ScanPing_old": "Wymaga nowszej wersji Minidoracat MiniMap: ta wersja nie odtworzy sygnału.",
     "IGUI_MinidoracatWatch_ShowButton": "Pokaż przycisk zegarka z mapą",
     "IGUI_MinidoracatWatch_ShowButton_tooltip": "Przycisk na ekranie, który po kliknięciu otwiera lub zamyka panel zegarka z mapą. Znajduje się na pasku rodziny modów. Gdy jest ukryty, kliknij prawym przyciskiem zegarek z mapą w ekwipunku i wybierz \"Otwórz zegarek z mapą\", aby otworzyć panel.",
+    "IGUI_MinidoracatWatch_OverSleeve": "Pokazuj zegarki z mapą na długich rękawach",
+    "IGUI_MinidoracatWatch_OverSleeve_tooltip": "Włączone: zegarek z mapą jest na rękawie i widać go także w kurtce czy swetrze. Wyłączone: długie rękawy go zasłaniają, jak zegarki z podstawowej gry. Zmienia tylko twój ekran, dla wszystkich zegarków z mapą.",
     "IGUI_MinidoracatWatch_Admin_Shop": "Sklep Centrum Ekonomii",
     "IGUI_MinidoracatWatch_Admin_Shop_desc": "Wystaw zegarki z mapą, moduły i baterie na sprzedaż w Centrum Ekonomii, aby gracze mogli je kupować. Otwiera stronę sklepu Centrum Ekonomii z wersją roboczą dla każdego przedmiotu, którego jeszcze nie sprzedaje; ceny ustalasz ty, a nic nie trafi do sprzedaży, dopóki nie zastosujesz zmian.",
     "IGUI_MinidoracatWatch_Admin_ShopBtn": "Sprzedawaj w Centrum Ekonomii",

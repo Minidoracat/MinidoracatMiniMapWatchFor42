@@ -27,7 +27,7 @@ Without this mod installed, the minimap stays fully available as before. Works i
 [h2]✨ Features[/h2]
 [list]
 [*] [b]Wear it to use the minimap[/b]: the world map, search and your own coordinates work without one
-[*] [b]Seven watches[/b]: different looks, same features, one worn at a time
+[*] [b]Seven watches[/b]: different looks, same features, one worn at a time, still visible over long sleeves
 [*] [b]Modules and slots[/b]: install modules to unlock navigation, resource points, zombie detection, a light and more
 [*] [b]Carry and Power-Saver Cores[/b]: army zombies sometimes carry Carry Cores that let you carry more, and the Power-Saver Core saves power and endurance
 [*] [b]Battery and charging[/b]: drains in real time, and admins can allow charging in vehicles or powered buildings

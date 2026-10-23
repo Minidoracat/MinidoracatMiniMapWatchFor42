@@ -629,6 +629,8 @@
     "IGUI_MinidoracatWatch_Sound_ScanPing_old": "Requer uma versão mais nova do Minidoracat MiniMap: esta versão não toca o bipe.",
     "IGUI_MinidoracatWatch_ShowButton": "Mostrar botão do Relógio-Mapa",
     "IGUI_MinidoracatWatch_ShowButton_tooltip": "Um botão na tela que abre ou fecha o painel do Relógio-Mapa ao clicar. Ele fica na barra da família de mods. Quando oculto, clique com o botão direito no relógio-mapa no seu inventário e escolha \"Abrir Relógio-Mapa\" para abrir o painel.",
+    "IGUI_MinidoracatWatch_OverSleeve": "Mostrar Relógios-Mapa sobre mangas longas",
+    "IGUI_MinidoracatWatch_OverSleeve_tooltip": "Ativado: o relógio-mapa fica por cima da manga e aparece mesmo com jaqueta ou suéter. Desativado: as mangas longas o cobrem, como os relógios do jogo original. Muda só a sua tela, para todos os relógios-mapa.",
     "IGUI_MinidoracatWatch_Admin_Shop": "Loja da Central Econômica",
     "IGUI_MinidoracatWatch_Admin_Shop_desc": "Coloque relógios-mapa, módulos e pilhas à venda na Central Econômica para os jogadores comprarem. Isto abre a página Loja da Central Econômica com um rascunho para cada item que ela ainda não vende; você define os preços, e nada entra à venda até você aplicar.",
     "IGUI_MinidoracatWatch_Admin_ShopBtn": "Vender na Central Econômica",

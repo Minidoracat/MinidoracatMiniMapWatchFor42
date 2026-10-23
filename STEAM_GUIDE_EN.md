@@ -324,6 +324,11 @@ Off by default (swap batteries instead). Admins can allow two ways to charge, bo
 [*] Untick it to hide it right away (in Options → Mods, press Apply).
 [*] You can still open the panel by right-clicking the map watch in your inventory and choosing "Open Map Watch".
 [/list]
+[*] [b]Show map watches over long sleeves[/b] (on by default): with jackets, sweaters and other long sleeves on, the map watch sits over the sleeve and stays visible.
+[list]
+[*] Untick it to have long sleeves cover it like vanilla watches (in Options → Mods, press Apply). No need to put the watch back on.
+[*] Only changes your own screen, for every map watch you see. The watch works the same.
+[/list]
 [*] [b]Where to get items[/b] (Map Display Settings only): opens the Where to Get window, even without a watch. Disabled when the server hides it.
 [/list]
 === ⚙️ Admin settings window
@@ -588,10 +593,16 @@ Check that:
 [list]
 [*] No. A removed battery is never fuller than when it went in.
 [/list]
+[h3]I can't see my map watch under a jacket?[/h3]
+[list]
+[*] Map watches sit over the sleeve, so jackets, sweaters and hoodies don't hide them.
+[*] If you still can't see it, check that "Show map watches over long sleeves" is ticked in the player settings.
+[*] The character in the character info window doesn't switch to the over-sleeve look, so the sleeve may cover part of the watch there.
+[/list]
 [h3]Putting on the watch takes off the arm guard on that arm?[/h3]
 [list]
-[*] In vanilla, the wrist and forearm armor on the same arm can't be worn together, and vanilla watches work the same way.
-[*] If the server runs Pack Mule with its "Slot: Watch" option on, map watches move to Pack Mule's watch slot just like vanilla watches and can be worn with arm guards.
+[*] In vanilla, the wrist and forearm armor on the same arm can't be worn together; map watches follow the same rule.
+[*] If the server runs Pack Mule with its "Slot: Watch" option on, map watches follow Pack Mule's rules for vanilla watches and can be worn with arm guards.
 [*] Take off a watch you were already wearing and put it back on once.
 [/list]
 === 💬 Feedback

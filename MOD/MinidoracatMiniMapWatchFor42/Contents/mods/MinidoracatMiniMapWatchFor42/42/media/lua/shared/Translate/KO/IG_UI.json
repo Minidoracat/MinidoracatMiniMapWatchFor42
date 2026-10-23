@@ -629,6 +629,8 @@
     "IGUI_MinidoracatWatch_Sound_ScanPing_old": "더 새로운 Minidoracat MiniMap이 필요합니다: 이 버전에서는 알림음이 재생되지 않습니다.",
     "IGUI_MinidoracatWatch_ShowButton": "지도 시계 버튼 표시",
     "IGUI_MinidoracatWatch_ShowButton_tooltip": "클릭하면 지도 시계 패널을 열거나 닫는 화면 버튼입니다. 패밀리 도구 모음에 놓입니다. 숨기면 소지품에서 지도 시계를 우클릭하고 \"지도 시계 열기\"를 선택해 패널을 여세요.",
+    "IGUI_MinidoracatWatch_OverSleeve": "긴소매 위에 지도 시계 표시",
+    "IGUI_MinidoracatWatch_OverSleeve_tooltip": "켜기: 지도 시계를 소매 위에 차서 재킷이나 스웨터를 입어도 보입니다. 끄기: 바닐라 시계처럼 긴소매에 가려집니다. 내 화면에만 적용되며, 모든 플레이어의 지도 시계에 반영됩니다.",
     "IGUI_MinidoracatWatch_Admin_Shop": "경제 센터 상점",
     "IGUI_MinidoracatWatch_Admin_Shop_desc": "지도 시계, 모듈, 건전지를 경제 센터에 올려 플레이어가 살 수 있게 합니다. 아직 판매하지 않는 아이템마다 초안이 담긴 경제 센터 상점 페이지가 열리며, 가격은 직접 정하고 적용하기 전까지는 아무것도 판매되지 않습니다.",
     "IGUI_MinidoracatWatch_Admin_ShopBtn": "경제 센터에서 판매",

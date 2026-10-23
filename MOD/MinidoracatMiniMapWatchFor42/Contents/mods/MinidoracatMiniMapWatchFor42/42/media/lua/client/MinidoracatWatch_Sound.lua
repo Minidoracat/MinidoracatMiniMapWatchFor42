@@ -32,6 +32,9 @@ if PZAPI and PZAPI.ModOptions then
     -- 家族工具列的地圖錶按鈕（預設顯示；使用者 2026-10-08 裁定每個入口都要能隱藏）
     opts:addTickBox("ShowButton", "IGUI_MinidoracatWatch_ShowButton", true,
         "IGUI_MinidoracatWatch_ShowButton_tooltip")
+    -- 穿長袖時顯示地圖手錶（預設勾；使用者 2026-10-23 裁定玩家能自己調）
+    opts:addTickBox("OverSleeve", "IGUI_MinidoracatWatch_OverSleeve", true,
+        "IGUI_MinidoracatWatch_OverSleeve_tooltip")
 end
 
 local function opt(id, default)
@@ -71,13 +74,41 @@ function Snd.loadShowButton()
     local ui = C and C.docked and C.ui()
     if ui then ui.Dock.refresh() end
 end
-if opts then opts.apply = Snd.loadShowButton end
 Events.OnGameStart.Add(Snd.loadShowButton)
 function Snd.showButtonOpt() return opt("ShowButton", true) end
 function Snd.setShowButton(on)
     setOpt("ShowButton", on == true)
     if opts then opts:apply() end
 end
+
+-- 穿長袖時顯示地圖手錶：只改這台電腦畫出來的樣子。W.setWristCovered 換物品腳本的部位（勾＝不被長袖藏、3D 袖子換套袖
+-- 模型；不勾＝跟原版錶一樣被長袖蓋住），有改才讓每個角色下一幀重組模型：本機玩家（分割畫面各自）與 MP 的遠端玩家
+-- （遠端玩家畫的是同步來的 visual，查規則一樣用本機腳本，IsoPlayer.java:7684-7689）。地上的屍體與假人下次重組模型才換。
+-- 更新點同上（OnGameStart、MODS 頁套用、齒輪分類的 set）。
+function Snd.overSleeve() return opt("OverSleeve", true) end
+function Snd.applyOverSleeve()
+    if not W.setWristCovered(not Snd.overSleeve()) then return end
+    for pn = 0, getNumActivePlayers() - 1 do
+        local p = getSpecificPlayer(pn)
+        if p then p:resetModelNextFrame() end
+    end
+    if isClient() then
+        local list = getOnlinePlayers() -- MP 客戶端＝GameClient 的玩家表（LuaManager.java:4453-4463）
+        for i = 0, list:size() - 1 do list:get(i):resetModelNextFrame() end
+    end
+end
+Events.OnGameStart.Add(Snd.applyOverSleeve)
+function Snd.setOverSleeve(on)
+    setOpt("OverSleeve", on == true)
+    Snd.applyOverSleeve()
+end
+
+-- MODS 頁按套用：每頁呼叫一次 options:apply()（MainOptions.lua:3760-3762），兩個要立即生效的勾選一起套
+function Snd.applyOptions()
+    Snd.loadShowButton()
+    Snd.applyOverSleeve()
+end
+if opts then opts.apply = Snd.applyOptions end
 
 -- ===== 播放 =====
 local warned = {}
@@ -171,7 +202,9 @@ Snd.SECTION = {
     ticks = { { label = "IGUI_MinidoracatWatch_Sound_ScanPing", tooltip = "IGUI_MinidoracatWatch_Sound_ScanPing_tooltip",
         default = false, get = Snd.scanPing, set = Snd.setScanPing },
         { label = "IGUI_MinidoracatWatch_ShowButton", tooltip = "IGUI_MinidoracatWatch_ShowButton_tooltip",
-        default = true, get = Snd.showButtonOpt, set = Snd.setShowButton } },
+        default = true, get = Snd.showButtonOpt, set = Snd.setShowButton },
+        { label = "IGUI_MinidoracatWatch_OverSleeve", tooltip = "IGUI_MinidoracatWatch_OverSleeve_tooltip",
+        default = true, get = Snd.overSleeve, set = Snd.setOverSleeve } },
     -- 「取得方式」視窗（MinidoracatWatch_Guide.lua；settingsApiVersion 2 起有 actions）：沒戴錶也能從這裡開；
     -- 伺服器不開放或 UI 框架太舊時停用
     actions = { { label = "IGUI_MinidoracatWatch_Guide_Open", tooltip = "IGUI_MinidoracatWatch_Guide_Open_tooltip",

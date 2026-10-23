@@ -374,9 +374,9 @@ function sendAttachedItem(player, loc, item)
     if F.mode == "server" then F.attachSent[#F.attachSent + 1] = { player = player, loc = loc, item = item } end
 end
 
--- ===== 原版穿戴動作（只留 isValid／complete 的形狀）=====
+-- ===== 原版穿戴動作（只留 isValid／complete 的形狀；WalkBodyLocations 是走路不打斷的部位表，ISWearClothing.lua:176-213）=====
 ISWearClothing = { isValid = function(self) return true end,
-    complete = function(self) F.wear(self.character, self.item); return true end }
+    complete = function(self) F.wear(self.character, self.item); return true end, WalkBodyLocations = {} }
 ISClothingExtraAction = { isValid = function(self) return true end,
     complete = function(self)
         -- 原版：舊物移除、instanceItem 新物、複製 modData、穿上（ISClothingExtraAction.lua:121-137）
@@ -392,6 +392,50 @@ ISClothingExtraAction = { isValid = function(self) return true end,
 function F.action(cls, character, item, extra)
     return setmetatable({ character = character, item = item, extra = extra }, { __index = cls })
 end
+
+-- ===== 部位登錄與部位群組（media/registries.lua 與核心檔載入時用到）=====
+-- ItemBodyLocation.register 回登錄物件，這裡用小寫 id 字串代替；原版部位只放核心檔用到的，拼錯的名稱是 nil，
+-- 群組方法收到 nil 就 error（實機 BodyLocationGroup.getLocationNotNull 也會丟例外）。
+-- 群組記下規則：order＝部位建立順序；alt／hide＝「外衣>部位」集合；exclusive 雙向（BodyLocationGroup.java:68-98）。
+ItemBodyLocation = { register = function(id) return id:lower() end }
+for _, k in ipairs({ "LEFT_WRIST", "RIGHT_WRIST", "FORE_ARM_LEFT", "FORE_ARM_RIGHT", "SHIRT", "BATH_ROBE", "FULL_ROBE",
+    "FULL_SUIT", "FULL_SUIT_HEAD", "FULL_TOP", "JACKET", "JACKET_SUIT", "JACKET_BULKY", "JACKET_HAT_BULKY", "SWEATER",
+    "SWEATER_HAT", "BOILERSUIT" }) do
+    ItemBodyLocation[k] = "base:" .. k:lower()
+end
+function F.resetBodyGroup() F.bodyGroup = { order = {}, alt = {}, hide = {}, exclusive = {} } end
+F.resetBodyGroup()
+local Group = {}
+function Group:getOrCreateLocation(id)
+    assert(id, "getOrCreateLocation：部位是 nil")
+    for _, v in ipairs(F.bodyGroup.order) do if v == id then return end end
+    table.insert(F.bodyGroup.order, id)
+end
+function Group:setAltModel(a, b) assert(a and b, "setAltModel：部位是 nil"); F.bodyGroup.alt[a .. ">" .. b] = true end
+function Group:setHideModel(a, b) assert(a and b, "setHideModel：部位是 nil"); F.bodyGroup.hide[a .. ">" .. b] = true end
+function Group:setExclusive(a, b)
+    assert(a and b, "setExclusive：部位是 nil")
+    F.bodyGroup.exclusive[a .. "|" .. b], F.bodyGroup.exclusive[b .. "|" .. a] = true, true
+end
+BodyLocations = { getGroup = function(name) assert(name == "Human"); return Group end }
+dofile(F.MEDIA .. "/../registries.lua")
+
+-- ===== 物品腳本（getScriptManager():FindItem 的替身）=====
+-- 同一個 fullType 回同一個物件（ScriptManager 的物品腳本是單例）；部位照腳本、玩家選項會換（W.setWristCovered）。
+-- 測試要的其他欄位用 extra 傳入，只在第一次建立時放；自己替換 getScriptManager 的測試也用它建物件。
+local ScriptItem = { __index = { getBodyLocation = function(self) return self.loc end,
+    setBodyLocation = function(self, loc) self.loc = loc end } }
+F.scripts = {}
+function F.scriptItem(t, extra)
+    local s = F.scripts[t]
+    if not s then
+        s = setmetatable(extra or {}, ScriptItem)
+        s.loc = t:find("_Left", 1, true) and MinidoracatWatchLocations.LEFT or MinidoracatWatchLocations.RIGHT
+        F.scripts[t] = s
+    end
+    return s
+end
+function getScriptManager() return { FindItem = function(_, t) return F.scriptItem(t) end } end
 
 -- ===== 計時動作（ISBaseTimedAction.lua:173-184 的形狀；ISTimedActionQueue 只留 add 與佇列）=====
 ISBaseTimedAction = {}

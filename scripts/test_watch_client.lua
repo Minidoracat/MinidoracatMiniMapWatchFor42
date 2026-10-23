@@ -27,12 +27,10 @@ function Menu:addSubMenu(opt, sub) opt.sub = sub; opt.subOption = 1 end
 ISContextMenu = { getNew = function(_, parent) return newMenu() end,
     get = function() F.lastMenu = newMenu(); return F.lastMenu end }
 local function pick(o) o.fn(o.target, o.a, o.b, o.c, o.d) end
-local scripts = {}
 function getScriptManager()
     return { FindItem = function(_, t)
-        scripts[t] = scripts[t] or { getNormalTexture = function() return "tex" end, getR = function() return 1 end,
-            getG = function() return 1 end, getB = function() return 1 end }
-        return scripts[t]
+        return F.scriptItem(t, { getNormalTexture = function() return "tex" end, getR = function() return 1 end,
+            getG = function() return 1 end, getB = function() return 1 end })
     end }
 end
 ISMouseDrag = {}

@@ -629,6 +629,8 @@
     "IGUI_MinidoracatWatch_Sound_ScanPing_old": "需要較新版本的 Minidoracat MiniMap：目前的版本不會播這個提示音。",
     "IGUI_MinidoracatWatch_ShowButton": "顯示地圖手錶按鈕",
     "IGUI_MinidoracatWatch_ShowButton_tooltip": "畫面上的地圖手錶按鈕，點擊即可開關地圖手錶面板，放在家族工具列裡。隱藏後，在背包裡對地圖手錶按右鍵、選「開啟地圖手錶」就能打開面板。",
+    "IGUI_MinidoracatWatch_OverSleeve": "穿長袖時顯示地圖手錶",
+    "IGUI_MinidoracatWatch_OverSleeve_tooltip": "開啟：地圖手錶戴在袖子外，穿外套、毛衣也看得到。關閉：跟原版手錶一樣被長袖蓋住。只影響你的畫面，所有人的地圖手錶都照這個設定。",
     "IGUI_MinidoracatWatch_Admin_Shop": "經濟中心商店",
     "IGUI_MinidoracatWatch_Admin_Shop_desc": "把地圖手錶、模組和電池上架到經濟中心，玩家就能在商店購買。按下後會開啟經濟中心的商店頁，還沒上架的物品各建一筆草稿；價格由你填，按套用後才會上架。",
     "IGUI_MinidoracatWatch_Admin_ShopBtn": "到經濟中心上架",

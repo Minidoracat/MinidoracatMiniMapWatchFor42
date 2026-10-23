@@ -602,33 +602,101 @@ check(W.power(cw) == nil, "需要電池（預設）：沒電池＝nil")
 sbw.ChargeCar, sbw.ChargeHouse = nil, nil
 F.mode = "sp"
 
--- ===== Pack Mule 相容：它的「手錶」選項開著才把地圖手錶搬到它的手錶部位 =====
+-- ===== 手腕部位：長袖不藏、3D 袖子換套袖模型、玩家選項換到會被藏的部位（2026-10-23）=====
 do
+    local B, L = F.bodyGroup, W.LOC
+    local ok = B.order[1] == L.LEFT and B.order[2] == L.LEFT_COVERED and B.order[3] == L.RIGHT
+        and B.order[4] == L.RIGHT_COVERED
+    check(ok, "部位順序：左手兩個在右手前（W.wornWatch 兩支都戴取左手）")
+    local altShow, hideCovered, leak = 0, 0, {}
+    for _, k in ipairs(W.SLEEVE_MODEL) do
+        local g = ItemBodyLocation[k]
+        for _, loc in ipairs({ L.LEFT, L.RIGHT }) do
+            if B.alt[g .. ">" .. loc] then altShow = altShow + 1 end
+            if B.hide[g .. ">" .. loc] then leak[#leak + 1] = k .. " 藏起顯示組" end
+        end
+        for _, loc in ipairs({ L.LEFT_COVERED, L.RIGHT_COVERED }) do
+            if B.hide[g .. ">" .. loc] then hideCovered = hideCovered + 1 end
+            if B.alt[g .. ">" .. loc] then leak[#leak + 1] = k .. " 給蓋住組套袖" end
+        end
+    end
+    local shirt = ItemBodyLocation.SHIRT
+    check(altShow == 24 and #W.SLEEVE_MODEL == 12 and #leak == 0,
+        "12 種 3D 袖子：顯示組換套袖模型、從不藏起來 " .. table.concat(leak, "、"))
+    check(hideCovered == 24 and B.hide[shirt .. ">" .. L.LEFT_COVERED] and B.hide[shirt .. ">" .. L.RIGHT_COVERED],
+        "蓋住組：13 種長袖（含襯衫）都藏起來，和原版手腕相同")
+    check(not B.alt[shirt .. ">" .. L.LEFT] and not B.hide[shirt .. ">" .. L.LEFT],
+        "襯衫袖子是貼圖：顯示組照原模型、不換套袖")
+    check(B.exclusive[L.LEFT .. "|" .. L.LEFT_COVERED] and B.exclusive[L.RIGHT .. "|" .. L.RIGHT_COVERED]
+        and not B.exclusive[L.LEFT .. "|" .. L.RIGHT_COVERED], "同一隻手的兩組互斥，左右手不互斥")
+    local walk = {}
+    for _, v in ipairs(ISWearClothing.WalkBodyLocations) do walk[v] = true end
+    check(walk[L.LEFT] and walk[L.LEFT_COVERED] and walk[L.RIGHT] and walk[L.RIGHT_COVERED],
+        "四個部位都在走路不打斷的表裡（照原版手腕）")
+
+    -- 互斥：一般照原版手腕；Pack Mule 的手錶選項開著時照它對原版錶的規則
+    local function ex(a, b) return B.exclusive[a .. "|" .. b] == true end
+    local function sideRules(want)
+        local bad = {}
+        for _, side in ipairs({ { "LEFT", "LEFT_WRIST", "FORE_ARM_LEFT", "RIGHT_WRIST" },
+            { "RIGHT", "RIGHT_WRIST", "FORE_ARM_RIGHT", "LEFT_WRIST" } }) do
+            for _, k in ipairs({ side[1], side[1] .. "_COVERED" }) do
+                local loc = L[k]
+                local got = { wrist = ex(loc, ItemBodyLocation[side[2]]), forearm = ex(loc, ItemBodyLocation[side[3]]),
+                    other = ex(loc, ItemBodyLocation[side[4]]),
+                    mule = MuleBodyLocations ~= nil and ex(loc, MuleBodyLocations[side[1] .. "_WATCH"]),
+                    bracelet = MuleBodyLocations ~= nil and ex(loc, MuleBodyLocations[side[1] .. "_BRACELET"]) }
+                for name, v in pairs(got) do
+                    if v ~= (want[name] == true) then bad[#bad + 1] = k .. "." .. name end
+                end
+            end
+        end
+        return bad
+    end
+    local function rules()
+        B.exclusive = {}
+        return W.wristRules()
+    end
+    SandboxVars.B42PackMule = { Watch = true }
+    local bad = (rules() == false) and sideRules({ wrist = true, forearm = true }) or { "回傳" }
+    check(#bad == 0, "沒裝 Pack Mule：和同手原版手腕、前臂護具互斥 " .. table.concat(bad, "、"))
+    MuleBodyLocations = { LEFT_WATCH = "mule:left_watch", RIGHT_WATCH = "mule:right_watch",
+        LEFT_BRACELET = "mule:left_bracelet", RIGHT_BRACELET = "mule:right_bracelet" }
+    SandboxVars.B42PackMule.Watch = false
+    bad = (rules() == false) and sideRules({ wrist = true, forearm = true }) or { "回傳" }
+    check(#bad == 0, "Pack Mule 的手錶選項關著：照原版手腕 " .. table.concat(bad, "、"))
+    SandboxVars.B42PackMule.Watch = true
+    bad = (rules() == true) and sideRules({ mule = true }) or { "回傳" }
+    check(#bad == 0, "手錶選項開著：只和它同手的手錶位互斥，可以和護臂一起戴 " .. table.concat(bad, "、"))
+    SandboxVars.B42PackMule.Exclusion1 = true
+    bad = (rules() == true) and sideRules({ mule = true, bracelet = true, wrist = true }) or { "回傳" }
+    check(#bad == 0, "再開 Exclusion1：加上它的手環位與原版手腕 " .. table.concat(bad, "、"))
+    MuleBodyLocations, SandboxVars.B42PackMule = nil, nil
+
+    -- 玩家選項換的是物品腳本的部位；缺一件腳本不影響其他，沒改＝回 false（呼叫端就不重組模型）
     local items = {}
     local savedSM = getScriptManager
     getScriptManager = function()
         return { FindItem = function(_, t)
-            if t:find("Luthex_Right", 1, true) then return nil end -- 缺一件腳本也不影響其他
-            items[t] = items[t] or { setBodyLocation = function(self, loc) self.loc = loc end }
+            if t:find("Luthex_Right", 1, true) then return nil end
+            items[t] = items[t] or { loc = t:find("_Left", 1, true) and L.LEFT or L.RIGHT,
+                getBodyLocation = function(self) return self.loc end,
+                setBodyLocation = function(self, loc) self.loc = loc end }
             return items[t]
         end }
     end
-    local LEFT_W, RIGHT_W = { "mule:left_watch" }, { "mule:right_watch" }
-    SandboxVars.B42PackMule = { Watch = true }
-    check(W.packMuleWatchSlots() == false and next(items) == nil, "沒裝 Pack Mule：不動地圖手錶的部位")
-    MuleBodyLocations = { LEFT_WATCH = LEFT_W, RIGHT_WATCH = RIGHT_W }
-    SandboxVars.B42PackMule.Watch = false
-    check(W.packMuleWatchSlots() == false and next(items) == nil, "Pack Mule 的手錶選項關著：不動")
-    SandboxVars.B42PackMule.Watch = true
-    check(W.packMuleWatchSlots() == true, "選項開著：搬到 Pack Mule 的手錶部位")
-    local ok = true
-    for _, s in ipairs(W.STYLES) do
-        local l = items["MinidoracatWatch.MapWatch_" .. s .. "_Left"]
-        local r = items["MinidoracatWatch.MapWatch_" .. s .. "_Right"]
-        ok = ok and l ~= nil and l.loc == LEFT_W and (s == "Luthex" or (r ~= nil and r.loc == RIGHT_W))
+    local function all(left, right)
+        for _, s in ipairs(W.STYLES) do
+            local l, r = items["MinidoracatWatch.MapWatch_" .. s .. "_Left"], items["MinidoracatWatch.MapWatch_" .. s .. "_Right"]
+            if not l or l.loc ~= left or (s ~= "Luthex" and (not r or r.loc ~= right)) then return false end
+        end
+        return true
     end
-    check(ok, "七款的左手款進左手位、右手款進右手位；缺一件腳本不影響其他")
-    MuleBodyLocations, SandboxVars.B42PackMule, getScriptManager = nil, nil, savedSM
+    check(W.setWristCovered(false) == false and all(L.LEFT, L.RIGHT), "已經是顯示組：不改、回 false")
+    check(W.setWristCovered(true) == true and all(L.LEFT_COVERED, L.RIGHT_COVERED), "蓋住：七款左右手都換到蓋住組")
+    check(W.setWristCovered(true) == false, "再設一次蓋住：沒改")
+    check(W.setWristCovered(false) == true and all(L.LEFT, L.RIGHT), "改回顯示：換回顯示組")
+    getScriptManager = savedSM
 end
 
 -- ===== 負重核心：負重上限加成（MinidoracatWatch_Cores.lua，2026-10-14）=====

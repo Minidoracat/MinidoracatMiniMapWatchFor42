@@ -2,6 +2,8 @@
 <clothingItem>
 	<m_MaleModel>media\models_X\Static\Clothes\MinidoracatWatch_Spiffo_M_Right.x</m_MaleModel>
 	<m_FemaleModel>media\models_X\Static\Clothes\MinidoracatWatch_Spiffo_F_Right.x</m_FemaleModel>
+	<m_AltMaleModel>media\models_X\Static\Clothes\MinidoracatWatch_Spiffo_M_Right_ALT.x</m_AltMaleModel>
+	<m_AltFemaleModel>media\models_X\Static\Clothes\MinidoracatWatch_Spiffo_F_Right_ALT.x</m_AltFemaleModel>
 	<m_GUID>541bbef9-1ec1-47ae-95a2-b14f28020a80</m_GUID>
 	<m_Static>true</m_Static>
 	<m_AllowRandomHue>false</m_AllowRandomHue>

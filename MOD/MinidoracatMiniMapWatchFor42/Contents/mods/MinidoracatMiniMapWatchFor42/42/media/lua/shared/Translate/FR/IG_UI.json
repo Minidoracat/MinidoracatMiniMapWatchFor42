@@ -629,6 +629,8 @@
     "IGUI_MinidoracatWatch_Sound_ScanPing_old": "Nécessite un Minidoracat MiniMap plus récent : cette version ne jouera pas le signal.",
     "IGUI_MinidoracatWatch_ShowButton": "Afficher le bouton de la montre-carte",
     "IGUI_MinidoracatWatch_ShowButton_tooltip": "Un bouton à l'écran qui ouvre ou ferme le panneau de la montre-carte d'un clic. Il se trouve dans la barre de la famille de mods. S'il est masqué, faites un clic droit sur la montre-carte dans votre inventaire et choisissez \"Ouvrir la montre-carte\" pour ouvrir le panneau.",
+    "IGUI_MinidoracatWatch_OverSleeve": "Afficher les montres-cartes sur les manches longues",
+    "IGUI_MinidoracatWatch_OverSleeve_tooltip": "Activé : la montre-carte se porte par-dessus la manche et reste visible avec une veste ou un pull. Désactivé : les manches longues la cachent, comme les montres du jeu de base. Ne change que votre affichage, pour toutes les montres-cartes.",
     "IGUI_MinidoracatWatch_Admin_Shop": "Boutique du Centre économique",
     "IGUI_MinidoracatWatch_Admin_Shop_desc": "Mettez en vente des montres-cartes, des modules et des piles dans le Centre économique pour que les joueurs puissent les acheter. Ceci ouvre la page boutique du Centre économique avec un brouillon pour chaque objet qu'elle ne vend pas encore ; vous fixez les prix, et rien n'est mis en vente avant que vous n'appliquiez.",
     "IGUI_MinidoracatWatch_Admin_ShopBtn": "Vendre au Centre économique",

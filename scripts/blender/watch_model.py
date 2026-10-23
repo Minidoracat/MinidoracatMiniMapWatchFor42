@@ -128,6 +128,8 @@ STYLES = {
 }
 WATCH_XC = 0.112  # 錶心 x：原版錶殼 0.103–0.128；放大後往手肘挪，最外緣不過 0.132（手腕環 0.13 之後跟著手骨轉）
 MARGIN = 0.006  # 錶帶外緣離手臂截面外框（原版錶環離手腕 4–10 mm）
+MARGIN_ALT = 0.002  # 套袖（_ALT）：錶帶外緣離袖子截面外框 2 mm，再近就看得出錶浮在袖子上
+SE_ALT = 0.9  # 套袖擬合：袖子＋手臂每一點的超橢圓值壓到 0.9 以下（比 check_fit 的 0.95 留取樣點之間內插的餘裕）
 STRAP_T = 0.002  # 錶帶厚度
 # 超橢圓指數：原版手臂截面幾乎是軸向長方形（4 個角就在外框角上），橢圓（p=2）、p=3、p=4 都會被角頂穿；
 # p=5＋6 mm 時手臂最外點的超橢圓值 0.74（男）／0.49（女），嗶嗶腕機 0.91（check_fit 門檻 0.95）
@@ -145,14 +147,9 @@ def read_arm(body_x_path):
     p = i + m.end()
     nums = re.findall(r"-?\d+\.\d+(?:e-?\d+)?", t[p:p + nv * 80])
     V = np.array([float(x) for x in nums[:nv * 3]]).reshape(nv, 3)
-    sw = {}
-    for mm in re.finditer(r'SkinWeights\s*\{\s*"([^"]+)";\s*(\d+);', t):
-        n = int(mm.group(2))
-        vals = re.findall(r"-?\d+(?:\.\d+)?(?:e-?\d+)?", t[mm.end():mm.end() + n * 40 + 600])
-        sw[mm.group(1)] = (np.array(list(map(int, vals[:n]))), np.array(list(map(float, vals[n:2 * n]))),
-                           np.array(list(map(float, vals[2 * n:2 * n + 16]))).reshape(4, 4))
+    sw = _skin_weights(t)
     idx = set()
-    for b in ("Bip01_L_UpperArm", "Bip01_L_Forearm", "Bip01_L_Hand"):
+    for b in ARM_BONES:
         ii, ww, _ = sw[b]
         idx |= set(ii[ww > 0.05].tolist())
     idx = np.array(sorted(idx))
@@ -178,6 +175,65 @@ def read_arm(body_x_path):
     return out
 
 
+ARM_BONES = ("Bip01_L_UpperArm", "Bip01_L_Forearm", "Bip01_L_Hand")
+
+
+def _skin_weights(t):
+    """.X 文字的每個 SkinWeights：骨名 → (頂點索引, 權重, 4×4 反綁定矩陣)。"""
+    sw = {}
+    for mm in re.finditer(r'SkinWeights\s*\{\s*"([^"]+)";\s*(\d+);', t):
+        n = int(mm.group(2))
+        vals = re.findall(r"-?\d+(?:\.\d+)?(?:e-?\d+)?", t[mm.end():mm.end() + n * 40 + 600])
+        sw[mm.group(1)] = (np.array(list(map(int, vals[:n]))), np.array(list(map(float, vals[n:2 * n]))),
+                           np.array(list(map(float, vals[2 * n:2 * n + 16]))).reshape(4, 4))
+    return sw
+
+
+_NUM = r"(-?\d+(?:\.\d+)?(?:e-?\d+)?)"
+
+
+def read_sleeve(cloth_x_path):
+    """原版 3D 袖子（Skinned/Clothes/*.x，只讀尺寸不複製進 MOD）：回傳左前臂空間裡「三個頂點都跟著手臂」
+    （UpperArm＋Forearm＋Hand 權重 ≥ 0.5）的三角形，k×3×3。PZ 只取第一個 mesh（ProcessedAiScene.findMesh），這裡也是。"""
+    t = open(cloth_x_path, encoding="latin-1").read()
+    m = re.search(r"Mesh [^{]*\{\s*(\d+);", t)  # 跳過 template Mesh（大括號後面不是數字）
+    nv = int(m.group(1))
+    vm = list(re.finditer(_NUM + ";" + _NUM + ";" + _NUM + ";[,;]", t[m.end():]))[:nv]
+    V = np.array([[float(g) for g in v.groups()] for v in vm])
+    p = m.end() + vm[-1].end()
+    nf = re.match(r";?\s*(\d+);", t[p:])  # 頂點清單以 ;; 結尾，正規式只吃掉一個
+    tris = []
+    for f in re.findall(r"\d+;(\d+(?:,\d+){2,3});", t[p + nf.end():])[:int(nf.group(1))]:
+        q = list(map(int, f.split(",")))
+        tris += [q[:3]] + ([[q[0], q[2], q[3]]] if len(q) == 4 else [])
+    sw = _skin_weights(t)
+    assert "Bip01_L_Forearm" in sw, f"{cloth_x_path}: no forearm weights (sleeveless)"
+    w = np.zeros(nv)
+    for b in ARM_BONES:
+        if b in sw:
+            ii, ww, _ = sw[b]
+            w[ii] += ww
+    P = (np.c_[V, np.ones(nv)] @ sw["Bip01_L_Forearm"][2])[:, :3]
+    T = np.array(tris)
+    return P[T[(w[T] >= 0.5).all(1)]]
+
+
+def sleeve_section(tris, x):
+    """x 平面切袖子三角形的交點 (y,z)。"""
+    out = []
+    for i, j in ((0, 1), (1, 2), (2, 0)):
+        a, b = tris[:, i], tris[:, j]
+        si, sj = a[:, 0] - x, b[:, 0] - x
+        k = ((si <= 0) & (0 < sj)) | ((sj <= 0) & (0 < si))
+        out.append(a[k] + (b[k] - a[k]) * (si[k] / (si[k] - sj[k]))[:, None])
+    return np.concatenate(out)[:, 1:]
+
+
+def _outline(arm, x, sleeves):
+    """x 處錶帶要包住的點：手臂截面，套袖時再加每件袖子的截面。"""
+    return np.concatenate([s for s in (sleeve_section(t, x) for t in sleeves) if len(s)] + [arm_section(arm, x)])
+
+
 def arm_section(arm, x):
     """x 處的手臂截面 4 角點 (y,z)：沿四條縱向邊在相鄰兩環之間內插。"""
     for (xa, ra), (xb, rb) in zip(arm, arm[1:]):
@@ -192,10 +248,20 @@ def arm_section(arm, x):
     raise ValueError(f"x={x} outside arm rings")
 
 
-def fit(arm, x0, x1):
-    pts = np.concatenate([arm_section(arm, x) for x in np.linspace(x0 - 0.003, x1 + 0.003, 9)])
+def fit(arm, x0, x1, sleeves=None):
+    xs = np.linspace(x0 - 0.003, x1 + 0.003, 9)
+    if not sleeves:
+        pts = np.concatenate([arm_section(arm, x) for x in xs])
+        lo, hi = pts.min(0), pts.max(0)
+        c, a = (lo + hi) / 2, (hi - lo) / 2 + MARGIN
+        return float(c[0]), float(c[1]), float(a[0]), float(a[1])
+    pts = np.concatenate([_outline(arm, x, sleeves) for x in xs])
     lo, hi = pts.min(0), pts.max(0)
-    c, a = (lo + hi) / 2, (hi - lo) / 2 + MARGIN
+    c, a = (lo + hi) / 2, (hi - lo) / 2 + MARGIN_ALT
+    # 外框只保證四個軸向極值在裡面；袖子截面不是方的，斜向的點可能頂出超橢圓角，每次放大 1% 到全部 ≤ SE_ALT
+    while (np.abs((pts[:, 0] - c[0]) / (a[0] - STRAP_T)) ** P_EXP
+           + np.abs((pts[:, 1] - c[1]) / (a[1] - STRAP_T)) ** P_EXP).max() > SE_ALT:
+        a = a * 1.01
     return float(c[0]), float(c[1]), float(a[0]), float(a[1])
 
 
@@ -207,13 +273,13 @@ def se_value(y, z, cy, cz, ay, az):
     return abs((y - cy) / ay) ** P_EXP + abs((z - cz) / az) ** P_EXP
 
 
-def check_fit(arm, sections, label):
-    """手臂每一點都要在錶帶內面（半軸−厚度）裡面；回傳最大超橢圓值（<1 才不穿模）。"""
+def check_fit(arm, sections, label, sleeves=None):
+    """手臂（套袖時連袖子）每一點都要在錶帶內面（半軸−厚度）裡面；回傳最大超橢圓值（<1 才不穿模）。"""
     worst = 0.0
     xs = np.linspace(sections[0][0], sections[-1][0], 25)
     for x in xs:
         cy, cz, ay, az = _interp(sections, x)
-        for y, z in arm_section(arm, x):
+        for y, z in (_outline(arm, x, sleeves) if sleeves else arm_section(arm, x)):
             worst = max(worst, se_value(y, z, cy, cz, ay - STRAP_T, az - STRAP_T))
     assert worst < 0.95, f"{label}: arm pokes through the strap (superellipse {worst:.3f})"
     return worst
@@ -254,8 +320,9 @@ class Mesh:
         return P.min(0), P.max(0)
 
 
-def build(sid, gender, side, arm):
-    """回傳 (Mesh, 資訊)；arm＝read_arm(<gender>Body.x)（左前臂空間），右手在最後做 y 鏡像。"""
+def build(sid, gender, side, arm, sleeves=None):
+    """回傳 (Mesh, 資訊)；arm＝read_arm(<gender>Body.x)（左前臂空間），右手在最後做 y 鏡像。
+    sleeves＝[read_sleeve(...)]：套袖（_ALT）模型，錶帶改包住袖子；袖子也只在左前臂空間量，右手同樣最後鏡像。"""
     st = STYLES[sid]
     kx, kz = st.get("k", {}).get(gender) or (K_WATCH[gender], K_WATCH[gender])
     hs = H_SCALE[gender]
@@ -270,10 +337,10 @@ def build(sid, gender, side, arm):
     xa, xb = sorted((X(sx0), X(sx1)))
     if st.get("cuff"):
         xs = [xa] + [r[0] for r in arm if xa < r[0] < xb] + [xb]
-        sections = [(x,) + fit(arm, x, x) for x in xs]
+        sections = [(x,) + fit(arm, x, x, sleeves) for x in xs]
     else:
-        sections = [(xa,) + fit(arm, xa, xb), (xb,) + fit(arm, xa, xb)]
-    worst = check_fit(arm, sections, f"{sid}/{gender}{side}")
+        sections = [(xa,) + fit(arm, xa, xb, sleeves), (xb,) + fit(arm, xa, xb, sleeves)]
+    worst = check_fit(arm, sections, f"{sid}/{gender}{side}", sleeves)
     cy, cz, ay, az = _interp(sections, xc)
     zc_ref = cz
 
