@@ -409,6 +409,45 @@ do
     if not C.docked then W.log("family Dock unavailable: open the watch panel from the watch context menu") end
 end
 
+-- ===== 裝備欄 MOD：地圖手錶留在手的格子 =====
+-- NeatUI Equipment（Workshop 3790656296）與 EquipmentUI（3780682550；Inventory Tetris 附帶的同名版 EQUIPMENT_UI 同一個
+-- 檔案路徑與形狀）依部位決定格子：格子定義檔 return 一張清單，面板建立時照它建「部位 → 格子」（NEQ_Body.lua:185-201、
+-- BodySlotDisplay.lua:269-291），清單沒有的部位排到「其他」區（NEQ_Body.lua:356-369、BodySlotDisplay.lua:347-361）。
+-- 地圖手錶的兩組部位接在同一格的原版手腕後面：清單前面的部位決定格子顯示哪一件，和原版錶同一層。在 OnGameBoot 補：
+-- 每次載入 Lua 之後都會觸發，這時面板還沒建（GameWindow.java:670、Core.java:3949-3962、IngameState.java:1070-1077）；
+-- require 拿到的是它們面板 require 過的同一張表（LuaManager.java:1349-1350）。不能在載入時 require：會先跑它們的
+-- 檔案，它們接其他 MOD 部位的那段就落空。MOD id 兩種寫法都認（有時帶反斜線，NEQ_InventoryTetris.lua:50-63）。
+C.EQUIP_SLOT_MODS = {
+    { ids = { "NeatUI_Equipment" }, defs = "NeatEquipment/Definitions/NEQ_SlotDefs" },
+    { ids = { "EquipmentUI_B42", "EQUIPMENT_UI" }, defs = "EquipmentUI/Definitions/EquipmentSlotDefinitions" },
+}
+local function has(list, v)
+    for i = 1, #list do if list[i] == v then return true end end
+    return false
+end
+function C.equipSlots()
+    local L, mods = W.LOC, getActivatedMods()
+    local ours = { [ItemBodyLocation.LEFT_WRIST] = { L.LEFT, L.LEFT_COVERED },
+        [ItemBodyLocation.RIGHT_WRIST] = { L.RIGHT, L.RIGHT_COVERED } }
+    for _, m in ipairs(C.EQUIP_SLOT_MODS) do
+        local id
+        for _, v in ipairs(m.ids) do id = id or ((mods:contains(v) or mods:contains("\\" .. v)) and v) end
+        local defs = id and require(m.defs)
+        local added = 0
+        for _, d in ipairs(type(defs) == "table" and defs or {}) do
+            local locs = type(d) == "table" and d.bodyLocations
+            for i = type(locs) == "table" and #locs or 0, 1, -1 do
+                local at = i + 1
+                for _, loc in ipairs(ours[locs[i]] or {}) do
+                    if not has(locs, loc) then table.insert(locs, at, loc); at, added = at + 1, added + 1 end
+                end
+            end
+        end
+        if added > 0 then W.log(id .. ": map watch slots added next to the wrists (" .. added .. ")") end
+    end
+end
+Events.OnGameBoot.Add(C.equipSlots)
+
 -- ===== 右鍵選單 =====
 -- OnFillInventoryObjectContextMenu(playerNum, context, items)：items 是物品或 { items = {...} } 疊
 -- （ISInventoryPaneContextMenu.lua:128-137、:935）。子選單照原版 ISContextMenu:getNew／addSubMenu。

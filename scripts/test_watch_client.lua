@@ -1667,4 +1667,41 @@ do
     C.ui().Toast.show = realShow
 end
 
+-- ===== 裝備欄 MOD（NeatUI Equipment、EquipmentUI）：地圖手錶的兩組部位接在同一格的原版手腕後面 =====
+do
+    local L, B = W.LOC, ItemBodyLocation
+    local function defs()
+        return { { name = "head", bodyLocations = { "base:hat" } },
+            { name = "left", bodyLocations = { "base:hands", B.LEFT_WRIST, "base:left_ringfinger" } },
+            { name = "right", bodyLocations = { "base:hands", B.RIGHT_WRIST } } }
+    end
+    local function same(list, want)
+        if #list ~= #want then return false end
+        for i = 1, #want do if list[i] ~= want[i] then return false end end
+        return true
+    end
+    local NEQ, EUI = "NeatEquipment/Definitions/NEQ_SlotDefs", "EquipmentUI/Definitions/EquipmentSlotDefinitions"
+    local neq, eui = defs(), defs()
+    F.required[NEQ], F.required[EUI] = neq, eui
+    F.activeMods, F.requires = { NeatUI_Equipment = true }, {}
+    F.fire("OnGameBoot"); F.fire("OnGameBoot")
+    check(same(neq[2].bodyLocations, { "base:hands", B.LEFT_WRIST, L.LEFT, L.LEFT_COVERED, "base:left_ringfinger" })
+        and same(neq[3].bodyLocations, { "base:hands", B.RIGHT_WRIST, L.RIGHT, L.RIGHT_COVERED })
+        and same(neq[1].bodyLocations, { "base:hat" }),
+        "NeatUI Equipment：兩組部位接在同一格的原版手腕後面、其他格不動，開機兩次不重複")
+    check(same(eui[2].bodyLocations, { "base:hands", B.LEFT_WRIST, "base:left_ringfinger" }) and F.requires[EUI] == nil,
+        "EquipmentUI 沒啟用：不 require（免得印 require failed）、不改")
+    F.activeMods.EquipmentUI_B42 = true
+    F.fire("OnGameBoot")
+    check(same(eui[3].bodyLocations, { "base:hands", B.RIGHT_WRIST, L.RIGHT, L.RIGHT_COVERED }), "EquipmentUI 啟用：同樣補上")
+    eui = defs()
+    F.required[EUI], F.activeMods = eui, { ["\\EQUIPMENT_UI"] = true } -- Inventory Tetris 附帶的版本、id 帶反斜線的寫法
+    F.fire("OnGameBoot")
+    check(same(eui[2].bodyLocations, { "base:hands", B.LEFT_WRIST, L.LEFT, L.LEFT_COVERED, "base:left_ringfinger" }),
+        "Inventory Tetris 的 Equipment UI（id 帶反斜線）：同一份格子定義同樣補上")
+    F.required[NEQ], F.required[EUI] = nil, { "壞的", { bodyLocations = "也壞" } }
+    check(pcall(F.fire, "OnGameBoot"), "格子定義讀不到或形狀不對：不出錯")
+    F.activeMods, F.required = {}, {}
+end
+
 F.finish("test_watch_client")

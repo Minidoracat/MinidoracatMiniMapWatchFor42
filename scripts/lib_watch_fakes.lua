@@ -490,11 +490,20 @@ local MODULES = {
     MinidoracatWatch_AdminUI = F.MEDIA .. "/client/MinidoracatWatch_AdminUI.lua",
 }
 local loaded = {}
+-- 第三方 MOD 的模組：F.required[路徑]＝它 return 的值（PZ 的 require 對已載入的檔回同一份，LuaManager.java:1349-1350）；
+-- F.requires[路徑] 記被要了幾次（沒啟用的 MOD 不該去 require，會印 require failed）
+F.required, F.requires = {}, {}
 function require(name)
+    if F.required[name] ~= nil or name:find("/", 1, true) then
+        F.requires[name] = (F.requires[name] or 0) + 1
+        return F.required[name]
+    end
     if loaded[name] then return end
     loaded[name] = true
     if MODULES[name] then dofile(MODULES[name]) end
 end
+F.activeMods = {}
+function getActivatedMods() return { contains = function(_, id) return F.activeMods[id] == true end } end
 function F.load(rel) dofile(F.MEDIA .. "/" .. rel) end
 
 -- ===== 家族 UI 框架的替身（面板、Dock、Toast 用到的面）=====
