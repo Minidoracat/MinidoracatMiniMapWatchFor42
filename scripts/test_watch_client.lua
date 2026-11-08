@@ -205,7 +205,11 @@ local function lootOf(id) return ((acquire(id) or ""):match("Acquire_Loot|([^\n]
 check(lootOf("weight1") == nil and lootOf("weight3") == nil and lootOf("gps") ~= nil,
     "負重核心的戰利品開關預設關：不寫地點；其他模組照舊")
 SB.LootWeight1 = true
-check(lootOf("weight1") == PLACE .. "ArmyStorageElectronics" and lootOf("weight2") == nil, "打開負重核心 I：只寫它的地點")
+local CORE_PLACES = {}
+for i, t in ipairs({ "ArmyStorageElectronics", "ElectronicStoreMisc", "CrateElectronics", "SurvivalGear", "GymWeights",
+    "SportStorageWeights", "CrateFitnessWeights" }) do CORE_PLACES[i] = PLACE .. t end
+check(lootOf("weight1") == table.concat(CORE_PLACES, SEP) and lootOf("weight2") == nil,
+    "打開負重核心 I：只寫它的地點（軍事據點在前，接著六個非軍事地點）")
 SB.LootModules = false
 check(lootOf("weight1") ~= nil and lootOf("gps") == nil, "關掉模組戰利品：負重核心 I 照自己的開關，其他模組不寫")
 SB.LootModules, SB.LootWeight1 = nil, nil

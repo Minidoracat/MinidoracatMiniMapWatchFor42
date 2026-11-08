@@ -325,6 +325,16 @@ local function weightOf(name, item)
     for i = 1, #items, 2 do if items[i] == item then return items[i + 1] end end
     return nil
 end
+-- 負重核心的非軍事地點（2026-11-08 使用者裁定；警察局不算）：每顆在這六張表各一筆、權重都是 w
+local CIVIL = { "ElectronicStoreMisc", "CrateElectronics", "SurvivalGear", "GymWeights", "SportStorageWeights",
+    "CrateFitnessWeights" }
+local PER = 1 + #CIVIL -- 每顆核心的筆數：軍事一張＋非軍事六張
+local function civil(item, w)
+    for _, name in ipairs(CIVIL) do
+        if count(name, item) ~= 1 or math.abs(weightOf(name, item) - w) > 1e-12 then return false end
+    end
+    return true
+end
 local before = #list.ElectronicStoreMisc.items
 F.reset()
 Lt.tick()
@@ -359,7 +369,9 @@ NATIVE["MinidoracatWatch.LootWeight2"] = true
 F.now = F.now + Lt.POLL_MS
 Lt.tick()
 check(parses == 3 and count("ArmyBunkerStorage", WEIGHTS[2]) == 1 and weightOf("ArmyBunkerStorage", WEIGHTS[2]) == 0.03
-    and weightsAnywhere() == 1 and ours() == total + 1, "開負重核心 II：只加進軍事地堡 0.03、I 與 III 照樣沒有、Parse")
+    and civil(WEIGHTS[2], 0.01) and count("PoliceLockers", WEIGHTS[2]) == 0
+    and weightsAnywhere() == PER and ours() == total + PER,
+    "開負重核心 II：軍事地堡 0.03、六張非軍事表各 0.01、警察局沒有；I 與 III 照樣沒有、Parse")
 NATIVE["MinidoracatWatch.LootWeight1"], NATIVE["MinidoracatWatch.LootWeight3"] = true, true
 NATIVE["MinidoracatWatch.LootModuleAmount"] = 1
 F.now = F.now + Lt.POLL_MS
@@ -368,12 +380,13 @@ check(count("ArmyStorageElectronics", WEIGHTS[1]) == 1 and count("ArmyBunkerStor
     and math.abs(weightOf("ArmyStorageElectronics", WEIGHTS[1]) - 0.0125) < 1e-12
     and math.abs(weightOf("ArmyBunkerStorage", WEIGHTS[3]) - 0.0025) < 1e-12
     and math.abs(weightOf("ArmyBunkerStorage", WEIGHTS[2]) - 0.0075) < 1e-12
-    and weightOf("StoreDisplayWatches", W.watchType("ValuTech")) == 4 and weightsAnywhere() == 3,
-    "三顆全開＋模組數量「很少」：I 軍事電子 0.05、III 地堡 0.01 都乘 0.25，錶的數量不受影響")
+    and civil(WEIGHTS[1], 0.005) and civil(WEIGHTS[3], 0.00125)
+    and weightOf("StoreDisplayWatches", W.watchType("ValuTech")) == 4 and weightsAnywhere() == 3 * PER,
+    "三顆全開＋模組數量「很少」：軍事表與非軍事表（I 0.02、III 0.005）都乘 0.25，錶的數量不受影響")
 NATIVE["MinidoracatWatch.LootModules"] = false
 F.now = F.now + Lt.POLL_MS
 Lt.tick()
-check(weightsAnywhere() == 3 and count("ArmyStorageElectronics", "MinidoracatWatch.Module_Relay") == 0,
+check(weightsAnywhere() == 3 * PER and count("ArmyStorageElectronics", "MinidoracatWatch.Module_Relay") == 0,
     "關掉一般的「模組」開關：負重核心照自己的開關留著")
 NATIVE["MinidoracatWatch.LootModules"], NATIVE["MinidoracatWatch.LootModuleAmount"] = nil, nil
 for _ = 1, 3 do
@@ -384,8 +397,8 @@ for _ = 1, 3 do
     F.now = F.now + Lt.POLL_MS
     Lt.tick()
 end
-check(count("ArmyBunkerStorage", WEIGHTS[2]) == 1 and weightsAnywhere() == 3 and ours() == total + 3,
-    "負重核心 II 反覆開關三次：每筆只有一份")
+check(count("ArmyBunkerStorage", WEIGHTS[2]) == 1 and civil(WEIGHTS[2], 0.01) and weightsAnywhere() == 3 * PER
+    and ours() == total + 3 * PER, "負重核心 II 反覆開關三次：每張表每筆只有一份")
 NATIVE["MinidoracatWatch.LootWeight1"], NATIVE["MinidoracatWatch.LootWeight2"], NATIVE["MinidoracatWatch.LootWeight3"] =
     false, false, false
 F.now = F.now + Lt.POLL_MS
@@ -399,7 +412,8 @@ check(weightsAnywhere() == 0, "原生選項拿不到負重核心開關：退回 
 SB.LootWeight3 = true
 F.now = F.now + Lt.POLL_MS
 Lt.tick()
-check(count("ArmyBunkerStorage", WEIGHTS[3]) == 1 and weightsAnywhere() == 1, "原生拿不到、SandboxVars 開負重核心 III：照 SandboxVars 加")
+check(count("ArmyBunkerStorage", WEIGHTS[3]) == 1 and civil(WEIGHTS[3], 0.005) and weightsAnywhere() == PER,
+    "原生拿不到、SandboxVars 開負重核心 III：照 SandboxVars 加")
 SB.LootWeight3 = nil
 NATIVE["MinidoracatWatch.LootModules"], NATIVE["MinidoracatWatch.LootCards"] = false, false
 F.now = F.now + Lt.POLL_MS

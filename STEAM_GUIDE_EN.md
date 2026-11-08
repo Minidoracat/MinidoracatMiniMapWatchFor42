@@ -70,7 +70,7 @@ The rest of this chapter shows the defaults. Where to loot each watch is under "
 [h3]Modules and unlock cards[/h3]
 [list]
 [*] [b]Modules[/b]: electronics stores and crates, military and police sites, survival gear lockers. General modules are more common; Advanced and Core are rare.
-[*] [b]Carry Cores[/b]: by default only army zombies carry them, and higher tiers are rarer (see "Zombie drops" below). They can't be crafted and don't spawn in containers by default. Admins can change the drop rules, make them appear as loot (military electronics storage, rare), or sell them in the Economy Center.
+[*] [b]Carry Cores[/b]: by default only army zombies carry them, and higher tiers are rarer (see "Zombie drops" below). They can't be crafted and don't spawn in containers by default. Admins can change the drop rules, make them appear as loot, or sell them in the Economy Center. As loot, Carry Core I spawns in military sites and pawnshops (Very rare) and II and III in military bunkers (Extremely rare); all three tiers also spawn, even more rarely, in electronics stores, gyms, sporting goods stores, and storage crates of electronics, survival gear or fitness equipment (Extremely rare).
 [*] [b]Unlock cards[/b] (rare):
 [list]
 [*] Expansion Slot Unlock Card: electronics stores

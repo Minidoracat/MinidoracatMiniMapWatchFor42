@@ -93,10 +93,18 @@ function W.lootEntries()
         { "LootModules", mod("LongComm"), { "ArmyStorageElectronics", 0.3, "PoliceLockers", 0.2 } },
         { "LootModules", mod("Relay"), { "ArmyStorageElectronics", 0.05, "ArmyBunkerStorage", 0.05 } },
         { "LootModules", mod("Eco"), { "ElectronicStoreMisc", 0.05, "ArmyStorageElectronics", 0.05 } },
-        -- 負重核心：每顆一個開關（LootWeight1..3，預設關、不受 LootModules 影響）；數量跟著「模組的數量」
-        { "LootWeight1", mod("Weight1"), { "ArmyStorageElectronics", 0.05 } },
-        { "LootWeight2", mod("Weight2"), { "ArmyBunkerStorage", 0.03 } },
-        { "LootWeight3", mod("Weight3"), { "ArmyBunkerStorage", 0.01 } },
+        -- 負重核心：每顆一個開關（LootWeight1..3，預設關、不受 LootModules 影響）；數量跟著「模組的數量」。
+        -- 非軍事地點（2026-11-08 使用者裁定）：電器行、倉庫的電子／生存用品箱、健身房、運動用品店與健身房的倉庫、
+        -- 倉庫的健身器材箱，都比軍事表少、階越高越稀有；警察局不放（本 MOD 把警察歸在軍警一階）
+        { "LootWeight1", mod("Weight1"), { "ArmyStorageElectronics", 0.05, "ElectronicStoreMisc", 0.02,
+            "CrateElectronics", 0.02, "SurvivalGear", 0.02, "GymWeights", 0.02, "SportStorageWeights", 0.02,
+            "CrateFitnessWeights", 0.02 } },
+        { "LootWeight2", mod("Weight2"), { "ArmyBunkerStorage", 0.03, "ElectronicStoreMisc", 0.01,
+            "CrateElectronics", 0.01, "SurvivalGear", 0.01, "GymWeights", 0.01, "SportStorageWeights", 0.01,
+            "CrateFitnessWeights", 0.01 } },
+        { "LootWeight3", mod("Weight3"), { "ArmyBunkerStorage", 0.01, "ElectronicStoreMisc", 0.005,
+            "CrateElectronics", 0.005, "SurvivalGear", 0.005, "GymWeights", 0.005, "SportStorageWeights", 0.005,
+            "CrateFitnessWeights", 0.005 } },
         -- 解鎖卡（很少）：擴充＝電器行、進階＝軍警、核心＝軍事地堡
         { "LootCards", card("ext"), { "ElectronicStoreMisc", 0.1, "CrateElectronics", 0.1 } },
         { "LootCards", card("adv"), { "ArmyStorageElectronics", 0.1, "PoliceLockers", 0.05 } },
