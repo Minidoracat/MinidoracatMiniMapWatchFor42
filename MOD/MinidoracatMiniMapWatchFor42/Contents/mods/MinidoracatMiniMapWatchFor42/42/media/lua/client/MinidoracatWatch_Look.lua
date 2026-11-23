@@ -49,11 +49,13 @@ function A:isValid() return self.skip or (C.lookState(self.pn) == true and not s
 -- onCompleted 裡面，它回去後會把這個動作的進度寫到下一個動作上（:77-95，進食到一半被打斷再接回來的會歸零）。
 -- 空動作不因跑步、瞄準中斷：引擎先處理玩家輸入才更新動作（IsoPlayer.java:2074-2080,2400-2402），被它停掉＝整列清掉；
 -- 這兩個欄位在建 Java 動作時讀（LuaTimedActionNew.java:38-55），所以在 begin 之前改。
--- 每次 begin 都重算：同一個動作會被原版接回來再 begin 一次（看錶中點門，門做完後接回，ISTimedActionQueue.lua:60-75）
+-- 每次 begin 都重算：同一個動作會被原版接回來再 begin 一次（看錶中點門，門做完後接回，ISTimedActionQueue.lua:60-75）。
+-- 有效時還原的是入列後的值，不是固定的 true：原版在農作中入列會把 stopOnAim 關掉（:171-173）
 function A:begin()
     self.skip = nil
     self.skip = not self:isValid() or nil
-    self.stopOnRun, self.stopOnAim = not self.skip, not self.skip
+    if self.onRun == nil then self.onRun, self.onAim = self.stopOnRun, self.stopOnAim end
+    self.stopOnRun, self.stopOnAim = self.onRun and not self.skip, self.onAim and not self.skip
     ISBaseTimedAction.begin(self)
 end
 

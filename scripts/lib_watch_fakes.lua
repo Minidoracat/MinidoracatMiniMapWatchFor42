@@ -583,6 +583,7 @@ ISTimedActionQueue = {
     end,
     add = function(a)
         if a.character:isAsleep() then return end
+        if a.character.farming then a.stopOnAim = false end -- 原版農作中入列（ISTimedActionQueue.lua:171-173）
         local q = ISTimedActionQueue.getTimedActionQueue(a.character)
         q:addToQueue(a)
         return q

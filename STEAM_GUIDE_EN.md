@@ -339,7 +339,7 @@ Off by default (swap batteries instead). Admins can allow two ways to charge, bo
 [*] With it ticked you need a powered map watch on, and the minimap shows only while your character looks at it.
 [*] To look: press the hotkey (default [b]0[/b]; rebind under Options → Key Bindings → "Minidoracat Map Watch"), use the panel's "Look at watch" button, or right-click the worn watch and choose "Look at watch". Do it again to stop.
 [*] While looking, your character raises the wrist that wears the watch and looks down at it. Other players see it too.
-[*] You can walk and drive while looking. Running, aiming, starting another action or taking the watch off stops it.
+[*] You can walk and drive while looking. Running, aiming, starting another action or taking the watch off stops it; after you click a door or window to open or close it, your character goes back to looking by itself.
 [*] It does nothing when the server turns the minimap off or already requires looking.
 [/list]
 [*] [b]Where to get items[/b] (Map Display Settings only): opens the Where to Get window, even without a watch. Disabled when the server hides it.

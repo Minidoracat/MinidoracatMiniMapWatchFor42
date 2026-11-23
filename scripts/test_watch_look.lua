@@ -264,6 +264,18 @@ for _, flag in ipairs({ "aiming", "running" }) do
     W.invalidate()
     ISTimedActionQueue.clear(p)
 end
+-- 農作中入列的動作，原版把 stopOnAim 關掉：有效的看錶要保留這個值，瞄準時由 update 只結束自己，後面的動作照做
+p.farming = true
+first = later(true)
+Look.toggle(p)
+nxt = later(true)
+p.farming, p.aiming = nil, true
+first:forceComplete()
+step()
+step()
+check(#queue() == 1 and queue()[1] == nxt and nxt.starts == 1, "農作中排的看錶輪到時正在瞄準：只結束自己，後面的動作照做")
+p.aiming = nil
+ISTimedActionQueue.clear(p)
 -- 開關門這類「做完要接回被打斷動作」的中斷者進行中：這一下不排看錶。排了會夾在中間，接回的動作（吃飽時的吸菸，
 -- isValidStart 為假）失去原版只給下一個動作的起始檢查豁免，整列被清掉
 local Resume = ISBaseTimedAction:derive("Resume")
