@@ -31,7 +31,7 @@ function Look.pose(action)
 end
 
 -- 每幀被問（IsoGameCharacter.java:9176）：脫錶、沒電、模式關掉、睡著，下一幀就停
--- （睡覺只設欄位、不清動作，IsoGameCharacter.java:3158-3160）
+-- （睡覺：單人與伺服器由引擎清動作，多人客戶端不清，IsoGameCharacter.java:9091,9118-9122，所以自己查）
 function A:isValid() return self.skip or (C.lookState(self.pn) == true and not self.character:isAsleep()) end
 
 -- 輪到時已經不能看（排隊期間脫錶、沒電、規則改了）：當成空動作開始（skip），start 馬上請引擎結束它，下一幀
@@ -76,7 +76,11 @@ function Look.toggle(player)
     local queue = ISTimedActionQueue.getTimedActionQueue(player)
     local i = queue:indexOfType(A.Type)
     if i == 1 then
-        queue.queue[1]:forceComplete() -- 佇列第 1 個一定開始了（addToQueue 同步 begin，ISTimedActionQueue.lua:9-17）
+        -- 佇列第 1 個已經交給引擎（addToQueue 同步 begin，ISTimedActionQueue.lua:9-17）。先標成 skip：它還在等開始時
+        -- （坐在地上，BaseAction.java:97-102），引擎的 start 會把 forceComplete 清掉（:133-135），靠 A:start 再結束一次
+        local a = queue.queue[1]
+        a.skip = true
+        a:forceComplete()
         return
     end
     if i > 1 then

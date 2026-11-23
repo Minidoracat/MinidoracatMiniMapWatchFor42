@@ -1039,7 +1039,7 @@ function M:arrange(player, w)
         self.btnLook:setEnabled(queued or look == true)
     end
     local show = { look ~= nil, hasLight == true, screen == true, true, true }
-    local right, maxH = width - PAD, 0
+    local right, maxH, widest = width - PAD, 0, 0
     for i, b in ipairs(self.footBtns) do
         b:setVisible(show[i])
         if show[i] then
@@ -1047,12 +1047,16 @@ function M:arrange(player, w)
             b:setX(right)
             right = right - 8
             maxH = math.max(maxH, b.height)
+            -- 換不換列用按鈕出現過的最大寬度算：標題會換（開始⇄停止看錶、開燈⇄關燈），照當下寬度算的話一按版面就來回跳
+            -- shortcut: 第一次換成較寬的標題時可能換列一次，之後固定；要連這一次都不跳得先量兩種標題
+            b.footW = math.max(b.footW or 0, b.width)
+            widest = widest + b.footW + 8
         end
     end
     self.footText = self:composeFoot(player, w)
     self.footTextW = right - PAD - 4
     local footH
-    if self.footTextW >= FOOT_TEXT_MIN then
+    if width - 2 * PAD - 4 - widest >= FOOT_TEXT_MIN then
         local textH = #wrap(self.footText, self.footTextW) * fh
         footH = math.max(maxH + 16, textH + 16)
         for _, b in ipairs(self.footBtns) do b:setY(y + math.floor((footH - b.height) / 2)) end

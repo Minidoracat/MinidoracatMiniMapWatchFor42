@@ -273,6 +273,17 @@ check(C.lookActive(0) == true, "（重新開始看）")
 Look.toggle(p)
 step()
 check(#queue() == 0 and C.lookActive(0) == false and gate() == false, "正在看時再觸發：停止、小地圖收起")
+-- 坐在地上：動作要等角色坐好才開始。這時按停止，引擎之後開始動作時會把 forceComplete 清掉，也不能讓看錶開始
+local sitting, baseWait = true, ISBaseTimedAction.waitToStart
+ISBaseTimedAction.waitToStart = function() return sitting end
+Look.toggle(p)
+a = queue()[1]
+check(a.action.started == nil and C.lookActive(0) == false, "坐在地上：動作還在等開始，不算在看")
+Look.toggle(p)
+sitting = false
+step()
+check(#queue() == 0 and C.lookActive(0) == false and a.poseCalls == nil, "還在等開始時按停止：之後不會開始看")
+ISBaseTimedAction.waitToStart = baseWait
 -- 排在別的動作後面：再觸發只取消它
 local other = F.action(ISWearClothing, p, watch)
 ISTimedActionQueue.add(other)

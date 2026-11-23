@@ -568,10 +568,12 @@ ISTimedActionQueue = {
         q:addToQueue(a)
         return q
     end,
-    -- 原版：StopAllActionQueue（引擎清單清空，不呼叫 Lua 的 stop）＋清佇列（ISTimedActionQueue.lua:236-243）
+    -- 原版（ISTimedActionQueue.lua:236-243）：StopAllActionQueue 對已開始的動作呼叫 stop（IsoGameCharacter.java:5468-5474），再清佇列
     clear = function(p)
-        ISTimedActionQueue.getTimedActionQueue(p):resetQueue()
+        local act = (p.actions or {})[1]
+        if act and act.started then act.owner:stop() end
         p.actions = {}
+        ISTimedActionQueue.getTimedActionQueue(p):resetQueue()
     end,
 }
 -- 引擎一幀：動作更新（IsoGameCharacter.java:9176-9204；Java 的 start 先清 forceComplete 才呼叫 Lua 的 start）

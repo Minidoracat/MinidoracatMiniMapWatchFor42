@@ -419,7 +419,7 @@ The sandbox options are on the five "Minidoracat Map Watch" pages.
 [tr][th]Option[/th][th]Default[/th][/tr]
 [tr][td]Enable map watch[/td][td]On[/td][/tr]
 [tr][td]Single-player defaults[/td][td]On: the first time a single-player save loads, options still at their default switch to no watch for the minimap, free paid slots and no unlock cards as loot[/td][/tr]
-[tr][td]Minimap rule[/td][td]Watch required (also: No watch needed, Minimap off, Only while looking at the watch)[/td][/tr]
+[tr][td]Minimap rule[/td][td]Watch required (also: No watch needed, Minimap off, Checking the watch, which the admin settings window lists as "Only while looking at the watch")[/td][/tr]
 [tr][td]Feature rules: resource points, navigation (incl. the direction arrow), faction sharing, vehicles & animals, zombie positions, light[/td][td]Module required[/td][/tr]
 [/table]
 [h3]Battery and charging[/h3]
