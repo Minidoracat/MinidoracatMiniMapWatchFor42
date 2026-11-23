@@ -33,7 +33,7 @@ Admins can change every one of these rules.
 {{img:02-seven-watches-en.jpg}}
 [table]
 [tr][th]Watch[/th][th]Rarity[/th][th]Where to loot[/th][/tr]
-[tr][td]ValuTech Map Watch[/td][td]Common[/td][td]Electronics stores, homes, gas station counters[/td][/tr]
+[tr][td]ValuTech Map Watch[/td][td]Common[/td][td]Electronics stores, homes, gas station counters; can also be crafted (see "Crafting")[/td][/tr]
 [tr][td]Cat Paw Map Watch[/td][td]Uncommon[/td][td]Toy stores, gift shops, kids' rooms[/td][/tr]
 [tr][td]Aurora Map Watch[/td][td]Uncommon[/td][td]Electronics store watch cases, department stores[/td][/tr]
 [tr][td]Spiffo Kids' Watch[/td][td]Uncommon[/td][td]Spiffo's, kids' rooms[/td][/tr]
@@ -78,15 +78,20 @@ The rest of this chapter shows the defaults. Where to loot each watch is under "
 [*] Core Slot Unlock Card: military bunkers
 [/list]
 [/list]
-[h3]Crafting modules[/h3]
-No recipe to learn; needs a screwdriver, a surface and Electrical 3 (adjustable). When an admin turns off "Allow crafting modules" or "Enable map watch", these recipes don't show in the crafting list.
+[h3]Crafting[/h3]
+No recipe to learn; needs a screwdriver, a surface and Electrical 3 (adjustable). When an admin turns off "Allow crafting" or "Enable map watch", these recipes don't show in the crafting list.
 [table]
-[tr][th]Module[/th][th]Materials[/th][/tr]
+[tr][th]Result[/th][th]Materials[/th][/tr]
+[tr][td]ValuTech Map Watch[/td][td]Vanilla Digital Watch (black, red or metallic dress style; used up) + 3 Scrap Electronics + a full Battery[/td][/tr]
 [tr][td]Directory Module[/td][td]Phonebook + 2 Scrap Electronics[/td][/tr]
 [tr][td]Comms Module[/td][td]Radio Transmitter + Radio Receiver + Scrap Electronics[/td][/tr]
 [tr][td]Light Module[/td][td]Flashlight (used up) + 2 Scrap Electronics[/td][/tr]
 [/table]
-Other modules are loot or zombie drops only (Carry Cores: see above).
+[list]
+[*] The crafted watch is fully charged; taking its battery out gives a full Battery.
+[*] A Digital Watch you are wearing or have favorited is never used; the Battery must be full.
+[/list]
+The other six watches and the other modules are loot or zombie drops only (Carry Cores: see above).
 [h3]Zombie drops[/h3]
 [list]
 [*] The [b]first time a corpse is searched[/b], items roll by outfit.
@@ -477,8 +482,8 @@ Each tier has its own currency, period and renewal, all defaulting to:
 [tr][th]Option[/th][th]Default[/th][/tr]
 [tr][td]What players see about obtaining items[/td][td]Where to get (also: Hidden, Where to get and odds)[/td][/tr]
 [tr][td]Screwdriver required for modules[/td][td]On[/td][/tr]
-[tr][td]Allow crafting modules[/td][td]On[/td][/tr]
-[tr][td]Electrical level to craft modules[/td][td]3[/td][/tr]
+[tr][td]Allow crafting[/td][td]On[/td][/tr]
+[tr][td]Electrical level for crafting[/td][td]3[/td][/tr]
 [tr][td]Watches, modules (except Carry Cores), unlock cards appear as loot[/td][td]On[/td][/tr]
 [tr][td]Amount[/td][td]Watches and modules Normal, cards Very Low[/td][/tr]
 [tr][td]Zombies carry map watch items[/td][td]On[/td][/tr]

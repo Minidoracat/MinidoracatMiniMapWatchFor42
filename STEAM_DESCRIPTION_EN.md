@@ -12,13 +12,13 @@ Without this mod installed, the minimap stays fully available as before. Works i
 [*] [b]Required:[/b] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3763913359]Minidoracat MiniMap[/url]
 [*] [b]Required:[/b] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3789836701]Minidoracat UI[/url]
 [*] [b]Optional:[/b] [url=https://steamcommunity.com/sharedfiles/filedetails/?id=3801482125]Minidoracat Economy[/url] (buy or rent paid slots with in-game currency on multiplayer servers)
-[*] [b]Add/remove mid-save:[/b] safe to add, but watches only appear in containers and corpses not searched yet; removing it deletes watches and modules
+[*] [b]Add/remove mid-save:[/b] safe to add, but watches only appear in containers and corpses not searched yet (you can also craft one from a vanilla Digital Watch); removing it deletes watches and modules
 [*] [b]Languages:[/b] 繁體中文, 简体中文, English, 日本語, 한국어, Русский, Español, Português, Türkçe, Français, Polski, Deutsch (please report any translation issues)
 [/list]
 
 [h2]🚀 Quick start[/h2]
 [olist]
-[*] Loot a map watch or take one from a zombie, then wear it to use the minimap (singleplayer needs no watch by default)
+[*] Loot a map watch, take one from a zombie, or craft a ValuTech from a vanilla Digital Watch, then wear it to use the minimap (singleplayer needs no watch by default)
 [*] Click the "Map Watch" button in the family toolbar to open the panel, or right-click the watch and choose "Open Map Watch"
 [*] Drag modules onto the panel's slots to install them and unlock more features
 [*] When the battery runs out, press "Insert Battery" or "Replace Battery" in the panel

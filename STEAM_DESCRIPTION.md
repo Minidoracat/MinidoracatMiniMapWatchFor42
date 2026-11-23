@@ -12,13 +12,13 @@
 [*] [b]必裝：[/b][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3763913359]Minidoracat MiniMap[/url]
 [*] [b]必裝：[/b][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3789836701]Minidoracat UI[/url]
 [*] [b]選裝：[/b][url=https://steamcommunity.com/sharedfiles/filedetails/?id=3801482125]Minidoracat Economy[/url]（多人伺服器用遊戲幣買斷或租用付費槽位）
-[*] [b]中途加入／移除：[/b]可加入，但地圖手錶只出現在還沒搜過的容器與屍體；移除後錶與模組會消失
+[*] [b]中途加入／移除：[/b]可加入，但地圖手錶只出現在還沒搜過的容器與屍體（也可以用原版電子錶自己做一支）；移除後錶與模組會消失
 [*] [b]介面語言：[/b]繁體中文、简体中文、English、日本語、한국어、Русский、Español、Português、Türkçe、Français、Polski、Deutsch（翻譯有問題請回報）
 [/list]
 
 [h2]🚀 快速上手[/h2]
 [olist]
-[*] 搜刮或從殭屍身上取得地圖手錶，戴上就能用小地圖（單人遊戲預設不需要錶）
+[*] 搜刮、從殭屍身上取得地圖手錶，或用原版電子錶自己做一支 ValuTech，戴上就能用小地圖（單人遊戲預設不需要錶）
 [*] 點家族工具列的「地圖手錶」按鈕打開面板，也可以在錶上按右鍵「開啟地圖手錶」
 [*] 把模組拖到面板的槽位上安裝，解鎖更多功能
 [*] 沒電時在面板按「裝入電池」或「更換電池」

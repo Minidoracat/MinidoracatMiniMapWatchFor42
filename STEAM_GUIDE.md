@@ -33,7 +33,7 @@ https://steamcommunity.com/sharedfiles/filedetails/?id=3816406671
 {{img:02-seven-watches-zh.jpg}}
 [table]
 [tr][th]錶款[/th][th]稀有度[/th][th]搜刮地點[/th][/tr]
-[tr][td]ValuTech 地圖手錶[/td][td]常見[/td][td]電器行、一般住宅、加油站櫃檯[/td][/tr]
+[tr][td]ValuTech 地圖手錶[/td][td]常見[/td][td]電器行、一般住宅、加油站櫃檯；也能自己製作（見「製作」）[/td][/tr]
 [tr][td]貓爪 地圖手錶[/td][td]少見[/td][td]玩具店、禮品店、小孩房[/td][/tr]
 [tr][td]極光 地圖手錶[/td][td]少見[/td][td]電器行的錶櫃、商場[/td][/tr]
 [tr][td]Spiffo 兒童手錶[/td][td]少見[/td][td]Spiffo's 餐廳、小孩房[/td][/tr]
@@ -78,15 +78,20 @@ https://steamcommunity.com/sharedfiles/filedetails/?id=3816406671
 [*] 核心槽解鎖卡：軍事地堡
 [/list]
 [/list]
-[h3]製作模組[/h3]
-不必學配方；需要螺絲起子、桌面與電學 3 級（等級可調）。管理員關閉「允許製作模組」或「啟用地圖手錶」時，合成清單不會出現這些配方。
+[h3]製作[/h3]
+不必學配方；需要螺絲起子、桌面與電學 3 級（等級可調）。管理員關閉「允許製作」或「啟用地圖手錶」時，合成清單不會出現這些配方。
 [table]
-[tr][th]模組[/th][th]材料[/th][/tr]
+[tr][th]成品[/th][th]材料[/th][/tr]
+[tr][td]ValuTech 地圖手錶[/td][td]原版電子錶（黑色、紅色、金屬風任一款，整支用掉）＋電子零件×3＋滿電的電池[/td][/tr]
 [tr][td]名錄模組[/td][td]電話簿＋電子零件×2[/td][/tr]
 [tr][td]通訊模組[/td][td]無線電發射器＋無線電接收器＋電子零件[/td][/tr]
 [tr][td]照明模組[/td][td]手電筒（整支用掉）＋電子零件×2[/td][/tr]
 [/table]
-其他模組只能搜刮或從殭屍身上取得（負重核心見上方）。
+[list]
+[*] 做好的地圖手錶是滿電，取出來是一顆滿電的電池。
+[*] 戴在手上或加入收藏的電子錶不會被用掉；電池要滿電才收。
+[/list]
+其他六款錶與其他模組只能搜刮或從殭屍身上取得（負重核心見上方）。
 [h3]殭屍掉落[/h3]
 [list]
 [*] 屍體[b]第一次被翻找[/b]時，依服裝擲機率放進物品。
@@ -478,8 +483,8 @@ https://steamcommunity.com/sharedfiles/filedetails/?id=3816406671
 [tr][th]選項[/th][th]預設[/th][/tr]
 [tr][td]玩家能看到的取得方式[/td][td]只列取得方式（另有：不開放、取得方式與機率）[/td][/tr]
 [tr][td]拆裝模組需要螺絲起子[/td][td]開[/td][/tr]
-[tr][td]允許製作模組[/td][td]開[/td][/tr]
-[tr][td]製作模組需要的電學等級[/td][td]3[/td][/tr]
+[tr][td]允許製作[/td][td]開[/td][/tr]
+[tr][td]製作需要的電學等級[/td][td]3[/td][/tr]
 [tr][td]各款錶、模組（負重核心除外）、解鎖卡出現在戰利品中[/td][td]開[/td][/tr]
 [tr][td]數量[/td][td]地圖手錶、模組一般；解鎖卡很少[/td][/tr]
 [tr][td]殭屍身上會帶地圖手錶相關物品[/td][td]開[/td][/tr]
