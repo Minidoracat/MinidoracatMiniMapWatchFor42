@@ -869,25 +869,28 @@ function M:composeFoot(player, watch)
     return s
 end
 
--- 由左到右排一列按鈕、放不下換行；最後一列底緣貼在 bottom，多的列往上長。回第一列的 y
+-- 由左到右排一列按鈕、放不下換行；最後一列底緣貼在 bottom，多的列往上長。回第一列的 y。
+-- 底列按鈕佔的寬度用出現過的最大寬度（footW，arrange 記的）：標題換了，列數與後面按鈕的位置不跟著跳
 local function flow(btns, n, left, right, bottom, gap)
     local rowH, rows, x = 0, 1, left
     for i = 1, n do
         local b = btns[i]
         rowH = math.max(rowH, b.height)
-        if i > 1 and x + b.width > right then rows, x = rows + 1, left end
-        x = x + b.width + gap
+        local bw = b.footW or b.width
+        if i > 1 and x + bw > right then rows, x = rows + 1, left end
+        x = x + bw + gap
     end
     local y = bottom - rows * rowH - (rows - 1) * 6
     local top = y
     x = left
     for i = 1, n do
         local b = btns[i]
-        if i > 1 and x + b.width > right then x, y = left, y + rowH + 6 end
+        local bw = b.footW or b.width
+        if i > 1 and x + bw > right then x, y = left, y + rowH + 6 end
         b:setX(x)
         b:setY(y)
         b:setVisible(true)
-        x = x + b.width + gap
+        x = x + bw + gap
     end
     return top
 end

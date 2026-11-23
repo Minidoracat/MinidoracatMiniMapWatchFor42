@@ -117,6 +117,9 @@ function Item:setCurrentUsesFloat(f)
     if f < 0 then f = 0 elseif f > 1 then f = 1 end
     self.uses = math.floor(f / self.useDelta + 0.5)
 end
+-- 手持遮罩（腳本的 primaryAnimMask／secondaryAnimMask，Item.java:1462-1474）：有才會平常就畫在手上
+function Item:getItemReplacementPrimaryHand() return self.maskP end
+function Item:getItemReplacementSecondHand() return self.maskS end
 
 F.BATTERY_DELTA = 0.007000000216066837
 function F.item(fullType)
@@ -497,14 +500,16 @@ end
 function ISBaseTimedAction:forceComplete() self.action.forceComplete = true end
 function ISBaseTimedAction:getJobDelta() return self.action.delta end
 function ISBaseTimedAction:setJobDelta(d) self.action.delta = d end
--- stopOnAim 在建立時讀一次（LuaTimedActionNew.java:38-55）；getTable 回 Lua 動作表
+-- stopOnAim／stopOnRun 在建立時讀一次（LuaTimedActionNew.java:38-55）；getTable 回 Lua 動作表
 local JavaAction = { isStarted = function(self) return self.started == true end, getTable = function(self) return self.owner end }
 JavaAction.__index = JavaAction
 function F.javaAction(owner, delta)
-    return setmetatable({ owner = owner, delta = delta or 0, stopOnAim = owner.stopOnAim }, JavaAction)
+    return setmetatable({ owner = owner, delta = delta or 0, stopOnAim = owner.stopOnAim, stopOnRun = owner.stopOnRun }, JavaAction)
 end
+-- 原版 begin（ISBaseTimedAction.lua:83-89）：不是中斷者就清掉「要接回的動作」。
 -- StartAction：引擎清單換成它，有效才開始（IsoGameCharacter.java:5456-5462）
 function ISBaseTimedAction:begin()
+    if not self.retriggerLastAction then self.character.retrigger = nil end
     self.action = F.javaAction(self)
     self.character.actions = { self.action }
     if self:isValid() == true and self:waitToStart() == false then
@@ -582,25 +587,28 @@ ISTimedActionQueue = {
         q:addToQueue(a)
         return q
     end,
-    -- 原版（ISTimedActionQueue.lua:236-243）：StopAllActionQueue 對已開始的動作呼叫 stop（IsoGameCharacter.java:5468-5474），再清佇列
+    -- 原版（ISTimedActionQueue.lua:46-58,236-243）：StopAllActionQueue 對已開始的動作呼叫 stop（它會 resetQueue；
+    -- IsoGameCharacter.java:5468-5474），沒開始的不通知 Lua；再 clearQueue，只清佇列、current 留著
     clear = function(p)
         local act = (p.actions or {})[1]
         if act and act.started then act.owner:stop() end
         p.actions = {}
-        ISTimedActionQueue.getTimedActionQueue(p):resetQueue()
+        local q = ISTimedActionQueue.getTimedActionQueue(p).queue
+        for i = #q, 1, -1 do q[i] = nil end
     end,
 }
 -- 引擎一幀：動作更新（IsoGameCharacter.java:9176-9204；Java 的 start 先清 forceComplete 才呼叫 Lua 的 start）
 -- 再跑佇列的 tick（第一個動作不在引擎清單＝整列清掉，ISTimedActionQueue.lua:112-125）
 function F.engineUpdate(p)
     local act = (p.actions or {})[1]
-    -- 步行時玩家輸入先處理：瞄準中第一個動作是 stopOnAim 就停掉（IsoPlayer.java:2074-2080,2400-2402、
-    -- IsoGameCharacter.java:5502-5511）；在車上不走這條
-    if act and p.aiming and not p.vehicle and act.stopOnAim then
+    -- 步行時玩家輸入先處理：瞄準／跑步中第一個動作是 stopOnAim／stopOnRun 就停掉（IsoPlayer.java:2074-2080,
+    -- 2400-2402,2659-2664、IsoGameCharacter.java:5502-5511）；在車上不走這條
+    if act and not p.vehicle and ((p.aiming and act.stopOnAim) or (p.running and act.stopOnRun)) then
         if act.started then act.owner:stop() end
         p.actions, act = {}, nil
     end
     if act then
+        if p.retrigger == act then p.retrigger = nil end -- IsoGameCharacter.java:9171-9174
         local a = act.owner
         local valid = a:isValid() == true
         if valid and not act.started then

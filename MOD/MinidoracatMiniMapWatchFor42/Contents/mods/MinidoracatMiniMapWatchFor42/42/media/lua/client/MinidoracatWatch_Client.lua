@@ -79,12 +79,13 @@ end
 -- 正在看錶：記動作實例（MinidoracatWatch_Look.lua 的 start 寫入），每次向引擎的動作清單核對。不用布林旗標：
 -- 引擎有不通知 Lua 就丟掉動作的路徑（StartAction 直接清空清單，IsoGameCharacter.java:5456-5462），旗標卡在 true
 -- 就等於繞過規則。死亡、重生（換了角色物件）、被別的動作取代都自動變 false。熱路徑，不配置 table。
+-- skip＝按了停止，或同一個動作被原版接回來時已經不能看（空動作）：它還在引擎清單裡，但不算在看。
 C.lookAction = {} -- [pn] = 看錶動作的 Lua 表
 function C.lookActive(pn)
     local a = C.lookAction[pn]
     if not a then return false end
     local p = getSpecificPlayer(pn)
-    if p and a.character == p and a.action and p:getCharacterActions():contains(a.action) then return true end
+    if p and not a.skip and a.character == p and a.action and p:getCharacterActions():contains(a.action) then return true end
     C.lookAction[pn] = nil
     return false
 end

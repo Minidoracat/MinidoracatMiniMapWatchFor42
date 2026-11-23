@@ -164,6 +164,7 @@ local function poseOf(who, pn)
     return r
 end
 local torch = F.item("Base.HandTorch")
+torch.maskP, torch.maskS = {}, {}
 bob.secondary = torch
 local posed = poseOf(bob, 1)
 check(posed.poseCalls[1] == "hands" and posed.poseCalls[2] == "anim:MinidoracatWatch_LookR", "姿勢：先設持物再設節點；戴右手錶，抬右手腕")
@@ -175,6 +176,12 @@ local bat = F.item("Base.BaseballBat")
 bat._class = "HandWeapon"
 bob.primary = bat
 check(poseOf(bob, 1).hands == nil, "有武器：引擎本來就不藏，不覆寫（雙手握的武器在別的玩家畫面不會變兩支）")
+local bottle = F.item("Base.WaterBottle")
+bob.primary, bob.secondary = bottle, nil
+check(poseOf(bob, 1).hands == nil, "水瓶這類平常不畫的持物（沒有手持遮罩）：不覆寫，免得看錶時憑空出現")
+bob.secondary = torch
+posed = poseOf(bob, 1)
+check(posed.hands[1] == nil and posed.hands[2] == torch, "主手水瓶、副手手電筒：只覆寫畫得出來的那一手")
 bob.primary, bob.secondary = nil, nil
 local empty = { getPrimaryHandItem = function() end, getSecondaryHandItem = function() end }
 check(poseOf(empty, 7).poseCalls[1] == "anim:MinidoracatWatch_LookL", "姿勢：找不到錶時用左手")
@@ -199,9 +206,9 @@ p.aiming = nil
 local Later = ISBaseTimedAction:derive("Later")
 function Later:isValid() return true end
 function Later:start() self.starts = (self.starts or 0) + 1 end
-local function later(aimOk) -- aimOk＝瞄準時也能做的動作（裝彈、喝水）
+local function later(aimOk) -- aimOk＝瞄準、跑步時也能做的動作
     local l = ISBaseTimedAction.new(Later, p)
-    if aimOk then l.stopOnAim = false end
+    if aimOk then l.stopOnAim, l.stopOnRun = false, false end
     ISTimedActionQueue.add(l)
     return l
 end
@@ -240,21 +247,23 @@ check(#queue() == 1 and queue()[1] == nxt and nxt.starts == 1 and nxt:getJobDelt
 W.setCharge(watch, 1)
 W.invalidate()
 ISTimedActionQueue.clear(p)
--- 同一件事，玩家走路瞄準著：空動作不能被引擎的瞄準中斷停掉（停掉＝整列清掉）
-first = later(true)
-Look.toggle(p)
-nxt = later(true)
-W.setCharge(watch, 0)
-W.invalidate()
-p.aiming = true
-first:forceComplete()
-step()
-step()
-check(#queue() == 1 and queue()[1] == nxt and nxt.starts == 1, "走路瞄準中輪到沒電的看錶：只跳過自己，後面的動作照做")
-p.aiming = nil
-W.setCharge(watch, 1)
-W.invalidate()
-ISTimedActionQueue.clear(p)
+-- 同一件事，玩家走路瞄準著或跑著：空動作不能被引擎的瞄準／跑步中斷停掉（停掉＝整列清掉）
+for _, flag in ipairs({ "aiming", "running" }) do
+    first = later(true)
+    Look.toggle(p)
+    nxt = later(true)
+    W.setCharge(watch, 0)
+    W.invalidate()
+    p[flag] = true
+    first:forceComplete()
+    step()
+    step()
+    check(#queue() == 1 and queue()[1] == nxt and nxt.starts == 1, flag .. " 中輪到沒電的看錶：只跳過自己，後面的動作照做")
+    p[flag] = nil
+    W.setCharge(watch, 1)
+    W.invalidate()
+    ISTimedActionQueue.clear(p)
+end
 -- 開關門這類「做完要接回被打斷動作」的中斷者進行中：這一下不排看錶。排了會夾在中間，接回的動作（吃飽時的吸菸，
 -- isValidStart 為假）失去原版只給下一個動作的起始檢查豁免，整列被清掉
 local Resume = ISBaseTimedAction:derive("Resume")
@@ -271,6 +280,48 @@ step()
 step()
 check(#queue() == 1 and queue()[1] == smoke and smoke.starts == 1 and smoke:getJobDelta() == 0.5,
     "中斷者做完：被打斷的動作接回來，進度還在")
+ISTimedActionQueue.clear(p)
+-- 中斷者還沒開始就被清掉：原版 clearQueue 不清 current，它會一直留在那裡。之後按看錶要照常排進去
+door = ISBaseTimedAction.new(Later, p)
+door.retriggerLastAction = true
+function door:waitToStart() return true end
+ISTimedActionQueue.add(door)
+p.retrigger = smoke.action
+ISTimedActionQueue.clear(p)
+Look.toggle(p)
+check(Look.index(p) == 1 and C.lookActive(0) == true, "中斷者沒開始就被清掉：之後按看錶照常開始")
+-- 看錶中點門：原版把看錶記成要接回的動作（CancelAction(pn, true)，MainScreen.lua:1690-1702），門做完後自己接回來
+local resumed = queue()[1]
+p.retrigger = resumed.action
+ISTimedActionQueue.clear(p)
+check(C.lookActive(0) == false, "看錶中點門：看錶先停")
+door = ISBaseTimedAction.new(Later, p)
+door.retriggerLastAction = true
+ISTimedActionQueue.add(door)
+door:forceComplete()
+step()
+check(queue()[1] == resumed and C.lookActive(0) == true and #resumed.poseCalls == 2, "門做完：看錶接回來，重新擺姿勢")
+-- 接回時整個重算：上一次 begin 留下的空動作旗標不能沿用（沿用的話接回後跑步不會中斷、已經不能看的也算有效）
+local function viaDoor()
+    p.retrigger = resumed.action
+    ISTimedActionQueue.clear(p)
+    door = ISBaseTimedAction.new(Later, p)
+    door.retriggerLastAction = true
+    ISTimedActionQueue.add(door)
+    door:forceComplete()
+    step()
+end
+resumed.skip, resumed.stopOnRun, resumed.stopOnAim = true, false, false
+viaDoor()
+check(C.lookActive(0) == true and resumed.skip == nil and resumed.action.stopOnRun == true and resumed.action.stopOnAim == true,
+    "接回時重算：不沿用上一次的空動作旗標")
+resumed.skip = true
+W.setCharge(watch, 0)
+W.invalidate()
+viaDoor()
+check(C.lookActive(0) == false and resumed.skip == true and #resumed.poseCalls == 3, "接回時錶沒電：當空動作，不擺姿勢")
+W.setCharge(watch, 1)
+W.invalidate()
 ISTimedActionQueue.clear(p)
 
 -- 引擎不通知 Lua 就丟掉動作（StartAction 清空清單）：下一次問就不算在看

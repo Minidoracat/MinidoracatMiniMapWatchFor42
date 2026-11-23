@@ -24,11 +24,15 @@ local A = ISMinidoracatWatchLookAction
 -- ModelManager.java:630-634），用角色實際拿的東西覆寫回去（:650-666）；要在 setActionAnim 之前設好（多人進入動作狀態時讀）。
 -- 有武器時引擎本來就不藏，不覆寫：覆寫會以模型名傳給其他玩家（PlayerActionsState.java:112-114），雙手握的同一件
 -- 在別人畫面變成兩件、槍的配件不見。兩手是同一件時只傳一次。
+-- 只覆寫平常就畫得出來的那一手（有手持遮罩的：手電筒、提燈、包）：水瓶、書這類平常不畫的，覆寫後反而會憑空出現
+-- （ModelManager.java:690-742，沒遮罩的非武器只有覆寫時才畫）。
 function Look.pose(action)
     local p = action.character
     local a, b = p:getPrimaryHandItem(), p:getSecondaryHandItem()
-    if (a or b) and not (instanceof(a, "HandWeapon") or instanceof(b, "HandWeapon")) then
-        action:setOverrideHandModels(a, a ~= b and b or nil)
+    if not (instanceof(a, "HandWeapon") or instanceof(b, "HandWeapon")) then
+        local pa = a and a:getItemReplacementPrimaryHand() and a or nil
+        local sb = b and b ~= a and b:getItemReplacementSecondHand() and b or nil
+        if pa or sb then action:setOverrideHandModels(pa, sb) end
     end
     local w = C.watchOf(action.pn)
     local side = (w and w:getFullType():sub(-6) == "_Right") and "R" or "L"
@@ -45,9 +49,11 @@ function A:isValid() return self.skip or (C.lookState(self.pn) == true and not s
 -- onCompleted 裡面，它回去後會把這個動作的進度寫到下一個動作上（:77-95，進食到一半被打斷再接回來的會歸零）。
 -- 空動作不因跑步、瞄準中斷：引擎先處理玩家輸入才更新動作（IsoPlayer.java:2074-2080,2400-2402），被它停掉＝整列清掉；
 -- 這兩個欄位在建 Java 動作時讀（LuaTimedActionNew.java:38-55），所以在 begin 之前改。
+-- 每次 begin 都重算：同一個動作會被原版接回來再 begin 一次（看錶中點門，門做完後接回，ISTimedActionQueue.lua:60-75）
 function A:begin()
+    self.skip = nil
     self.skip = not self:isValid() or nil
-    if self.skip then self.stopOnRun, self.stopOnAim = false, false end
+    self.stopOnRun, self.stopOnAim = not self.skip, not self.skip
     ISBaseTimedAction.begin(self)
 end
 
@@ -95,10 +101,11 @@ function Look.toggle(player)
         queue:removeFromQueue(queue.queue[i])
         return
     end
-    -- 佇列正在跑「做完要接回被打斷動作」的中斷者（原版只有開關門，ISTimedActionQueue.lua:60-75）：這一下不排。
-    -- 排了會夾在中斷者與接回的動作之間，接回的動作就失去原版給它的 isValidStart 豁免（吃飽時接回吸菸會被整列清掉）
+    -- 佇列正在跑「做完要接回被打斷動作」的中斷者（開關門窗、翻越，ISTimedActionQueue.lua:60-75）：這一下不排。
+    -- 排了會夾在中斷者與接回的動作之間，接回的動作就失去原版給它的 isValidStart 豁免（吃飽時接回吸菸會被整列清掉）。
+    -- 要核對它還是佇列第 1 個：原版 clearQueue 不清 current，還沒開始就被清掉的中斷者會一直留在那裡
     local cur = queue.current
-    if cur and cur.retriggerLastAction and player:getTimedActionToRetrigger() then return end
+    if cur and cur == queue.queue[1] and cur.retriggerLastAction and player:getTimedActionToRetrigger() then return end
     local ok, reason = C.lookState(player:getPlayerNum())
     if ok == nil then return end
     if not ok then
