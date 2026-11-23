@@ -516,7 +516,11 @@ end
 do
     local R = MinidoracatWatch_Recipe
     local function input(tags, list, written)
-        return { getItemTags = function() return { isEmpty = function() return not tags end } end,
+        local set = { isEmpty = function() return not tags end, iterator = function()
+            local i = 0
+            return { hasNext = function() return i < #tags end, next = function() i = i + 1; return tags[i] end }
+        end }
+        return { getItemTags = function() return set end,
             getPossibleInputItems = function() return list end, getItems = function() return F.javaList(written or {}) end }
     end
     local function recipe(name, ...)
@@ -526,37 +530,43 @@ do
     local VT = W.watchType("ValuTech")
     local valu, vanilla = F.scriptItem(VT), F.scriptItem("Base.WristWatch_Left_DigitalBlack")
     local watches = {}
-    for t in pairs(W.WATCH_TYPES) do watches[#watches + 1] = F.scriptItem(t) end
+    for t in pairs(W.WATCH_TYPES) do
+        watches[#watches + 1] = F.scriptItem(t)
+        F.scriptItem(t).tags = { digital = true, hasmetal = true, watchonly = true }
+    end
     local function withWatches(first)
         local items = { first }
         for _, s in ipairs(watches) do if s ~= first then items[#items + 1] = s end end
         return F.mutableList(items)
     end
-    -- 引擎每格每個物品登記一筆短名（InputScript.java:875、896）：指名又被 tag 展開到的登記兩筆
+    -- 引擎每格每個物品、每命中一個 tag 登記一筆短名（InputScript.java:875、896）：指名又被 tag 展開到的登記兩筆
     local function register()
         for _, s in ipairs(watches) do
-            s.usedIn = F.mutableList({ "DismantleElectronics", "DismantleElectronics", "Recycle", "OnlyWatches", "BuildRadio" })
+            s.usedIn = F.mutableList({ "DismantleElectronics", "DismantleElectronics", "Recycle", "OnlyWatches", "BuildRadio",
+                "TwoTags", "TwoTags" })
         end
         valu.usedIn = F.mutableList({ "DismantleElectronics", "DismantleElectronics", "Recycle", "Recycle", "OnlyWatches",
-            "BuildRadio", "NamedOnly" })
+            "BuildRadio", "NamedOnly", "TwoTags", "TwoTags" })
     end
-    local base, other, mixed = withWatches(vanilla), withWatches(vanilla), withWatches(valu)
+    local base, other, mixed, two = withWatches(vanilla), withWatches(vanilla), withWatches(valu), withWatches(vanilla)
     mixed._items[#mixed._items + 1] = vanilla
     local only, named, build = F.mutableList({ table.unpack(watches) }), F.mutableList({ valu }), withWatches(vanilla)
     local tools = F.mutableList({ F.scriptItem("Base.Screwdriver") })
     local scans = 0
     local crafts = F.javaList({
-        recipe("DismantleElectronics", input(false, tools), input(true, base)), -- 原版那條（Base）
-        recipe("DismantleElectronics", input(true, other)),                     -- 別的模組、同一個短名
-        recipe("Recycle", input(true, mixed, { VT })),                          -- 同一格指名 ValuTech 又用 tag
-        recipe("OnlyWatches", input(true, only)),                               -- 那個 tag 只有地圖手錶帶
+        recipe("DismantleElectronics", input(false, tools), input({ "digital" }, base)), -- 原版那條（Base）
+        recipe("DismantleElectronics", input({ "digital" }, other)),                     -- 別的模組、同一個短名
+        recipe("Recycle", input({ "digital" }, mixed, { "ValuShort" })),                 -- 同一格指名 ValuTech（短名）又用 tag
+        recipe("OnlyWatches", input({ "watchonly" }, only)),                             -- 那個 tag 只有地圖手錶帶
         recipe("NamedOnly", input(false, named, { VT })),
-        recipe("Unrelated", input(true, F.mutableList({ vanilla }))),
+        recipe("TwoTags", input({ "digital", "hasmetal" }, two)),                        -- 同一格兩個 tag 都命中
+        recipe("Unrelated", input({ "digital" }, F.mutableList({ vanilla }))),
     })
     local savedSM = getScriptManager
     getScriptManager = function()
         return F.scriptManager({ getAllCraftRecipes = function() scans = scans + 1; return crafts end,
-            getAllBuildableRecipes = function() return F.javaList({ recipe("BuildRadio", input(true, build)) }) end })
+            getAllBuildableRecipes = function() return F.javaList({ recipe("BuildRadio", input({ "digital" }, build)) }) end,
+            getItem = function(_, t) return F.scriptItem(t == "ValuShort" and VT or t) end }) -- 腳本寫短名，引擎解析成同一個物品
     end
     register()
     R.usedSum = nil
@@ -569,6 +579,8 @@ do
     check(named:size() == 1 and named:contains(valu), "沒有 tag、指名收地圖手錶的輸入不動")
     check(build:size() == 1 and build:contains(vanilla), "建造配方也處理")
     local used, paws = valu:getUsedInRecipes(), F.scriptItem(W.watchType("Paws")):getUsedInRecipes()
+    check(two:size() == 1 and not used:contains("TwoTags") and not paws:contains("TwoTags"),
+        "同一格命中兩個 tag：清單拿掉一次、登記的兩筆都拿掉")
     check(not used:contains("DismantleElectronics") and not used:contains("BuildRadio") and used:size() == 4
         and paws:size() == 1 and paws:contains("OnlyWatches"),
         "錶登記的配方：拿掉的每格少一筆；指名的（Recycle 兩筆、NamedOnly）與沒動的（OnlyWatches）留著")
@@ -578,8 +590,12 @@ do
     base._items[#base._items + 1] = valu
     valu.usedIn._items[#valu.usedIn._items + 1] = "DismantleElectronics"
     check(R.protectWatches() == 1 and scans == before + 1 and base:size() == 1, "清單重新展開（登記筆數變了）：再拿掉一次")
-    for t in pairs(W.WATCH_TYPES) do F.scriptItem(t).usedIn = nil end
-    R.usedSum = nil
+    -- 原本只有地圖手錶的那格後來多了別的物品（錶的登記筆數沒變）：也要重看
+    only._items[#only._items + 1] = vanilla
+    check(R.protectWatches() == 14 and only:size() == 1 and only:contains(vanilla) and paws:size() == 0,
+        "沒動的那格後來多了別的物品：地圖手錶拿掉")
+    for t in pairs(W.WATCH_TYPES) do F.scriptItem(t).usedIn, F.scriptItem(t).tags = nil, nil end
+    R.usedSum, R.kept = nil, {}
     getScriptManager = savedSM
 end
 -- 配方腳本（2026-11-23 加做錶）：R.RECIPES 的鍵＝那條配方的產出物；做錶只收原版三款電子錶與整顆滿電電池

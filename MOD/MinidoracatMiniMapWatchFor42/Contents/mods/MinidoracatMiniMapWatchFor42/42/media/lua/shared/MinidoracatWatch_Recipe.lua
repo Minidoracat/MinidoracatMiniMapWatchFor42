@@ -74,30 +74,69 @@ end
 -- 別的配方用 tag 收料時會把地圖手錶一起收進去：原版「拆解電子產品」寫 tags[base:digital]（recipes_electrical.txt:48），
 -- 沒戴、沒收藏的錶會被拆成 1 個電子零件，錶上的模組與電池跟著消失。base:digital 不能拿掉：HUD 時鐘靠它顯示日期與
 -- 氣溫（Clock.java:342）。材料驗證與合成介面的材料格查的是同一份物品清單（InputScript.containsItem／
--- getPossibleInputItems，InputScript.java:101-103、484-486），所以從用 tag 收料的輸入拿掉七款錶；
--- 指名收地圖手錶的輸入（沒有 tag，別的 MOD 刻意寫的）不動。清單在世界載入時才展開（OnPostWorldDictionaryInit，
--- :797），比本檔晚，所以跟著輪詢做：物品登記的「用在哪些配方」（Item.getUsedInRecipes，展開時登記，:896）
--- 清掉之後每輪只剩 14 次查表。伺服器與客戶端各自套。回傳拿掉幾筆
+-- getPossibleInputItems，InputScript.java:101-103、484-486），所以從那份清單拿掉「只因為 tag 才收」的地圖手錶。
+-- 不動的：沒有 tag 的輸入；同一格另外指名的那款錶（getItems 是腳本寫的物品名，:1161）；拿掉後會變空的清單
+-- （只有地圖手錶帶那個 tag＝衝著它來的，而且合成介面讀清單第 0 項，空的會出錯，ISWidgetInput.lua:322-340）。
+-- items＝完整類型 → 物品腳本。回這一格拿掉幾個
+local function strip(input, name, items, sm)
+    local tags = input:getItemTags()
+    if tags:isEmpty() then return 0 end
+    local list, written, named, drop = input:getPossibleInputItems(), input:getItems(), {}, {}
+    for i = 0, written:size() - 1 do
+        local item = sm:getItem(written:get(i)) -- 引擎展開時同一個查法（:868）
+        if item then named[item:getFullName()] = true end
+    end
+    for fullType, item in pairs(items) do
+        if not named[fullType] and list:contains(item) then drop[#drop + 1] = item end
+    end
+    if #drop == 0 then return 0 end
+    if #drop == list:size() then
+        R.kept[#R.kept + 1] = { list, #drop }
+        return 0
+    end
+    for _, item in ipairs(drop) do
+        list:remove(item)
+        -- 展開時每命中一個 tag 登記一筆（:884-896），照樣一筆一筆拿掉：物品右鍵的配方清單才不再列這條
+        local used, it = item:getUsedInRecipes(), tags:iterator()
+        while it:hasNext() do
+            if item:hasTag(it:next()) then used:remove(name) end
+        end
+    end
+    return #drop
+end
+
+-- 清單在世界載入時才展開（OnPostWorldDictionaryInit，:797），比本檔晚，所以跟著輪詢做。展開時每個物品登記
+-- 「用在哪些配方」（Item.getUsedInRecipes，只記短名）：14 個錶的登記筆數和上次掃完一樣就不必再掃（每輪 14 次查表）；
+-- 變了才走訪全部配方，只處理名字登記過的。用配方物件而不是 getCraftRecipe(短名)：短名只查得到 Base 模組的
+-- （ScriptBucketCollection.java:72-90），別的 MOD 寫在自己模組裡的配方會漏掉。實體內嵌的配方載入時都帶
+-- EntityRecipe tag（CraftRecipeComponentScript.java:57），在 getAllBuildableRecipes 那一份（ScriptManager.java:898）。
+-- R.kept＝因為會變空而沒動的清單與當時的件數：之後有別的物品進了那份清單也要重看。
+-- 伺服器與客戶端各自套。回傳拿掉幾筆
+R.usedSum, R.kept = nil, {}
 function R.protectWatches()
-    local sm, n = getScriptManager(), 0
-    for fullType in pairs(W.WATCH_TYPES) do
-        local item = sm:FindItem(fullType)
-        local used = item and item:getUsedInRecipes()
-        for i = (used and used:size() or 0) - 1, 0, -1 do
-            local name = used:get(i)
-            local recipe = sm:getCraftRecipe(name)
-            if recipe then
-                local inputs, named = recipe:getInputs(), false
-                for j = 0, inputs:size() - 1 do
-                    local input = inputs:get(j)
-                    local list = input:getPossibleInputItems()
-                    if input:getItemTags():isEmpty() then
-                        named = named or list:contains(item)
-                    elseif list:remove(item) then
-                        n = n + 1
-                    end
-                end
-                if not named then used:remove(name) end -- 物品右鍵的製作清單也不再列這條配方
+    local sm, items = getScriptManager(), {}
+    local function sum()
+        local total = 0
+        for _, item in pairs(items) do total = total + item:getUsedInRecipes():size() end
+        return total
+    end
+    for fullType in pairs(W.WATCH_TYPES) do items[fullType] = sm:FindItem(fullType) end
+    local stale = sum() ~= R.usedSum
+    for _, k in ipairs(R.kept) do stale = stale or k[1]:size() ~= k[2] end
+    if not stale then return 0 end
+    local names, n = {}, 0
+    R.kept = {}
+    for _, item in pairs(items) do
+        local used = item:getUsedInRecipes()
+        for i = 0, used:size() - 1 do names[used:get(i)] = true end
+    end
+    for _, recipes in ipairs({ sm:getAllCraftRecipes(), sm:getAllBuildableRecipes() }) do
+        for i = 0, recipes:size() - 1 do
+            local recipe = recipes:get(i)
+            local name = recipe:getName()
+            if names[name] then
+                local inputs = recipe:getInputs()
+                for j = 0, inputs:size() - 1 do n = n + strip(inputs:get(j), name, items, sm) end
             end
         end
     end

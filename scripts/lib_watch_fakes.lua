@@ -435,6 +435,7 @@ dofile(F.MEDIA .. "/../registries.lua")
 local ScriptItem = { __index = { getBodyLocation = function(self) return self.loc end,
     setBodyLocation = function(self, loc) self.loc = loc end,
     getFullName = function(self) return self.fullType end,
+    hasTag = function(self, tag) return self.tags ~= nil and self.tags[tag] == true end,
     getUsedInRecipes = function(self) self.usedIn = self.usedIn or F.mutableList({}); return self.usedIn end } }
 F.scripts = {}
 function F.scriptItem(t, extra)
