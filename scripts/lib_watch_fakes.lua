@@ -222,7 +222,7 @@ Player.__index = Player
 function Player:getInventory() return self.inv end
 function Player:isDead() return self.dead == true end
 function Player:isAsleep() return self.asleep == true end
--- 引擎的動作清單（IsoGameCharacter.characterActions，裡面是 Java 動作）：F.startAction 放進去
+-- 引擎的動作清單（IsoGameCharacter.characterActions，裡面是 Java 動作）：動作 begin 時放進去
 function Player:getCharacterActions()
     local list = self.actions or {}
     return { contains = function(_, a)
@@ -467,7 +467,10 @@ function F.scriptManager(over)
 end
 function getScriptManager() return F.scriptManager() end
 
--- ===== 計時動作（ISBaseTimedAction.lua:173-184 的形狀；ISTimedActionQueue 只留 add、clear、佇列、indexOfType 與換下一個）=====
+-- ===== 計時動作與佇列 =====
+-- 照原版做到看錶測試需要的程度：ISBaseTimedAction.lua（isValid 預設不回值＝無效、begin 建 Java 動作並 StartAction、
+-- perform 交棒、stop 清整列）、ISTimedActionQueue.lua:9-17,60-109（空佇列 add 同步 begin、onCompleted 的 current 與
+-- 進度回寫、resetQueue）；引擎每幀的動作更新是 F.engineUpdate。Java 動作用一張表代替：started、forceComplete、delta。
 ISBaseTimedAction = {}
 ISBaseTimedAction.__index = ISBaseTimedAction
 function ISBaseTimedAction:derive(name)
@@ -478,26 +481,53 @@ end
 function ISBaseTimedAction.new(cls, character)
     return setmetatable({ character = character, stopOnWalk = true, stopOnRun = true, stopOnAim = true, maxTime = -1 }, cls)
 end
-function ISBaseTimedAction:perform() F.performed = (F.performed or 0) + 1 end
+function ISBaseTimedAction:isValidStart() return true end
+function ISBaseTimedAction:isValid() end
+function ISBaseTimedAction:waitToStart() return false end
+function ISBaseTimedAction:isStarted() return self.action ~= nil and self.action:isStarted() end
 function ISBaseTimedAction:start() end
--- 佇列輪到它：建 Java 動作交給引擎（清單換成它），引擎呼叫 start（ISBaseTimedAction.lua:83-89、IsoGameCharacter.java:5456-5462）
-function ISBaseTimedAction:begin()
-    self.action = {}
-    self.character.actions = { self.action }
-    self:start()
-end
--- 引擎下一幀 perform：佇列移掉它、開始下一個（ISBaseTimedAction.lua:68-69、ISTimedActionQueue.lua:60-99）
-function ISBaseTimedAction:forceComplete()
-    self.forced = true
-    self.character.actions = {}
+function ISBaseTimedAction:update() end
+function ISBaseTimedAction:stop() ISTimedActionQueue.getTimedActionQueue(self.character):resetQueue() end
+function ISBaseTimedAction:perform()
+    F.performed = (F.performed or 0) + 1
     ISTimedActionQueue.getTimedActionQueue(self.character):onCompleted(self)
+end
+function ISBaseTimedAction:forceComplete() self.action.forceComplete = true end
+function ISBaseTimedAction:getJobDelta() return self.action.delta end
+function ISBaseTimedAction:setJobDelta(d) self.action.delta = d end
+local JavaAction = { isStarted = function(self) return self.started == true end }
+JavaAction.__index = JavaAction
+function F.javaAction(owner, delta) return setmetatable({ owner = owner, delta = delta or 0 }, JavaAction) end
+-- StartAction：引擎清單換成它，有效才開始（IsoGameCharacter.java:5456-5462）
+function ISBaseTimedAction:begin()
+    self.action = F.javaAction(self)
+    self.character.actions = { self.action }
+    if self:isValid() == true and self:waitToStart() == false then
+        self.action.started = true
+        self:start()
+    end
 end
 -- 姿勢：poseCalls 記呼叫順序
 local function poseCall(a, what) a.poseCalls = a.poseCalls or {}; a.poseCalls[#a.poseCalls + 1] = what end
 function ISBaseTimedAction:setActionAnim(anim) poseCall(self, "anim:" .. tostring(anim)) end
+function ISBaseTimedAction:setOverrideHandModels(primary, secondary)
+    self.hands = { primary, secondary }
+    poseCall(self, "hands")
+end
+setmetatable(ISWearClothing, { __index = ISBaseTimedAction })
+setmetatable(ISClothingExtraAction, { __index = ISBaseTimedAction })
 F.queues = {}
+local queueObjs = {}
 local Queue = {}
 Queue.__index = Queue
+function Queue:addToQueue(a)
+    local count = #self.queue
+    table.insert(self.queue, a)
+    if count == 0 then
+        self.current = a
+        a:begin()
+    end
+end
 function Queue:indexOfType(t) -- 找不到回 -1（ISTimedActionQueue.lua:30-37）
     for i, v in ipairs(self.queue) do if v.Type == t then return i end end
     return -1
@@ -510,29 +540,68 @@ function Queue:removeFromQueue(a)
         end
     end
 end
+function Queue:resetQueue()
+    for i = #self.queue, 1, -1 do self.queue[i] = nil end
+    self.current = nil
+end
+-- 原版的後半段（:77-95）：下一個動作的進度在 begin 之前讀、begin 之後才寫回 self.current
 function Queue:onCompleted(a)
     self:removeFromQueue(a)
-    local nxt = self.queue[1]
-    if nxt and nxt.begin then nxt:begin() end
+    self.current = self.queue[1]
+    if not self.current then return end
+    if not self.current:isValidStart() then return self:resetQueue() end
+    local newDelta = 0
+    if self.current.action then newDelta = self.current:getJobDelta() end
+    self.current:begin()
+    if self.current and self.current.relaunchWithDelta and self.current.action then self.current:setJobDelta(newDelta) end
 end
 ISTimedActionQueue = {
-    add = function(a)
-        F.queues[a.character] = F.queues[a.character] or {}
-        table.insert(F.queues[a.character], a)
-        return a
-    end,
     getTimedActionQueue = function(p)
         F.queues[p] = F.queues[p] or {}
-        return setmetatable({ queue = F.queues[p] }, Queue)
+        queueObjs[p] = queueObjs[p] or setmetatable({ character = p }, Queue)
+        queueObjs[p].queue = F.queues[p] -- 測試會直接換掉 F.queues[p]
+        return queueObjs[p]
+    end,
+    add = function(a)
+        if a.character:isAsleep() then return end
+        local q = ISTimedActionQueue.getTimedActionQueue(a.character)
+        q:addToQueue(a)
+        return q
     end,
     -- 原版：StopAllActionQueue（引擎清單清空，不呼叫 Lua 的 stop）＋清佇列（ISTimedActionQueue.lua:236-243）
-    clear = function(p) F.queues[p], p.actions = {}, {} end,
+    clear = function(p)
+        ISTimedActionQueue.getTimedActionQueue(p):resetQueue()
+        p.actions = {}
+    end,
 }
--- 佇列開始第一個動作（ISTimedActionQueue.lua 的 addToQueue：第一個進佇列就 begin）
-function F.startAction(p)
-    local a = F.queues[p][1]
-    a:begin()
-    return a
+-- 引擎一幀：動作更新（IsoGameCharacter.java:9176-9204；Java 的 start 先清 forceComplete 才呼叫 Lua 的 start）
+-- 再跑佇列的 tick（第一個動作不在引擎清單＝整列清掉，ISTimedActionQueue.lua:112-125）
+function F.engineUpdate(p)
+    local act = (p.actions or {})[1]
+    if act then
+        local a = act.owner
+        local valid = a:isValid() == true
+        if valid and not act.started then
+            if a:waitToStart() == false then
+                act.started, act.forceComplete = true, nil
+                a:start()
+            end
+        elseif valid and not act.forceComplete then
+            a:update()
+        end
+        if not valid or act.forceComplete then
+            if act.forceComplete then
+                a:perform()
+            elseif act.started then
+                a:stop()
+            end
+            if p.actions[1] == act then p.actions = {} end
+            act.forceComplete = nil
+        end
+    end
+    local q = ISTimedActionQueue.getTimedActionQueue(p)
+    local first = q.queue[1]
+    if first and (p.actions or {})[1] ~= first.action then q:resetQueue() end
 end
 -- 跑完一位玩家佇列裡的所有動作：isValid 為假＝動作被取消（不 perform）
 function F.runActions(p)

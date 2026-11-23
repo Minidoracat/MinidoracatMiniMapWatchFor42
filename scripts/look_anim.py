@@ -46,7 +46,6 @@ ImportedSkeleton.java:336-345; a MOD reads its own anims_X/Bob, ModelManager.loa
 names need a common/media/anims_X, Tesla seat_anim.py). Line endings: the source is CRLF and write_anim keeps it; git
 stores them LF (core.autocrlf), so --check compares bytes after turning CRLF into LF.
 """
-import glob
 import os
 import sys
 import tempfile
@@ -277,11 +276,7 @@ def main():
     check(bones, edits, G)
     want = {os.path.normpath(os.path.join(OUT, CLIPS[s] + ".x")): s for s in CLIPS}
     xml = {os.path.normpath(p): t for p, t in nodes().items()}
-    # 只認這支腳本自己的名字（MinidoracatWatch_Look*）：同前綴的其他動畫不是這裡的產物，不能當成舊檔刪掉
-    have = {os.path.normpath(p) for p in glob.glob(os.path.join(OUT, "MinidoracatWatch_Look*.x"))
-            + glob.glob(os.path.join(MEDIA, "AnimSets", "*", "*", "MinidoracatWatch_Look*.xml"))}
-    old = sorted(have - set(want) - set(xml))
-    stale = list(old)
+    stale = []  # 只寫上面列出的確切路徑，不找、不刪別的檔案：動畫改名時舊檔自己刪
 
     def text(path):
         return open(path, "rb").read().replace(b"\r\n", b"\n") if os.path.exists(path) else None
@@ -301,12 +296,10 @@ def main():
             os.makedirs(os.path.dirname(out), exist_ok=True)
             open(out, "w", encoding="utf-8", newline="").write(body)
     if check_only:
-        print("look_anim: " + (f"{stale} differ from a fresh build or are left over: run without --check" if stale
+        print("look_anim: " + (f"{stale} differ from a fresh build: run without --check" if stale
                                else f"up to date ({len(want)} clips, {len(xml)} nodes)"))
         sys.exit(1 if stale else 0)
-    for p in old:
-        os.remove(p)
-    print(f"look_anim: wrote {len(want)} clips, {len(xml)} nodes; removed {len(old)}")
+    print(f"look_anim: wrote {len(want)} clips, {len(xml)} nodes")
 
 
 if __name__ == "__main__":

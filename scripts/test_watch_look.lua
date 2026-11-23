@@ -146,6 +146,7 @@ F.keys.MinidoracatWatch_Look = 11
 
 -- ===== 看錶動作 =====
 F.reset()
+local function step() F.engineUpdate(p) end -- 引擎一幀
 Look.toggle(p)
 local a = queue()[1]
 check(#queue() == 1 and a.Type == A.Type and a.character == p and a.pn == 0, "觸發：排進看錶動作")
@@ -153,67 +154,89 @@ check(a.maxTime == -1 and a.stopOnWalk == false and a.stopOnRun == true and a.st
     and a.useProgressBar == false, "動作：不會自己結束、走路不中斷、跑步與瞄準中斷、不畫進度條")
 check(rawget(A, "complete") == nil and rawget(A, "perform") == nil and rawget(A, "stop") == nil,
     "只在客戶端跑：不定義 complete；不靠 perform／stop 收尾")
-check(C.lookActive(0) == false and gate() == false, "排進佇列還沒開始：不算在看")
-F.startAction(p)
-check(#a.poseCalls == 1 and a.poseCalls[1] == "anim:MinidoracatWatch_LookL", "姿勢：戴左手錶，抬左手腕的看錶節點；不藏手上的東西")
-local function poseOf(pn)
-    local r = setmetatable({ pn = pn }, A)
+check(a.action ~= nil and a.action.started == true, "佇列是空的：馬上開始")
+check(#a.poseCalls == 2 and a.poseCalls[1] == "hands" and a.poseCalls[2] == "anim:MinidoracatWatch_LookL"
+    and a.hands[1] == nil and a.hands[2] == nil, "姿勢：先設持物再設節點；戴左手錶抬左手腕；空手就是空手")
+local function poseOf(who, pn)
+    local r = setmetatable({ pn = pn, character = who }, A)
     W.invalidate()
     Look.pose(r)
-    return r.poseCalls[1]
+    return r
 end
-check(poseOf(1) == "anim:MinidoracatWatch_LookR", "姿勢：戴右手錶，抬右手腕")
-check(poseOf(7) == "anim:MinidoracatWatch_LookL", "姿勢：找不到錶時用左手")
+local torch = F.item("Base.HandTorch")
+bob.secondary = torch
+local posed = poseOf(bob, 1)
+check(posed.poseCalls[2] == "anim:MinidoracatWatch_LookR", "姿勢：戴右手錶，抬右手腕")
+check(posed.hands[1] == nil and posed.hands[2] == torch, "手上的東西照舊拿著：用角色實際拿的兩件覆寫（不是武器的持物引擎會藏）")
+bob.secondary = nil
+local empty = { getPrimaryHandItem = function() end, getSecondaryHandItem = function() end }
+check(poseOf(empty, 7).poseCalls[2] == "anim:MinidoracatWatch_LookL", "姿勢：找不到錶時用左手")
 ok, reason, dist, how = gate()
 check(C.lookActive(0) == true and ok == true and how == nil, "動作開始：正在看、小地圖放行")
 check(a:isValid() == true, "isValid 回布林 true")
 p.asleep = true
 check(a:isValid() == false, "睡著：動作失效")
 p.asleep = nil
-a:update()
-check(a.forced == nil, "佇列只有它：繼續看")
+step()
+check(C.lookActive(0) == true and #queue() == 1, "佇列只有它：繼續看")
 p.aiming = true
-a:update()
-check(a.forced == true and #queue() == 0 and C.lookActive(0) == false, "瞄準（車上引擎不會停動作）：自己停")
+step()
+check(#queue() == 0 and C.lookActive(0) == false, "瞄準（車上引擎不會停動作）：自己停")
 p.aiming = nil
 -- 排了別的動作：讓路，而且後面的動作真的開始
-local function later() return ISBaseTimedAction.new(ISBaseTimedAction:derive("Later"), p) end
+local Later = ISBaseTimedAction:derive("Later")
+function Later:isValid() return true end
+function Later:start() self.starts = (self.starts or 0) + 1 end
+local function later()
+    local l = ISBaseTimedAction.new(Later, p)
+    ISTimedActionQueue.add(l)
+    return l
+end
 Look.toggle(p)
-a = F.startAction(p)
-local nxt = ISTimedActionQueue.add(later())
-a:update()
-check(a.forced == true and #queue() == 1 and queue()[1] == nxt and nxt.action ~= nil, "排了別的動作：讓路，下一個動作開始")
+local nxt = later()
+check(nxt.starts == nil and C.lookActive(0) == true, "排了別的動作：這一幀還在看")
+step()
+check(#queue() == 1 and queue()[1] == nxt and nxt.starts == 1 and C.lookActive(0) == false, "排了別的動作：讓路，下一個動作開始")
 ISTimedActionQueue.clear(p)
--- 後面已經排了動作、還沒輪到讓路就按停止：只結束看錶，後面的照做
+-- 後面已經排了動作、還沒輪到讓路就按停止（同一幀按兩次）：只結束看錶一次，後面的照做、不會重開看錶
 Look.toggle(p)
-a = F.startAction(p)
-nxt = ISTimedActionQueue.add(later())
+nxt = later()
 Look.toggle(p)
-check(#queue() == 1 and queue()[1] == nxt and nxt.action ~= nil, "看錶後面有動作時按停止：只停看錶")
+Look.toggle(p)
+check(#queue() == 2 and Look.index(p) == 1, "按停止：請引擎結束，這一幀還在佇列")
+step()
+check(#queue() == 1 and queue()[1] == nxt and nxt.starts == 1, "同一幀按兩次停止：只停看錶，後面的動作開始一次")
+step()
+check(#queue() == 1 and nxt.starts == 1, "下一幀：後面的動作照跑")
 ISTimedActionQueue.clear(p)
--- 排在別的動作後面，輪到時已經不能看：只跳過自己，再後面的動作照做（不讓原版把整列清掉）
-local first = ISTimedActionQueue.add(later())
-first:begin()
+-- 排在別的動作後面，輪到時已經不能看：只跳過自己。後面是被打斷後接回來的動作（進食）時，它的進度不能被歸零
+local first = later()
 Look.toggle(p)
-nxt = ISTimedActionQueue.add(later())
+check(Look.index(p) == 2, "別的動作進行中：看錶排在後面")
+nxt = later()
+nxt.relaunchWithDelta, nxt.action = true, F.javaAction(nxt, 0.5)
 W.setCharge(watch, 0)
 W.invalidate()
-ISTimedActionQueue.getTimedActionQueue(p):onCompleted(first)
-check(#queue() == 1 and queue()[1] == nxt and nxt.action ~= nil and C.lookActive(0) == false,
-    "輪到看錶時錶沒電：跳過看錶，後面的動作開始")
+first:forceComplete()
+step()
+check(Look.index(p) == 1 and queue()[1].poseCalls == nil and C.lookActive(0) == false and gate() == false and nxt.starts == nil,
+    "輪到看錶時錶沒電：當成空動作，不擺姿勢、不開小地圖")
+step()
+check(#queue() == 1 and queue()[1] == nxt and nxt.starts == 1 and nxt:getJobDelta() == 0.5,
+    "下一幀：跳過看錶，後面的動作開始，接回來的進度還在")
 W.setCharge(watch, 1)
 W.invalidate()
 ISTimedActionQueue.clear(p)
-Look.toggle(p)
-a = F.startAction(p)
 
 -- 引擎不通知 Lua 就丟掉動作（StartAction 清空清單）：下一次問就不算在看
+Look.toggle(p)
+check(C.lookActive(0) == true, "（重新開始看）")
 p.actions = {}
 check(C.lookActive(0) == false and C.lookAction[0] == nil and gate() == false, "引擎丟掉動作：不算在看、紀錄清掉")
 -- 換了角色物件（死亡重生）
 ISTimedActionQueue.clear(p)
 Look.toggle(p)
-a = F.startAction(p)
+a = queue()[1]
 check(C.lookActive(0) == true, "（重新開始看）")
 a.character = F.player("ghost", 5)
 check(C.lookActive(0) == false, "動作的角色不是現在這位玩家：不算在看")
@@ -222,7 +245,7 @@ ISTimedActionQueue.clear(p)
 
 -- isValid：脫錶、沒電、規則改掉都停
 Look.toggle(p)
-a = F.startAction(p)
+a = queue()[1]
 F.unwear(p, watch)
 W.invalidate()
 check(a:isValid() == false, "脫錶：動作失效")
@@ -237,12 +260,22 @@ check(a:isValid() == false, "管理員把規則改掉：動作失效")
 SB.MinimapRule = 4
 W.invalidate()
 check(a:isValid() == true, "（恢復）")
+W.setCharge(watch, 0)
+W.invalidate()
+step()
+check(#queue() == 0 and C.lookActive(0) == false, "看到一半沒電：下一幀停止")
+W.setCharge(watch, 1)
+W.invalidate()
 
 -- 再觸發一次＝停
 Look.toggle(p)
+check(C.lookActive(0) == true, "（重新開始看）")
+Look.toggle(p)
+step()
 check(#queue() == 0 and C.lookActive(0) == false and gate() == false, "正在看時再觸發：停止、小地圖收起")
 -- 排在別的動作後面：再觸發只取消它
-local other = ISTimedActionQueue.add(F.action(ISWearClothing, p, watch))
+local other = F.action(ISWearClothing, p, watch)
+ISTimedActionQueue.add(other)
 Look.toggle(p)
 check(#queue() == 2 and Look.index(p) == 2, "別的動作進行中：看錶排在後面")
 Look.toggle(p)
@@ -270,6 +303,7 @@ F.fire("OnKeyPressed", 70)
 F.fire("OnKeyPressed", 0)
 check(#queue() == 1, "別的鍵、鍵碼 0：沒反應")
 F.fire("OnKeyPressed", 11)
+step()
 check(#queue() == 0, "再按一次：停止")
 F.keys.MinidoracatWatch_Look = 0
 F.fire("OnKeyPressed", 0)
@@ -292,6 +326,7 @@ check(#queue() == 1, "右鍵看錶：開始")
 opts = lookOpts({ watch })
 check(#opts == 1 and opts[1].name == "IGUI_MinidoracatWatch_Look_Stop", "正在看：右鍵變成停止看錶")
 opts[1].fn(opts[1].target, opts[1].a)
+step()
 check(#queue() == 0, "右鍵停止")
 W.setCharge(watch, 0)
 opts = lookOpts({ watch })
@@ -311,10 +346,10 @@ check(b and b.icon == "clock" and b.style == "chip" and b.visible and b.enable a
     and b.title == "IGUI_MinidoracatWatch_Look_Start", "面板：看錶按鈕（chip），未啟用")
 b:forceClick()
 check(#queue() == 1, "面板按鈕：開始看錶")
-F.startAction(p)
 panel:update()
 check(b.title == "IGUI_MinidoracatWatch_Look_Stop" and b.active == true and b.enable, "正在看：按鈕亮起、寫停止看錶")
 b:forceClick()
+step()
 panel:update()
 check(#queue() == 0 and b.active == false, "面板按鈕：停止")
 W.setCharge(watch, 0)

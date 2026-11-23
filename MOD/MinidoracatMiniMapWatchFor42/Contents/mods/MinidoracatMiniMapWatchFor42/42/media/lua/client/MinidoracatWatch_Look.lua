@@ -20,8 +20,11 @@ local A = ISMinidoracatWatchLookAction
 -- （C.watchOf，和閘門同一個來源）的手腕。setActionAnim(String) 設 PerformingAction（BaseAction.java:265-280），節點條件就是它；
 -- 同名節點在 AnimSets/player（站、走）與 player-vehicle（座位）各一份，跟原版 Bandage 等動作一樣由角色當下的
 -- AnimSet 挑。錶的物品類型固定分左右（MapWatch_*_Left／_Right），戴在哪個部位都一樣；找不到錶時用左手。
--- 不呼叫 setOverrideHandModels：傳兩個 nil 是把兩手拿的東西都藏起來（BaseAction.java:297-306），沒戴錶那隻手也會空掉。
+-- 手上的東西照舊拿著：計時動作期間引擎會把不是武器的持物藏起來（BaseAction.java:133-140、ModelManager.java:630-634），
+-- 用角色實際拿的兩件覆寫回去（:650-666）；傳兩個 nil 則是兩手都清空。要在 setActionAnim 之前設好（多人進入動作狀態時讀）。
 function Look.pose(action)
+    local p = action.character
+    action:setOverrideHandModels(p:getPrimaryHandItem(), p:getSecondaryHandItem())
     local w = C.watchOf(action.pn)
     local side = (w and w:getFullType():sub(-6) == "_Right") and "R" or "L"
     action:setActionAnim("MinidoracatWatch_Look" .. side)
@@ -29,16 +32,19 @@ end
 
 -- 每幀被問（IsoGameCharacter.java:9176）：脫錶、沒電、模式關掉、睡著，下一幀就停
 -- （睡覺只設欄位、不清動作，IsoGameCharacter.java:3158-3160）
-function A:isValid() return C.lookState(self.pn) == true and not self.character:isAsleep() end
+function A:isValid() return self.skip or (C.lookState(self.pn) == true and not self.character:isAsleep()) end
 
--- 輪到時已經不能看（排隊期間脫錶、沒電、規則改了）：只跳過自己。照原版走的話引擎不啟動它，佇列發現第一個動作
--- 不在引擎清單就整列清掉（ISTimedActionQueue.lua:117-125），排在後面的動作跟著沒了
+-- 輪到時已經不能看（排隊期間脫錶、沒電、規則改了）：當成空動作開始（skip），start 馬上請引擎結束它，下一幀
+-- 佇列照原版的路換下一個。照常開始的話引擎不啟動它，佇列發現第一個動作不在引擎清單就整列清掉
+-- （ISTimedActionQueue.lua:117-125），排在後面的動作跟著沒了；也不能在這裡自己呼叫 onCompleted：這時就在原版
+-- onCompleted 裡面，它回去後會把這個動作的進度寫到下一個動作上（:77-95，進食到一半被打斷再接回來的會歸零）。
 function A:begin()
-    if self:isValid() then return ISBaseTimedAction.begin(self) end
-    ISTimedActionQueue.getTimedActionQueue(self.character):onCompleted(self)
+    self.skip = not self:isValid() or nil
+    ISBaseTimedAction.begin(self)
 end
 
 function A:start()
+    if self.skip then return self:forceComplete() end
     Look.pose(self)
     C.lookAction[self.pn] = self
 end
@@ -70,8 +76,7 @@ function Look.toggle(player)
     local queue = ISTimedActionQueue.getTimedActionQueue(player)
     local i = queue:indexOfType(A.Type)
     if i == 1 then
-        local a = queue.queue[1]
-        if a.action then a:forceComplete() else ISTimedActionQueue.clear(player) end
+        queue.queue[1]:forceComplete() -- 佇列第 1 個一定開始了（addToQueue 同步 begin，ISTimedActionQueue.lua:9-17）
         return
     end
     if i > 1 then
