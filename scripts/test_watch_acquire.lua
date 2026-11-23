@@ -455,7 +455,7 @@ SB.AllowCraft = nil
 SB.Enabled = false
 check(MinidoracatWatch_Recipe.canCraft() == false and MinidoracatWatch_recipeShown() == false, "地圖錶系統關閉：不能做、不列在合成清單")
 SB.Enabled = true
--- Neat Crafting 自己畫清單、不問 OnAddToMenu：遊戲開始時包 NC_FilterBar:shouldIncludeRecipe，只替這三條配方代問
+-- Neat Crafting 自己畫清單、不問 OnAddToMenu：遊戲開始時包 NC_FilterBar:shouldIncludeRecipe，只替地圖錶的配方代問
 do
     local answer = true   -- Neat Crafting 自己的篩選（只看能做、已知等）怎麼回答
     NC_FilterBar = { shouldIncludeRecipe = function() return answer end }
@@ -494,7 +494,7 @@ do
     poll()
     local all3 = true
     for _, r in pairs(recipes) do all3 = all3 and #r.skills == 1 and r.skills[1][2] == 3 end
-    check(nRecipes == 3 and all3 and R.applied == 3, "預設電學 3：三條配方都套上")
+    check(nRecipes == 4 and all3 and R.applied == 3, "預設電學 3：四條配方（三個模組＋ValuTech 錶）都套上")
     SB.CraftLevel = 7
     poll()
     local c = recipes.CraftMinidoracatWatchLight
@@ -510,6 +510,45 @@ do
     SB.CraftLevel = nil
     poll()
     getScriptManager, Perks = savedSM, savedPerks
+end
+-- 配方腳本（2026-11-23 加做錶）：R.RECIPES 的鍵＝那條配方的產出物；做錶只收原版三款電子錶與整顆滿電電池
+do
+    local R = MinidoracatWatch_Recipe
+    local f = assert(io.open(F.MEDIA .. "/../scripts/MinidoracatWatch_recipes.txt", "rb"))
+    local text = f:read("a"):gsub("/%*.-%*/", "")
+    f:close()
+    local scripts = {}
+    for name, body in text:gmatch("craftRecipe%s+([%w_]+)%s*(%b{})") do
+        scripts[name] = { inputs = body:match("inputs%s*(%b{})") or "", outputs = body:match("outputs%s*(%b{})") or "" }
+    end
+    local n, matched = 0, true
+    for out, name in pairs(R.RECIPES) do
+        n = n + 1
+        matched = matched and scripts[name] ~= nil and scripts[name].outputs:match("item%s+1%s+([%w_.]+)") == out
+    end
+    check(n == 4 and matched, "R.RECIPES 四筆：每筆的鍵就是那條配方的產出物")
+    check(R.RECIPES[W.watchType("ValuTech")] == "CraftMinidoracatWatchValuTech" and R.RECIPES[W.watchType("Paws")] == nil,
+        "七款錶只有 ValuTech 有配方")
+    local inputs = (scripts.CraftMinidoracatWatchValuTech or { inputs = "" }).inputs
+    local watchLine, batLine = "", ""
+    for line in inputs:gmatch("[^\r\n]+") do
+        if line:find("WristWatch", 1, true) then watchLine = line end
+        if line:find("Base.Battery", 1, true) then batLine = line end
+    end
+    local ids = {}
+    for id in (watchLine:match("%[(Base%.WristWatch[^%]]*)%]") or ""):gmatch("[^;]+") do ids[#ids + 1] = id end
+    table.sort(ids)
+    check(table.concat(ids, ";") == "Base.WristWatch_Left_DigitalBlack;Base.WristWatch_Left_DigitalDress;Base.WristWatch_Left_DigitalRed;"
+        .. "Base.WristWatch_Right_DigitalBlack;Base.WristWatch_Right_DigitalDress;Base.WristWatch_Right_DigitalRed",
+        "做錶：只列原版三款電子錶的左右手六個物品")
+    -- tags[base:digital] 會把七款地圖手錶（連同裝著的模組）也當材料
+    check(not inputs:find("base:digital", 1, true) and not inputs:find("MinidoracatWatch.", 1, true),
+        "做錶：錶那格不用 tag 收料，材料裡沒有本 MOD 的物品")
+    check(watchLine:find("mode:destroy", 1, true) and watchLine:find("IsNotWorn", 1, true) and watchLine:find("ItemCount", 1, true)
+        and not inputs:find("AllowFavorite", 1, true), "做錶：戴著的、收藏的不收")
+    -- 不要求滿電：快沒電的電池做一支錶再取出就變滿電
+    check(batLine:find("mode:destroy", 1, true) and batLine:find("IsFull", 1, true) and batLine:find("ItemCount", 1, true),
+        "做錶：整顆滿電電池用掉（成品視為滿電，電量守恆）")
 end
 
 -- ===== 嗶嗶腕機的螢幕：伺服器 =====

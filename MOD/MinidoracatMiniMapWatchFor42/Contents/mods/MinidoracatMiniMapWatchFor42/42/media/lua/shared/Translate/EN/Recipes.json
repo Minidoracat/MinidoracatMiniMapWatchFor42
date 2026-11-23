@@ -1,5 +1,6 @@
 {
     "CraftMinidoracatWatchLedger": "Make Directory Module",
     "CraftMinidoracatWatchComm": "Make Comms Module",
-    "CraftMinidoracatWatchLight": "Make Light Module"
+    "CraftMinidoracatWatchLight": "Make Light Module",
+    "CraftMinidoracatWatchValuTech": "Make ValuTech Map Watch"
 }

@@ -440,7 +440,7 @@ option MinidoracatWatch.LootCards
 option MinidoracatWatch.LootCardAmount
 {type = enum, numValues = 4, default = 1, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_LootCardAmount,}
 
-/* 製作模組需要的電學等級（0＝不需要；執行期改配方 SkillRequired，shared/MinidoracatWatch_Recipe.lua） */
+/* 允許製作（ValuTech 地圖手錶與名錄、通訊、照明模組）與需要的電學等級（0＝不需要；執行期改配方 SkillRequired，shared/MinidoracatWatch_Recipe.lua） */
 option MinidoracatWatch.AllowCraft
 {type = boolean, default = true, page = MinidoracatWatchAcquire, translation = MinidoracatWatch_AllowCraft,}
 

@@ -1,13 +1,13 @@
 module Base
 {
     /*
-        地圖錶模組的製作（B42 craftRecipe）。只有設計稿 data.mjs MODULES 寫「可製作」的一般模組：
-        名錄（電話簿＋電子零件）、通訊（拆對講機的收發零件）、照明（手電筒＋電子零件）。
+        地圖錶的製作（B42 craftRecipe）。一般模組三個：名錄（電話簿＋電子零件）、通訊（拆對講機的收發零件）、
+        照明（手電筒＋電子零件）；錶一支：基礎款 ValuTech（原版電子錶＋電子零件＋滿電電池，2026-11-23）。
         - 版型照原版 recipes_electrical.txt:101-126 MakeImprovisedFlashlight 與 AutoDrive recipes_autodrive.txt。
         - 放 module Base：短名配方引用只查 Base bucket（ScriptBucketCollection.getScript 不含 '.' 時寫死 Base，
           家族 pitfalls.md「CraftRecipe 學習管線」）。物品留在 module MinidoracatWatch，這裡寫 full type。
         - 不需要學：NeedToBeLearn 預設 false，電學 3 級（SkillRequired）就能做；沒有雜誌與研究的取得管道要維護。
-        - OnTest＝沙盒「允許製作模組」與地圖錶總開關（shared/MinidoracatWatch_Recipe.lua）；
+        - OnTest＝沙盒「允許製作」與地圖錶總開關（shared/MinidoracatWatch_Recipe.lua）；
           引擎對每個候選輸入物品呼叫一次（CraftRecipe.OnTestItem），全回 false＝沒有可用材料。
         - OnAddToMenu＝同一個條件，做不了就不列出（只認全域名稱，不能寫點號；同一個檔）。
         - 配方名翻譯在 Translate/<語言>/Recipes.json（Translator.getRecipeName 以配方名為鍵，Translator.java:691-699）。
@@ -80,6 +80,38 @@ module Base
         outputs
         {
             item 1 MinidoracatWatch.Module_Light,
+        }
+    }
+
+    /*
+        ValuTech 地圖手錶（基礎款）：原版電子錶＋電子零件＋滿電電池（2026-11-23 使用者裁定，Workshop 玩家許願）。
+        - 錶只列原版三款電子錶左右手六個物品，不用 tags[base:digital]：七款地圖手錶與原版名錶也有這個 tag，
+          用 tag 會把地圖手錶（連同裝著的模組）當材料。
+        - flags[IsNotWorn]＝戴著的不用（InputScript.java:1016-1020）；收藏的物品引擎本來就不用（:970-976，沒寫 AllowFavorite）。
+        - 電池 flags[IsFull;ItemCount] mode:destroy（同 recipes_metalWelding.txt:16）：整顆滿電電池用掉。做好的錶沒有電量紀錄＝
+          出廠滿電（shared/MinidoracatWatch.lua 的 W.charge），取出來也是一顆滿電電池；不要求滿電的話，
+          快沒電的電池做一支錶再取出就變滿電（規劃書 §4「擋用錶充一般電池」）。
+    */
+    craftRecipe CraftMinidoracatWatchValuTech
+    {
+        timedAction = MakingElectrical,
+        time = 200,
+        SkillRequired = Electricity:3,
+        OnTest = MinidoracatWatch_Recipe.canCraft,
+        OnAddToMenu = MinidoracatWatch_recipeShown,
+        Tags = AnySurfaceCraft,
+        category = Electrical,
+        xpAward = Electricity:10,
+        inputs
+        {
+            item 1 tags[base:screwdriver] mode:keep flags[Prop1],
+            item 1 [Base.WristWatch_Left_DigitalBlack;Base.WristWatch_Right_DigitalBlack;Base.WristWatch_Left_DigitalRed;Base.WristWatch_Right_DigitalRed;Base.WristWatch_Left_DigitalDress;Base.WristWatch_Right_DigitalDress] mode:destroy flags[IsNotWorn;ItemCount],
+            item 3 [Base.ElectronicsScrap],
+            item 1 [Base.Battery] mode:destroy flags[IsFull;ItemCount],
+        }
+        outputs
+        {
+            item 1 MinidoracatWatch.MapWatch_ValuTech_Left,
         }
     }
 }

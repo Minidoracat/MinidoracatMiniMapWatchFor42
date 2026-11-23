@@ -1,6 +1,6 @@
--- MinidoracatWatch_Recipe.lua（shared）：模組配方的 OnTest 與電學等級（media/scripts/MinidoracatWatch_recipes.txt）。
+-- MinidoracatWatch_Recipe.lua（shared）：製作配方的 OnTest 與電學等級（media/scripts/MinidoracatWatch_recipes.txt）。
 -- 引擎對每個候選輸入物品呼叫一次（CraftRecipe.OnTestItem → LuaManager.getFunctionObject 依「表.函式」解析全域），
--- 全部回 false＝配方沒有可用材料。沙盒「允許製作模組」關閉、或地圖錶系統關閉（等於沒裝本 MOD）時不能做。
+-- 全部回 false＝配方沒有可用材料。沙盒「允許製作」關閉、或地圖錶系統關閉（等於沒裝本 MOD）時不能做。
 -- 沙盒還沒載入（主選單）時 W.sandbox 回預設值＝放行，配方不會在讀到設定前被誤鎖。
 --
 -- 電學等級（沙盒 CraftLevel 0–10，預設 3＝腳本的 SkillRequired）：執行期直接改配方的需求。CraftRecipe 已暴露給 Lua
@@ -43,8 +43,13 @@ function MinidoracatWatch_Recipe.wrapNeatCrafting()
 end
 Events.OnGameStart.Add(MinidoracatWatch_Recipe.wrapNeatCrafting)
 
--- 模組 id → 配方名（media/scripts/MinidoracatWatch_recipes.txt）；面板的取得方式也查這張表
-R.RECIPES = { ledger = "CraftMinidoracatWatchLedger", comm = "CraftMinidoracatWatchComm", light = "CraftMinidoracatWatchLight" }
+-- 產出物完整類型 → 配方名（media/scripts/MinidoracatWatch_recipes.txt）；取得方式（C.acquireInfo）也查這張表
+R.RECIPES = {
+    ["MinidoracatWatch.Module_Ledger"] = "CraftMinidoracatWatchLedger",
+    ["MinidoracatWatch.Module_Comm"] = "CraftMinidoracatWatchComm",
+    ["MinidoracatWatch.Module_Light"] = "CraftMinidoracatWatchLight",
+    [W.watchType("ValuTech")] = "CraftMinidoracatWatchValuTech",
+}
 R.POLL_MS = 2000
 
 function R.level()

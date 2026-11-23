@@ -291,7 +291,7 @@ do
     c.sb.NeedBattery, c.sb.DeadMode, c.sb.CraftLevel = false, 2, 5
     lines = M.diff(base, c)
     check(has(lines, "需要電池：從 開 改成 關") and has(lines, "沒電時：從 所有功能停用 改成 只保留小地圖")
-        and has(lines, "製作模組需要的電學等級：從 3 改成 5"), "diff: battery switch, dead mode and craft level")
+        and has(lines, "製作需要的電學等級：從 3 改成 5"), "diff: battery switch, dead mode and craft level")
     -- 核心頁的欄位：照沙盒名稱寫「原本 → 改成」；負重槽的租金、幣別、天數也是條款，重試、提醒不是
     local w = M.copy(base)
     w.sb.WeightEnabled, w.sb.WeightUnits1, w.sb.DrainWeight3 = false, 2, 50

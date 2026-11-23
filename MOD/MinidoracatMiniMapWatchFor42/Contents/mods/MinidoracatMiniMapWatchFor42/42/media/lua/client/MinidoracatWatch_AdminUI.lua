@@ -689,7 +689,7 @@ local function buildAcquire(S, p)
     end
     row("LootModules", T("LootModules"), T("LootModules_desc"), "LootModuleAmount")
     row("LootCards", T("LootCards"), T("LootCards_desc"), "LootCardAmount")
-    -- 製作模組需要的電學等級（0–10；配方執行期改 SkillRequired，shared/MinidoracatWatch_Recipe.lua）
+    -- 製作需要的電學等級（0–10；配方執行期改 SkillRequired，shared/MinidoracatWatch_Recipe.lua）
     local lx = labeled(p, M.sbLabel("CraftLevel"), w - 230, y, 150)
     sbField(S, p, lx, y, 50, "CraftLevel")
     row("AllowCraft", T("Craft"), T("Craft_desc"))

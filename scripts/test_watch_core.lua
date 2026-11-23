@@ -184,6 +184,13 @@ F.reset()
 check(W.applyBatteryChange(s, fresh:getID(), false) == true and #s.inv:getAllTypeRecurse("Base.Battery")._items == 3,
     "全新錶視為裝著滿電電池，可取出一顆")
 check(F.added[1]:getCurrentUses() == 142, "取出的是滿電電池（142 格，與新電池相同）")
+-- 配方做出來的錶：原版把消耗的材料記在產出物的 modData（ISHandcraftAction），有 modData 但沒有電量鍵＝一樣是出廠滿電
+local crafted = F.item(F.LEFT)
+crafted:getModData()["Base.Battery"] = 1
+s.inv:AddItem(crafted)
+F.reset()
+check(W.charge(crafted) == 1 and W.applyBatteryChange(s, crafted:getID(), false) == true
+    and F.added[1]:getCurrentUses() == 142 and W.charge(crafted) == nil, "配方做出來的錶：滿電，取出一顆滿電電池後變成沒電池")
 
 -- 反覆拆裝不得生電：0.503 用四捨五入會變成 72 格＝0.504
 local function totalCharge(p, watch)

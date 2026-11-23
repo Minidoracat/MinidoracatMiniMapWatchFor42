@@ -200,6 +200,15 @@ check(acquire("ledger") == "IGUI_MinidoracatWatch_Acquire_CraftAny" and acquire(
 SB.LootModules, SB.CraftLevel, SB.AllowCraft = nil, nil, false
 check(acquire("comm") == LOOT .. PLACE .. "ElectronicStoreMisc" .. SEP .. PLACE .. "PoliceLockers", "關閉製作：不寫可以製作")
 SB.AllowCraft = nil
+-- 錶：只有基礎款 ValuTech 有配方（2026-11-23），和模組共用「允許製作」與電學等級
+local function craftOf(fullType) return C.acquireInfo(fullType).craft end
+check(craftOf(W.watchType("ValuTech")) == 3 and craftOf(W.watchType("Paws")) == false and craftOf(W.watchType("BB3000")) == false
+    and craftOf(W.BATTERY_TYPE) == false, "ValuTech 地圖手錶可以製作（電學 3）；其他款與電池不能")
+SB.CraftLevel = 0
+check(craftOf(W.watchType("ValuTech")) == 0, "電學 0：ValuTech 不需要技能")
+SB.CraftLevel, SB.AllowCraft = nil, false
+check(craftOf(W.watchType("ValuTech")) == false, "關閉製作：ValuTech 也不能做")
+SB.AllowCraft = nil
 -- 負重核心：每顆自己的戰利品開關（LootWeight1..3，預設關、不看 LootModules）
 local function lootOf(id) return ((acquire(id) or ""):match("Acquire_Loot|([^\n]*)")) end
 check(lootOf("weight1") == nil and lootOf("weight3") == nil and lootOf("gps") ~= nil,
@@ -1605,6 +1614,8 @@ MinidoracatEconomy, W.econStatus, C.Pay.sheet, C.Pay.busy, SB.SlotExt = nil, nil
     check(not ecoText:find("Tier_", 1, true) and ecoText:find("Guide_NoteMethods", 1, true)
         and ecoText:find("Guide_ZombieNone", 1, true) and ecoText:find("Guide_CraftNone", 1, true),
         "開放程度 2：不寫稀有度、寫這台伺服器不公開機率；節能核心殭屍不帶、不能製作")
+    check(texts(W.watchType("ValuTech")):find("Acquire_Craft|3", 1, true)
+        and texts(W.watchType("Paws")):find("Guide_CraftNone", 1, true), "取得方式視窗：ValuTech 寫可以製作，其他款寫不能製作")
     SB.AcquireGuide = 3
     W.clientLists.drops, W.clientLists.dropCap = { { group = "police", item = "mod:comm", chance = 2 } }, 1
     local commText = texts(MOD("Comm"))

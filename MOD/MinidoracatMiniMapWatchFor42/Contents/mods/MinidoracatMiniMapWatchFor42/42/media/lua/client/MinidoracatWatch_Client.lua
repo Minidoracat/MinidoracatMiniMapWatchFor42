@@ -609,8 +609,8 @@ function C.acquireInfo(fullType)
         end
     end
     if rates and #info.drops > 0 then info.dropCap = W.guideList("dropCap") end
-    local def, R = W.moduleByItem[fullType], MinidoracatWatch_Recipe -- Recipe 是 shared 檔，遊戲裡一定比本檔先載入
-    if def and R and R.RECIPES[def.id] and R.canCraft() then info.craft = R.level() end
+    local R = MinidoracatWatch_Recipe -- Recipe 是 shared 檔，遊戲裡一定比本檔先載入
+    if R and R.RECIPES[fullType] and R.canCraft() then info.craft = R.level() end
     return info
 end
 
