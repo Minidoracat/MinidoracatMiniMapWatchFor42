@@ -79,7 +79,7 @@ https://steamcommunity.com/sharedfiles/filedetails/?id=3816406671
 [/list]
 [/list]
 [h3]製作[/h3]
-不必學配方；需要螺絲起子、桌面與電學 3 級（等級可調）。管理員關閉「允許製作」或「啟用地圖手錶」時，合成清單不會出現這些配方。
+不必學配方；需要螺絲起子、桌面與電工 3 級（等級可調）。管理員關閉「允許製作」或「啟用地圖手錶」時，合成清單不會出現這些配方。
 [table]
 [tr][th]成品[/th][th]材料[/th][/tr]
 [tr][td]ValuTech 地圖手錶[/td][td]原版電子錶（黑色、紅色、金屬風任一款，整支用掉）＋電子零件×3＋滿電的電池[/td][/tr]
@@ -484,7 +484,7 @@ https://steamcommunity.com/sharedfiles/filedetails/?id=3816406671
 [tr][td]玩家能看到的取得方式[/td][td]只列取得方式（另有：不開放、取得方式與機率）[/td][/tr]
 [tr][td]拆裝模組需要螺絲起子[/td][td]開[/td][/tr]
 [tr][td]允許製作[/td][td]開[/td][/tr]
-[tr][td]製作需要的電學等級[/td][td]3[/td][/tr]
+[tr][td]製作需要的電工等級[/td][td]3[/td][/tr]
 [tr][td]各款錶、模組（負重核心除外）、解鎖卡出現在戰利品中[/td][td]開[/td][/tr]
 [tr][td]數量[/td][td]地圖手錶、模組一般；解鎖卡很少[/td][/tr]
 [tr][td]殭屍身上會帶地圖手錶相關物品[/td][td]開[/td][/tr]
