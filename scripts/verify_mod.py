@@ -50,6 +50,8 @@
  20. client 物品名稱用 getItemName — getItemNameFromFullType 只回翻譯表的物品名；原版背包顯示車輛零件時再接上車型，
                           getItemName 照同一規則（LuaManager.java:8745-8763）。BigGasTank1／2／3 因此都顯示「油箱 (大型)」
                           （Economy、UIFor42 2026-10-18）。不拿來顯示或不會出現車輛零件的用法寫進 verify_ignore.txt 並註明查證依據
+ 21. 看錶動畫是最新          — scripts/look_anim.py --check：四支 clip 與四個節點 xml 等於重新產生的結果（手改產出、改了
+                          產生器沒重產、遊戲更新改了原版 clip 都會不過）。需要遊戲的 anims_X/Bob（PZ_PATH），找不到則 SKIP
 
 新增檢查時：同步把對應的坑記進 AGENTS.md 踩坑錄，並依「踩坑進化協議」回流到
 pz-mod-template（見 AGENTS.md）。
@@ -1175,6 +1177,16 @@ for f in LUA_FILES:
             plain_names.append(f"getItemNameFromFullType in {lua_rel}:{lineno}")
 _t = "client 顯示物品名稱用 getItemName（getItemNameFromFullType 沒有車型）"
 fail(_t, plain_names) if plain_names else ok(_t)
+
+# ---- 21. 看錶動畫是最新（scripts/look_anim.py --check）----
+_t = "看錶動畫與節點等於 look_anim.py 重新產生的結果"
+_bob = os.path.join(PZ_PATH, "media", "anims_X", "Bob")
+if not os.path.isdir(_bob) or not shutil.which("uv"):
+    skip(_t, f"找不到遊戲的 {_bob}（設定 PZ_PATH）或 PATH 沒有 uv")
+else:
+    _r = subprocess.run(["uv", "run", "--quiet", "scripts/look_anim.py", "--src", _bob, "--check"], cwd=REPO,
+                        capture_output=True, text=True, encoding="utf-8", errors="replace")
+    ok(_t) if _r.returncode == 0 else fail(_t, (_r.stdout + _r.stderr).strip().splitlines()[-8:])
 
 # ---- 總結 ----
 print()

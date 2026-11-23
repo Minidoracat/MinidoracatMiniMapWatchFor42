@@ -334,6 +334,13 @@ Off by default (swap batteries instead). Admins can allow two ways to charge, bo
 [*] Untick it to have long sleeves cover it like vanilla watches (in Options → Mods, press Apply). No need to put the watch back on.
 [*] Only changes your own screen, for every map watch you see. The watch works the same.
 [/list]
+[*] [b]Show the minimap only while looking at the watch[/b] (off by default): play by the "Only while looking at the watch" rule yourself, even when the server doesn't ask for it.
+[list]
+[*] With it ticked you need a powered map watch on, and the minimap shows only while your character looks at it.
+[*] To look: press the hotkey (default [b]0[/b]; rebind under Options → Key Bindings → "Minidoracat Map Watch"), use the panel's "Look at watch" button, or right-click the worn watch and choose "Look at watch". Do it again to stop.
+[*] You can walk and drive while looking. Running, aiming, starting another action or taking the watch off stops it.
+[*] It does nothing when the server turns the minimap off or already requires looking.
+[/list]
 [*] [b]Where to get items[/b] (Map Display Settings only): opens the Where to Get window, even without a watch. Disabled when the server hides it.
 [/list]
 === ⚙️ Admin settings window
@@ -411,7 +418,7 @@ The sandbox options are on the five "Minidoracat Map Watch" pages.
 [tr][th]Option[/th][th]Default[/th][/tr]
 [tr][td]Enable map watch[/td][td]On[/td][/tr]
 [tr][td]Single-player defaults[/td][td]On: the first time a single-player save loads, options still at their default switch to no watch for the minimap, free paid slots and no unlock cards as loot[/td][/tr]
-[tr][td]Minimap rule[/td][td]Watch required[/td][/tr]
+[tr][td]Minimap rule[/td][td]Watch required (also: No watch needed, Minimap off, Only while looking at the watch)[/td][/tr]
 [tr][td]Feature rules: resource points, navigation (incl. the direction arrow), faction sharing, vehicles & animals, zombie positions, light[/td][td]Module required[/td][/tr]
 [/table]
 [h3]Battery and charging[/h3]
@@ -529,6 +536,12 @@ Each tier has its own currency, period and renewal, all defaulting to:
 [list]
 [*] The watch is dead or has no battery.
 [*] Insert or replace one.
+[/list]
+[h3]The minimap is gone, or says "Look at your watch to see the minimap"?[/h3]
+[list]
+[*] The server set the minimap rule to "Only while looking at the watch", or you ticked "Show the minimap only while looking at the watch" in the player settings.
+[*] Wear a powered map watch and press the look key (default 0). The minimap shows while you look.
+[*] While looking, the Cancel Action key (Esc by default) stops looking; press it again to open the menu.
 [/list]
 [h3]The battery is dead, but the minimap still works?[/h3]
 [list]

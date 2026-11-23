@@ -480,10 +480,8 @@ function ISBaseTimedAction.new(cls, character)
 end
 function ISBaseTimedAction:perform() F.performed = (F.performed or 0) + 1 end
 function ISBaseTimedAction:forceComplete() self.forced = true end
--- 姿勢：poseCalls 記呼叫順序（動畫變數要早於 setActionAnim 才會同步給其他玩家）
-CharacterActionAnims = { Read = "Read" }
+-- 姿勢：poseCalls 記呼叫順序
 local function poseCall(a, what) a.poseCalls = a.poseCalls or {}; a.poseCalls[#a.poseCalls + 1] = what end
-function ISBaseTimedAction:setAnimVariable(k, v) poseCall(self, "var:" .. k .. "=" .. tostring(v)) end
 function ISBaseTimedAction:setActionAnim(anim) poseCall(self, "anim:" .. tostring(anim)) end
 function ISBaseTimedAction:setOverrideHandModels(a, b) poseCall(self, "hands") end
 F.queues = {}

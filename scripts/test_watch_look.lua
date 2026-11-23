@@ -152,8 +152,15 @@ check(rawget(A, "complete") == nil and rawget(A, "perform") == nil and rawget(A,
     "只在客戶端跑：不定義 complete；不靠 perform／stop 收尾")
 check(C.lookActive(0) == false and gate() == false, "排進佇列還沒開始：不算在看")
 F.startAction(p)
-check(a.poseCalls[1] == "var:ReadType=photo" and a.poseCalls[2] == "anim:Read" and a.poseCalls[3] == "hands",
-    "姿勢：先設動畫變數再設動作動畫（才會同步給其他玩家）、空手")
+check(#a.poseCalls == 2 and a.poseCalls[1] == "anim:MinidoracatWatch_LookL" and a.poseCalls[2] == "hands",
+    "姿勢：戴左手錶，抬左手腕的看錶節點、空手")
+local function poseOf(who)
+    local r = setmetatable({ character = who }, A)
+    Look.pose(r)
+    return r.poseCalls[1]
+end
+check(poseOf(bob) == "anim:MinidoracatWatch_LookR", "姿勢：戴右手錶，抬右手腕")
+check(poseOf({ getWornItems = function() return nil end }) == "anim:MinidoracatWatch_LookL", "姿勢：找不到錶時用左手")
 ok, reason, dist, how = gate()
 check(C.lookActive(0) == true and ok == true and how == nil, "動作開始：正在看、小地圖放行")
 check(a:isValid() == true, "isValid 回布林 true")

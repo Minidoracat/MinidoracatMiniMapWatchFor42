@@ -16,11 +16,14 @@ MinidoracatWatchLook = Look -- 內部表（_Panel、測試與 E2E 用），不�
 ISMinidoracatWatchLookAction = ISBaseTimedAction:derive("ISMinidoracatWatchLookAction")
 local A = ISMinidoracatWatchLookAction
 
--- 姿勢只在這裡決定。動畫變數要在 setActionAnim 之前設：同步給其他玩家的封包在 setActionAnim 當下收集變數
--- （StatePacket.java:61-78；原版 ISReadABook.lua:146-156 同樣的順序）。
+-- 姿勢只在這裡決定：自製的看錶節點（scripts/look_anim.py 產生；姿勢、遮罩與權重的理由寫在那裡），抬起戴著生效那支錶
+-- （W.wornWatch）的手腕。setActionAnim(String) 設 PerformingAction（BaseAction.java:265-280），節點條件就是它；
+-- 同名節點在 AnimSets/player（站、走）與 player-vehicle（座位）各一份，跟原版 Bandage 等動作一樣由角色當下的
+-- AnimSet 挑。錶的物品類型固定分左右（MapWatch_*_Left／_Right），戴在哪個部位都一樣；找不到錶時用左手。
 function Look.pose(action)
-    action:setAnimVariable("ReadType", "photo") -- 原版沒有看錶的姿勢，借「看照片」（AnimSets/player/actions/photo.xml）
-    action:setActionAnim(CharacterActionAnims.Read)
+    local w = W.wornWatch(action.character)
+    local side = (w and w:getFullType():sub(-6) == "_Right") and "R" or "L"
+    action:setActionAnim("MinidoracatWatch_Look" .. side)
     action:setOverrideHandModels(nil, nil)
 end
 
