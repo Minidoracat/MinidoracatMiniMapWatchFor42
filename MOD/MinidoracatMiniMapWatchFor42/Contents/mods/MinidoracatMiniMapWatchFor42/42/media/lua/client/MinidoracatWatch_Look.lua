@@ -20,11 +20,16 @@ local A = ISMinidoracatWatchLookAction
 -- （C.watchOf，和閘門同一個來源）的手腕。setActionAnim(String) 設 PerformingAction（BaseAction.java:265-280），節點條件就是它；
 -- 同名節點在 AnimSets/player（站、走）與 player-vehicle（座位）各一份，跟原版 Bandage 等動作一樣由角色當下的
 -- AnimSet 挑。錶的物品類型固定分左右（MapWatch_*_Left／_Right），戴在哪個部位都一樣；找不到錶時用左手。
--- 手上的東西照舊拿著：計時動作期間引擎會把不是武器的持物藏起來（BaseAction.java:133-140、ModelManager.java:630-634），
--- 用角色實際拿的兩件覆寫回去（:650-666）；傳兩個 nil 則是兩手都清空。要在 setActionAnim 之前設好（多人進入動作狀態時讀）。
+-- 手上的東西照舊拿著：計時動作期間，兩手都不是武器時引擎會把持物藏起來（PlayerActionsState.java:40-47、
+-- ModelManager.java:630-634），用角色實際拿的東西覆寫回去（:650-666）；要在 setActionAnim 之前設好（多人進入動作狀態時讀）。
+-- 有武器時引擎本來就不藏，不覆寫：覆寫會以模型名傳給其他玩家（PlayerActionsState.java:112-114），雙手握的同一件
+-- 在別人畫面變成兩件、槍的配件不見。兩手是同一件時只傳一次。
 function Look.pose(action)
     local p = action.character
-    action:setOverrideHandModels(p:getPrimaryHandItem(), p:getSecondaryHandItem())
+    local a, b = p:getPrimaryHandItem(), p:getSecondaryHandItem()
+    if (a or b) and not (instanceof(a, "HandWeapon") or instanceof(b, "HandWeapon")) then
+        action:setOverrideHandModels(a, a ~= b and b or nil)
+    end
     local w = C.watchOf(action.pn)
     local side = (w and w:getFullType():sub(-6) == "_Right") and "R" or "L"
     action:setActionAnim("MinidoracatWatch_Look" .. side)
@@ -38,8 +43,11 @@ function A:isValid() return self.skip or (C.lookState(self.pn) == true and not s
 -- 佇列照原版的路換下一個。照常開始的話引擎不啟動它，佇列發現第一個動作不在引擎清單就整列清掉
 -- （ISTimedActionQueue.lua:117-125），排在後面的動作跟著沒了；也不能在這裡自己呼叫 onCompleted：這時就在原版
 -- onCompleted 裡面，它回去後會把這個動作的進度寫到下一個動作上（:77-95，進食到一半被打斷再接回來的會歸零）。
+-- 空動作不因跑步、瞄準中斷：引擎先處理玩家輸入才更新動作（IsoPlayer.java:2074-2080,2400-2402），被它停掉＝整列清掉；
+-- 這兩個欄位在建 Java 動作時讀（LuaTimedActionNew.java:38-55），所以在 begin 之前改。
 function A:begin()
     self.skip = not self:isValid() or nil
+    if self.skip then self.stopOnRun, self.stopOnAim = false, false end
     ISBaseTimedAction.begin(self)
 end
 
@@ -87,6 +95,10 @@ function Look.toggle(player)
         queue:removeFromQueue(queue.queue[i])
         return
     end
+    -- 佇列正在跑「做完要接回被打斷動作」的中斷者（原版只有開關門，ISTimedActionQueue.lua:60-75）：這一下不排。
+    -- 排了會夾在中斷者與接回的動作之間，接回的動作就失去原版給它的 isValidStart 豁免（吃飽時接回吸菸會被整列清掉）
+    local cur = queue.current
+    if cur and cur.retriggerLastAction and player:getTimedActionToRetrigger() then return end
     local ok, reason = C.lookState(player:getPlayerNum())
     if ok == nil then return end
     if not ok then

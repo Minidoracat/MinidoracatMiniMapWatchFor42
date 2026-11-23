@@ -270,6 +270,8 @@ function Player:getVehicle() return self.vehicle end
 function Player:getPrimaryHandItem() return self.primary end
 function Player:getSecondaryHandItem() return self.secondary end
 function Player:isAiming() return self.aiming == true end
+function Player:getTimedActionToRetrigger() return self.retrigger end
+function Player:setTimedActionToRetrigger(a) self.retrigger = a end
 function Player:getCurrentSquare() return self.square end
 function F.vehicle(running)
     return { running = running, isEngineRunning = function(v) return v.running == true end }
@@ -495,9 +497,12 @@ end
 function ISBaseTimedAction:forceComplete() self.action.forceComplete = true end
 function ISBaseTimedAction:getJobDelta() return self.action.delta end
 function ISBaseTimedAction:setJobDelta(d) self.action.delta = d end
-local JavaAction = { isStarted = function(self) return self.started == true end }
+-- stopOnAim 在建立時讀一次（LuaTimedActionNew.java:38-55）；getTable 回 Lua 動作表
+local JavaAction = { isStarted = function(self) return self.started == true end, getTable = function(self) return self.owner end }
 JavaAction.__index = JavaAction
-function F.javaAction(owner, delta) return setmetatable({ owner = owner, delta = delta or 0 }, JavaAction) end
+function F.javaAction(owner, delta)
+    return setmetatable({ owner = owner, delta = delta or 0, stopOnAim = owner.stopOnAim }, JavaAction)
+end
 -- StartAction：引擎清單換成它，有效才開始（IsoGameCharacter.java:5456-5462）
 function ISBaseTimedAction:begin()
     self.action = F.javaAction(self)
@@ -544,12 +549,21 @@ function Queue:resetQueue()
     for i = #self.queue, 1, -1 do self.queue[i] = nil end
     self.current = nil
 end
--- 原版的後半段（:77-95）：下一個動作的進度在 begin 之前讀、begin 之後才寫回 self.current
+-- 照原版（:60-95）。前半：剛做完的是「做完要接回被打斷動作」的中斷者（開關門）時，把那個動作排回來，而且只有
+-- 緊接著的下一個動作免查 isValidStart；後半：下一個動作的進度在 begin 之前讀、begin 之後才寫回 self.current
 function Queue:onCompleted(a)
+    local cur, p, addedBack = self.current, self.character, false
+    if cur and cur.retriggerLastAction and p:getTimedActionToRetrigger() then
+        local t = p:getTimedActionToRetrigger():getTable()
+        t.relaunchWithDelta, t.fromRelaunch = true, true
+        self:addToQueue(t)
+        addedBack = true
+    end
+    if cur and cur.retriggerLastAction then p:setTimedActionToRetrigger(nil) end
     self:removeFromQueue(a)
     self.current = self.queue[1]
     if not self.current then return end
-    if not self.current:isValidStart() then return self:resetQueue() end
+    if not addedBack and not self.current:isValidStart() then return self:resetQueue() end
     local newDelta = 0
     if self.current.action then newDelta = self.current:getJobDelta() end
     self.current:begin()
@@ -580,6 +594,12 @@ ISTimedActionQueue = {
 -- 再跑佇列的 tick（第一個動作不在引擎清單＝整列清掉，ISTimedActionQueue.lua:112-125）
 function F.engineUpdate(p)
     local act = (p.actions or {})[1]
+    -- 步行時玩家輸入先處理：瞄準中第一個動作是 stopOnAim 就停掉（IsoPlayer.java:2074-2080,2400-2402、
+    -- IsoGameCharacter.java:5502-5511）；在車上不走這條
+    if act and p.aiming and not p.vehicle and act.stopOnAim then
+        if act.started then act.owner:stop() end
+        p.actions, act = {}, nil
+    end
     if act then
         local a = act.owner
         local valid = a:isValid() == true

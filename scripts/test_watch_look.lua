@@ -155,8 +155,8 @@ check(a.maxTime == -1 and a.stopOnWalk == false and a.stopOnRun == true and a.st
 check(rawget(A, "complete") == nil and rawget(A, "perform") == nil and rawget(A, "stop") == nil,
     "只在客戶端跑：不定義 complete；不靠 perform／stop 收尾")
 check(a.action ~= nil and a.action.started == true, "佇列是空的：馬上開始")
-check(#a.poseCalls == 2 and a.poseCalls[1] == "hands" and a.poseCalls[2] == "anim:MinidoracatWatch_LookL"
-    and a.hands[1] == nil and a.hands[2] == nil, "姿勢：先設持物再設節點；戴左手錶抬左手腕；空手就是空手")
+check(#a.poseCalls == 1 and a.poseCalls[1] == "anim:MinidoracatWatch_LookL" and a.hands == nil,
+    "姿勢：戴左手錶抬左手腕；空手不覆寫持物")
 local function poseOf(who, pn)
     local r = setmetatable({ pn = pn, character = who }, A)
     W.invalidate()
@@ -166,11 +166,18 @@ end
 local torch = F.item("Base.HandTorch")
 bob.secondary = torch
 local posed = poseOf(bob, 1)
-check(posed.poseCalls[2] == "anim:MinidoracatWatch_LookR", "姿勢：戴右手錶，抬右手腕")
-check(posed.hands[1] == nil and posed.hands[2] == torch, "手上的東西照舊拿著：用角色實際拿的兩件覆寫（不是武器的持物引擎會藏）")
-bob.secondary = nil
+check(posed.poseCalls[1] == "hands" and posed.poseCalls[2] == "anim:MinidoracatWatch_LookR", "姿勢：先設持物再設節點；戴右手錶，抬右手腕")
+check(posed.hands[1] == nil and posed.hands[2] == torch, "手上的東西照舊拿著：不是武器的持物引擎會藏，用實際拿的覆寫回去")
+bob.primary = torch
+posed = poseOf(bob, 1)
+check(posed.hands[1] == torch and posed.hands[2] == nil, "兩手拿同一件：只傳一次（傳兩次，別的玩家會看到兩件）")
+local bat = F.item("Base.BaseballBat")
+bat._class = "HandWeapon"
+bob.primary = bat
+check(poseOf(bob, 1).hands == nil, "有武器：引擎本來就不藏，不覆寫（雙手握的武器在別的玩家畫面不會變兩支）")
+bob.primary, bob.secondary = nil, nil
 local empty = { getPrimaryHandItem = function() end, getSecondaryHandItem = function() end }
-check(poseOf(empty, 7).poseCalls[2] == "anim:MinidoracatWatch_LookL", "姿勢：找不到錶時用左手")
+check(poseOf(empty, 7).poseCalls[1] == "anim:MinidoracatWatch_LookL", "姿勢：找不到錶時用左手")
 ok, reason, dist, how = gate()
 check(C.lookActive(0) == true and ok == true and how == nil, "動作開始：正在看、小地圖放行")
 check(a:isValid() == true, "isValid 回布林 true")
@@ -179,16 +186,22 @@ check(a:isValid() == false, "睡著：動作失效")
 p.asleep = nil
 step()
 check(C.lookActive(0) == true and #queue() == 1, "佇列只有它：繼續看")
-p.aiming = true
+p.aiming, p.vehicle = true, {}
 step()
-check(#queue() == 0 and C.lookActive(0) == false, "瞄準（車上引擎不會停動作）：自己停")
+check(#queue() == 0 and C.lookActive(0) == false, "在車上瞄準（引擎不會停動作）：自己停")
+p.vehicle = nil
+Look.toggle(p)
+check(#queue() == 1, "走路瞄準中按看錶：照常排進去")
+step()
+check(#queue() == 0 and C.lookActive(0) == false, "走路瞄準：引擎停掉（stopOnAim）")
 p.aiming = nil
 -- 排了別的動作：讓路，而且後面的動作真的開始
 local Later = ISBaseTimedAction:derive("Later")
 function Later:isValid() return true end
 function Later:start() self.starts = (self.starts or 0) + 1 end
-local function later()
+local function later(aimOk) -- aimOk＝瞄準時也能做的動作（裝彈、喝水）
     local l = ISBaseTimedAction.new(Later, p)
+    if aimOk then l.stopOnAim = false end
     ISTimedActionQueue.add(l)
     return l
 end
@@ -226,6 +239,38 @@ check(#queue() == 1 and queue()[1] == nxt and nxt.starts == 1 and nxt:getJobDelt
     "下一幀：跳過看錶，後面的動作開始，接回來的進度還在")
 W.setCharge(watch, 1)
 W.invalidate()
+ISTimedActionQueue.clear(p)
+-- 同一件事，玩家走路瞄準著：空動作不能被引擎的瞄準中斷停掉（停掉＝整列清掉）
+first = later(true)
+Look.toggle(p)
+nxt = later(true)
+W.setCharge(watch, 0)
+W.invalidate()
+p.aiming = true
+first:forceComplete()
+step()
+step()
+check(#queue() == 1 and queue()[1] == nxt and nxt.starts == 1, "走路瞄準中輪到沒電的看錶：只跳過自己，後面的動作照做")
+p.aiming = nil
+W.setCharge(watch, 1)
+W.invalidate()
+ISTimedActionQueue.clear(p)
+-- 開關門這類「做完要接回被打斷動作」的中斷者進行中：這一下不排看錶。排了會夾在中間，接回的動作（吃飽時的吸菸，
+-- isValidStart 為假）失去原版只給下一個動作的起始檢查豁免，整列被清掉
+local Resume = ISBaseTimedAction:derive("Resume")
+function Resume:isValid() return true end
+function Resume:isValidStart() return false end
+function Resume:start() self.starts = (self.starts or 0) + 1 end
+local door, smoke = later(), ISBaseTimedAction.new(Resume, p)
+door.retriggerLastAction, smoke.action = true, F.javaAction(smoke, 0.5)
+p.retrigger = smoke.action
+Look.toggle(p)
+check(Look.index(p) == -1 and #queue() == 1, "中斷者進行中按看錶：不排")
+door:forceComplete()
+step()
+step()
+check(#queue() == 1 and queue()[1] == smoke and smoke.starts == 1 and smoke:getJobDelta() == 0.5,
+    "中斷者做完：被打斷的動作接回來，進度還在")
 ISTimedActionQueue.clear(p)
 
 -- 引擎不通知 Lua 就丟掉動作（StartAction 清空清單）：下一次問就不算在看

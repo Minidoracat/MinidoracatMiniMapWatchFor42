@@ -9,7 +9,7 @@ looks down at it; no vanilla clip checks a watch, look-anim research Q3), and th
     uv run scripts/look_anim.py                      write the clips into MOD media/anims_X/Bob/ and the nodes into
                                                      media/AnimSets/player|player-vehicle/actions/
     uv run scripts/look_anim.py --check              exit 1 when a shipped clip or node differs from a fresh build
-                                                     (after a game update or a change here) or a stale one is left
+                                                     (after a game update or a change here)
     uv run scripts/look_anim.py --src DIR [--check]  vanilla anims_X/Bob folder (or env PZ_BOB_ANIMS; default the
                                                      Steam install below)
 
