@@ -91,7 +91,7 @@ local function strip(input, name, items, sm)
     end
     if #drop == 0 then return 0 end
     if #drop == list:size() then
-        R.kept[#R.kept + 1] = { list, #drop }
+        R.kept[#R.kept + 1] = list
         return 0
     end
     for _, item in ipairs(drop) do
@@ -109,10 +109,16 @@ end
 -- 「用在哪些配方」（Item.getUsedInRecipes，只記短名）：14 個錶的登記筆數和上次掃完一樣就不必再掃（每輪 14 次查表）；
 -- 變了才走訪全部配方，只處理名字登記過的。用配方物件而不是 getCraftRecipe(短名)：短名只查得到 Base 模組的
 -- （ScriptBucketCollection.java:72-90），別的 MOD 寫在自己模組裡的配方會漏掉。實體內嵌的配方載入時都帶
--- EntityRecipe tag（CraftRecipeComponentScript.java:57），在 getAllBuildableRecipes 那一份（ScriptManager.java:898）。
--- R.kept＝因為會變空而沒動的清單與當時的件數：之後有別的物品進了那份清單也要重看。
+-- EntityRecipe tag（CraftRecipeComponentScript.java:58），在 getAllBuildableRecipes 那一份（ScriptManager.java:898）。
+-- R.kept＝因為會變空而沒動的清單：之後有別的物品進了那份清單（登記筆數不一定跟著變）也要重看。
 -- 伺服器與客戶端各自套。回傳拿掉幾筆
 R.usedSum, R.kept = nil, {}
+local function mixed(list)
+    for i = 0, list:size() - 1 do
+        if not W.WATCH_TYPES[list:get(i):getFullName()] then return true end
+    end
+    return false
+end
 function R.protectWatches()
     local sm, items = getScriptManager(), {}
     local function sum()
@@ -122,7 +128,7 @@ function R.protectWatches()
     end
     for fullType in pairs(W.WATCH_TYPES) do items[fullType] = sm:FindItem(fullType) end
     local stale = sum() ~= R.usedSum
-    for _, k in ipairs(R.kept) do stale = stale or k[1]:size() ~= k[2] end
+    for _, list in ipairs(R.kept) do stale = stale or mixed(list) end
     if not stale then return 0 end
     local names, n = {}, 0
     R.kept = {}

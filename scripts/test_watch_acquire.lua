@@ -545,8 +545,13 @@ do
             s.usedIn = F.mutableList({ "DismantleElectronics", "DismantleElectronics", "Recycle", "OnlyWatches", "BuildRadio",
                 "TwoTags", "TwoTags" })
         end
-        valu.usedIn = F.mutableList({ "DismantleElectronics", "DismantleElectronics", "Recycle", "Recycle", "OnlyWatches",
-            "BuildRadio", "NamedOnly", "TwoTags", "TwoTags" })
+        valu.usedIn = F.mutableList({ "DismantleElectronics", "DismantleElectronics", "DismantleElectronics", "Recycle", "Recycle",
+            "OnlyWatches", "BuildRadio", "NamedOnly", "TwoTags", "TwoTags" })
+    end
+    local function count(list, v)
+        local n = 0
+        for i = 0, list:size() - 1 do if list:get(i) == v then n = n + 1 end end
+        return n
     end
     local base, other, mixed, two = withWatches(vanilla), withWatches(vanilla), withWatches(valu), withWatches(vanilla)
     mixed._items[#mixed._items + 1] = vanilla
@@ -554,8 +559,9 @@ do
     local tools = F.mutableList({ F.scriptItem("Base.Screwdriver") })
     local scans = 0
     local crafts = F.javaList({
-        recipe("DismantleElectronics", input(false, tools), input({ "digital" }, base)), -- 原版那條（Base）
+        recipe("DismantleElectronics", input(false, tools), input({ "camera", "digital" }, base)), -- 原版那條（Base）；錶沒有 camera
         recipe("DismantleElectronics", input({ "digital" }, other)),                     -- 別的模組、同一個短名
+        recipe("DismantleElectronics", input(false, F.mutableList({ valu }), { VT })),   -- 再一個同短名的，指名 ValuTech
         recipe("Recycle", input({ "digital" }, mixed, { "ValuShort" })),                 -- 同一格指名 ValuTech（短名）又用 tag
         recipe("OnlyWatches", input({ "watchonly" }, only)),                             -- 那個 tag 只有地圖手錶帶
         recipe("NamedOnly", input(false, named, { VT })),
@@ -581,19 +587,19 @@ do
     local used, paws = valu:getUsedInRecipes(), F.scriptItem(W.watchType("Paws")):getUsedInRecipes()
     check(two:size() == 1 and not used:contains("TwoTags") and not paws:contains("TwoTags"),
         "同一格命中兩個 tag：清單拿掉一次、登記的兩筆都拿掉")
-    check(not used:contains("DismantleElectronics") and not used:contains("BuildRadio") and used:size() == 4
+    check(count(used, "DismantleElectronics") == 1 and not used:contains("BuildRadio") and used:size() == 5
         and paws:size() == 1 and paws:contains("OnlyWatches"),
-        "錶登記的配方：拿掉的每格少一筆；指名的（Recycle 兩筆、NamedOnly）與沒動的（OnlyWatches）留著")
+        "錶登記的配方：只拿掉命中的 tag 那幾筆；指名的（同短名那條、Recycle 兩筆、NamedOnly）與沒動的（OnlyWatches）留著")
     local before = scans
     check(R.protectWatches() == 0 and scans == before, "登記筆數沒變：不再走訪配方")
     -- 腳本重新載入：清單重新展開、名字重新登記 → 筆數變了，再做一次
     base._items[#base._items + 1] = valu
     valu.usedIn._items[#valu.usedIn._items + 1] = "DismantleElectronics"
-    check(R.protectWatches() == 1 and scans == before + 1 and base:size() == 1, "清單重新展開（登記筆數變了）：再拿掉一次")
-    -- 原本只有地圖手錶的那格後來多了別的物品（錶的登記筆數沒變）：也要重看
-    only._items[#only._items + 1] = vanilla
-    check(R.protectWatches() == 14 and only:size() == 1 and only:contains(vanilla) and paws:size() == 0,
-        "沒動的那格後來多了別的物品：地圖手錶拿掉")
+    check(R.protectWatches() == 1 and scans == before + 1 and base:size() == 1 and count(used, "DismantleElectronics") == 1,
+        "清單重新展開（登記筆數變了）：再拿掉一次")
+    -- 原本只有地圖手錶的那格，其中一支後來被換成別的物品（件數、錶的登記筆數都沒變）：也要重看
+    only._items[1] = vanilla
+    check(R.protectWatches() == 13 and only:size() == 1 and only:contains(vanilla), "沒動的那格後來混進別的物品：地圖手錶拿掉")
     for t in pairs(W.WATCH_TYPES) do F.scriptItem(t).usedIn, F.scriptItem(t).tags = nil, nil end
     R.usedSum, R.kept = nil, {}
     getScriptManager = savedSM
