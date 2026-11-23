@@ -1,4 +1,5 @@
--- MinidoracatWatch_Recipe.lua（shared）：製作配方的 OnTest 與電學等級（media/scripts/MinidoracatWatch_recipes.txt）。
+-- MinidoracatWatch_Recipe.lua（shared）：製作配方的 OnTest 與電學等級（media/scripts/MinidoracatWatch_recipes.txt），
+-- 以及不讓別的配方把地圖手錶當材料（R.protectWatches）。
 -- 引擎對每個候選輸入物品呼叫一次（CraftRecipe.OnTestItem → LuaManager.getFunctionObject 依「表.函式」解析全域），
 -- 全部回 false＝配方沒有可用材料。沙盒「允許製作」關閉、或地圖錶系統關閉（等於沒裝本 MOD）時不能做。
 -- 沙盒還沒載入（主選單）時 W.sandbox 回預設值＝放行，配方不會在讀到設定前被誤鎖。
@@ -70,6 +71,39 @@ function R.applyLevel(level)
     end
 end
 
+-- 別的配方用 tag 收料時會把地圖手錶一起收進去：原版「拆解電子產品」寫 tags[base:digital]（recipes_electrical.txt:48），
+-- 沒戴、沒收藏的錶會被拆成 1 個電子零件，錶上的模組與電池跟著消失。base:digital 不能拿掉：HUD 時鐘靠它顯示日期與
+-- 氣溫（Clock.java:342）。材料驗證與合成介面的材料格查的是同一份物品清單（InputScript.containsItem／
+-- getPossibleInputItems，InputScript.java:101-103、484-486），所以從用 tag 收料的輸入拿掉七款錶；
+-- 指名收地圖手錶的輸入（沒有 tag，別的 MOD 刻意寫的）不動。清單在世界載入時才展開（OnPostWorldDictionaryInit，
+-- :797），比本檔晚，所以跟著輪詢做：物品登記的「用在哪些配方」（Item.getUsedInRecipes，展開時登記，:896）
+-- 清掉之後每輪只剩 14 次查表。伺服器與客戶端各自套。回傳拿掉幾筆
+function R.protectWatches()
+    local sm, n = getScriptManager(), 0
+    for fullType in pairs(W.WATCH_TYPES) do
+        local item = sm:FindItem(fullType)
+        local used = item and item:getUsedInRecipes()
+        for i = (used and used:size() or 0) - 1, 0, -1 do
+            local name = used:get(i)
+            local recipe = sm:getCraftRecipe(name)
+            if recipe then
+                local inputs, named = recipe:getInputs(), false
+                for j = 0, inputs:size() - 1 do
+                    local input = inputs:get(j)
+                    local list = input:getPossibleInputItems()
+                    if input:getItemTags():isEmpty() then
+                        named = named or list:contains(item)
+                    elseif list:remove(item) then
+                        n = n + 1
+                    end
+                end
+                if not named then used:remove(name) end -- 物品右鍵的製作清單也不再列這條配方
+            end
+        end
+    end
+    return n
+end
+
 R.applied = nil
 local lastPoll = nil
 function R.tick()
@@ -81,5 +115,6 @@ function R.tick()
         R.applyLevel(lv)
         R.applied = lv
     end
+    R.protectWatches()
 end
 Events.OnTickEvenPaused.Add(R.tick)

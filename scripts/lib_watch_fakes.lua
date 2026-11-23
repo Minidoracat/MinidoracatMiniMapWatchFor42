@@ -68,6 +68,15 @@ end
 function F.javaList(items)
     return { size = function() return #items end, get = function(_, i) return items[i + 1] end, _items = items }
 end
+-- 可改的清單（ArrayList 的 size／get／contains／remove(物件)）
+function F.mutableList(items)
+    local L = { _items = items }
+    function L:size() return #items end
+    function L:get(i) return items[i + 1] end
+    function L:contains(o) for _, v in ipairs(items) do if v == o then return true end end return false end
+    function L:remove(o) for i, v in ipairs(items) do if v == o then table.remove(items, i); return true end end return false end
+    return L
+end
 
 -- ===== 物品 =====
 local nextId = 1000
@@ -424,7 +433,8 @@ dofile(F.MEDIA .. "/../registries.lua")
 -- 同一個 fullType 回同一個物件（ScriptManager 的物品腳本是單例）；部位照腳本、玩家選項會換（W.setWristCovered）。
 -- 測試要的其他欄位用 extra 傳入，只在第一次建立時放；自己替換 getScriptManager 的測試也用它建物件。
 local ScriptItem = { __index = { getBodyLocation = function(self) return self.loc end,
-    setBodyLocation = function(self, loc) self.loc = loc end } }
+    setBodyLocation = function(self, loc) self.loc = loc end,
+    getUsedInRecipes = function(self) self.usedIn = self.usedIn or F.mutableList({}); return self.usedIn end } }
 F.scripts = {}
 function F.scriptItem(t, extra)
     local s = F.scripts[t]
@@ -435,7 +445,9 @@ function F.scriptItem(t, extra)
     end
     return s
 end
-function getScriptManager() return { FindItem = function(_, t) return F.scriptItem(t) end } end
+function getScriptManager()
+    return { FindItem = function(_, t) return F.scriptItem(t) end, getCraftRecipe = function() return nil end }
+end
 
 -- ===== 計時動作（ISBaseTimedAction.lua:173-184 的形狀；ISTimedActionQueue 只留 add 與佇列）=====
 ISBaseTimedAction = {}

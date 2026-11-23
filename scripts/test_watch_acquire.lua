@@ -488,7 +488,9 @@ do
     local nRecipes = 0
     for _, n in pairs(R.RECIPES) do recipes[n], nRecipes = recipe(), nRecipes + 1 end
     local savedSM, savedPerks = getScriptManager, Perks
-    getScriptManager = function() return { getCraftRecipe = function(_, n) return recipes[n] end } end
+    getScriptManager = function()
+        return { getCraftRecipe = function(_, n) return recipes[n] end, FindItem = function(_, t) return F.scriptItem(t) end }
+    end
     Perks = { Electricity = "Electricity" }
     local function poll() F.now = F.now + R.POLL_MS; F.fire("OnTickEvenPaused") end
     poll()
@@ -510,6 +512,45 @@ do
     SB.CraftLevel = nil
     poll()
     getScriptManager, Perks = savedSM, savedPerks
+end
+-- 別的配方不把地圖手錶當材料（2026-11-23，原版「拆解電子產品」用 tags[base:digital] 收料）：用 tag 收料的輸入拿掉
+-- 七款錶；指名收地圖手錶的輸入、同一格的原版電子錶不動；做完第二次沒事可做
+do
+    local R = MinidoracatWatch_Recipe
+    local function input(tags, list)
+        return { getItemTags = function() return { isEmpty = function() return not tags end } end,
+            getPossibleInputItems = function() return list end }
+    end
+    local vanilla, screw = { "Base.WristWatch_Left_DigitalBlack" }, { "Base.Screwdriver" }
+    local valu = F.scriptItem(W.watchType("ValuTech"))
+    local tagged, nWatch = { vanilla }, 0
+    for t in pairs(W.WATCH_TYPES) do
+        local s = F.scriptItem(t)
+        s.usedIn = F.mutableList({ "DismantleElectronics", "OtherModRecycle", "NotACraftRecipe" })
+        tagged[#tagged + 1], nWatch = s, nWatch + 1
+    end
+    local taggedList, namedList = F.mutableList(tagged), F.mutableList({ valu })
+    local recipes = {
+        DismantleElectronics = { getInputs = function() return F.javaList({ input(false, F.mutableList({ screw })), input(true, taggedList) }) end },
+        OtherModRecycle = { getInputs = function() return F.javaList({ input(false, namedList) }) end },
+    }
+    local savedSM = getScriptManager
+    getScriptManager = function()
+        return { getCraftRecipe = function(_, n) return recipes[n] end, FindItem = function(_, t) return F.scriptItem(t) end }
+    end
+    local n = R.protectWatches()
+    check(nWatch == 14 and n == 14 and taggedList:size() == 1 and taggedList:contains(vanilla),
+        "用 tag 收料的輸入：14 個地圖手錶物品都拿掉，原版電子錶留著")
+    check(namedList:size() == 1 and namedList:contains(valu), "指名收地圖手錶的輸入不動")
+    local used = valu:getUsedInRecipes()
+    check(not used:contains("DismantleElectronics") and used:contains("OtherModRecycle") and used:contains("NotACraftRecipe"),
+        "錶登記的配方：拆解那條拿掉；指名的那條、查不到的名字留著")
+    check(R.protectWatches() == 0, "再跑一次：沒有東西可拿")
+    F.now = F.now + R.POLL_MS
+    F.fire("OnTickEvenPaused")
+    check(taggedList:size() == 1, "輪詢也走這條路、不出錯")
+    for t in pairs(W.WATCH_TYPES) do F.scriptItem(t).usedIn = nil end
+    getScriptManager = savedSM
 end
 -- 配方腳本（2026-11-23 加做錶）：R.RECIPES 的鍵＝那條配方的產出物；做錶只收原版三款電子錶與整顆滿電電池
 do
