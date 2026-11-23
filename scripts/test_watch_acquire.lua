@@ -562,12 +562,14 @@ do
     for name, body in text:gmatch("craftRecipe%s+([%w_]+)%s*(%b{})") do
         scripts[name] = { inputs = body:match("inputs%s*(%b{})") or "", outputs = body:match("outputs%s*(%b{})") or "" }
     end
-    local n, matched = 0, true
+    local n, matched, nScripts = 0, true, 0
     for out, name in pairs(R.RECIPES) do
         n = n + 1
         matched = matched and scripts[name] ~= nil and scripts[name].outputs:match("item%s+1%s+([%w_.]+)") == out
     end
-    check(n == 4 and matched, "R.RECIPES 四筆：每筆的鍵就是那條配方的產出物")
+    for _ in pairs(scripts) do nScripts = nScripts + 1 end
+    -- 腳本多一條沒登記的配方（例：別款錶）會讓合成選單列出它、卻不受沙盒開關與等級管
+    check(n == 4 and matched and nScripts == n, "R.RECIPES 四筆：每筆的鍵就是那條配方的產出物，腳本裡也只有這四條")
     check(R.RECIPES[W.watchType("ValuTech")] == "CraftMinidoracatWatchValuTech" and R.RECIPES[W.watchType("Paws")] == nil,
         "七款錶只有 ValuTech 有配方")
     local inputs = (scripts.CraftMinidoracatWatchValuTech or { inputs = "" }).inputs
