@@ -1,4 +1,5 @@
 {
     "UI_optionscreen_binding_MinidoracatWatch": "Minidoracat Часы с картой",
-    "UI_optionscreen_binding_MinidoracatWatch_Light": "Свет часов вкл./выкл."
+    "UI_optionscreen_binding_MinidoracatWatch_Light": "Свет часов вкл./выкл.",
+    "UI_optionscreen_binding_MinidoracatWatch_Look": "Посмотреть на часы с картой"
 }

@@ -80,6 +80,21 @@ check(W.deadKeepsMinimap() == false, "DeadMode 預設＝所有功能停用")
 SandboxVars.MinidoracatWatch.DeadMode = 2
 check(W.deadKeepsMinimap() == true, "DeadMode 2＝保留小地圖")
 SandboxVars.MinidoracatWatch.DeadMode = nil
+-- 看錶時才顯示（RULE_LOOK）：沒錶、沒電先擋（原因照舊），之後才看有沒有在看；保留小地圖只豁免沒電
+local function look(hasWatch, charge, keepDead, looking)
+    local ok, reason = W.minimapDecision(true, W.RULE_LOOK, hasWatch, charge, keepDead, looking)
+    return ok, reason
+end
+check(look(true, 1, false, true) == true and select(2, look(true, 1, false, false)) == W.REASON_LOOK
+    and look(true, 1, false, nil) == false, "看錶規則：正在看放行、沒在看擋")
+check(select(2, look(false, nil, false, true)) == W.REASON_NO_WATCH and select(2, look(true, nil, false, true)) == W.REASON_NO_BATTERY
+    and select(2, look(true, 0, false, true)) == W.REASON_DEAD, "看錶規則：沒錶、沒電池、沒電時看了也沒有")
+check(look(true, 0, true, true) == true and select(2, look(true, 0, true, false)) == W.REASON_LOOK,
+    "看錶規則＋沒電時保留小地圖：還是要看錶")
+check(W.minimapDecision(false, W.RULE_LOOK, false, nil) == true and W.minimapDecision(true, W.RULE_WATCH, true, 1, false, false) == true,
+    "系統關閉放行；戴錶才能用不看有沒有在看")
+SandboxVars.MinidoracatWatch.MinimapRule = 4
+check(W.minimapRule() == W.RULE_LOOK, "規則值 4＝看錶時才顯示")
 SandboxVars.MinidoracatWatch.MinimapRule = 9
 check(W.minimapRule() == W.RULE_WATCH, "未知規則值退回 watch")
 SandboxVars.MinidoracatWatch.MinimapRule = 2

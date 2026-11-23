@@ -128,7 +128,8 @@ W.MAX_TICK_MS = 5000
 W.MAX_OFFLINE_MS = 30 * 24 * 3600000 -- 離線耗電的上限（系統時鐘大跳躍時不至於清空）
 W.LOW_CHARGE = 0.2
 
-W.RULE_FREE, W.RULE_WATCH, W.RULE_OFF = 1, 2, 3
+-- 小地圖規則（沙盒 MinimapRule 的值）。RULE_LOOK＝戴錶、而且角色正在看錶時才有小地圖（2026-11-24 使用者裁定）
+W.RULE_FREE, W.RULE_WATCH, W.RULE_OFF, W.RULE_LOOK = 1, 2, 3, 4
 
 W.FAIL_GENERIC = "IGUI_MinidoracatWatch_BatteryFailed"
 W.FAIL_NO_BATTERY = "IGUI_MinidoracatWatch_NoBatteryToRemove"
@@ -136,6 +137,7 @@ W.REASON_OFF = "IGUI_MinidoracatWatch_Reason_Off"
 W.REASON_NO_WATCH = "IGUI_MinidoracatWatch_Reason_NoWatch"
 W.REASON_NO_BATTERY = "IGUI_MinidoracatWatch_Reason_NoBattery"
 W.REASON_DEAD = "IGUI_MinidoracatWatch_Reason_Dead"
+W.REASON_LOOK = "IGUI_MinidoracatWatch_Reason_Look"
 -- 伺服器回給客戶端的失敗原因只能是這幾個鍵（客戶端照表核對才 getText）
 W.FAIL_KEYS = { [W.FAIL_GENERIC] = true, [W.FAIL_NO_BATTERY] = true }
 
@@ -173,7 +175,7 @@ end
 
 function W.minimapRule()
     local r = W.sandbox("MinimapRule", W.RULE_WATCH)
-    if r == W.RULE_FREE or r == W.RULE_OFF then return r end
+    if r == W.RULE_FREE or r == W.RULE_OFF or r == W.RULE_LOOK then return r end
     return W.RULE_WATCH
 end
 
@@ -258,15 +260,19 @@ function W.offlineMs(now, seen, drainOffline)
     return d
 end
 
--- 小地圖閘門的決策表（純函式）：回 allowed, reasonKey。keepDead＝沒電時保留小地圖（W.deadKeepsMinimap）
-function W.minimapDecision(enabled, rule, hasWatch, charge, keepDead)
+-- 小地圖閘門的決策表（純函式）：回 allowed, reasonKey。keepDead＝沒電時保留小地圖（W.deadKeepsMinimap）；
+-- looking＝角色正在看錶（只有 RULE_LOOK 看它）。沒錶、沒電排在「沒在看」前面：那時提示看錶會誤導；
+-- keepDead 只豁免沒電，不豁免看錶
+function W.minimapDecision(enabled, rule, hasWatch, charge, keepDead, looking)
     if not enabled or rule == W.RULE_FREE then return true end
     if rule == W.RULE_OFF then return false, W.REASON_OFF end
     if not hasWatch then return false, W.REASON_NO_WATCH end
-    if charge ~= nil and charge > 0 then return true end
-    if keepDead then return true end
-    if charge == nil then return false, W.REASON_NO_BATTERY end
-    return false, W.REASON_DEAD
+    if not keepDead and not (charge ~= nil and charge > 0) then
+        if charge == nil then return false, W.REASON_NO_BATTERY end
+        return false, W.REASON_DEAD
+    end
+    if rule == W.RULE_LOOK and not looking then return false, W.REASON_LOOK end
+    return true
 end
 
 -- 身上第一支（except 以外的）地圖錶與總支數。WornItems 依 BodyLocationGroup 順序排列

@@ -466,6 +466,36 @@ check(MinidoracatWatchSound.overSleeve() == false and wrists() == "covered", "�
 MinidoracatWatchSound.setOverSleeve(true)
 check(wrists() == "show", "勾回來")
 
+-- ===== 只在看錶時顯示小地圖（LookOnly，同一頁，預設不勾）=====
+-- 玩家自己照沙盒規則 4 玩：快取 Snd.lookOnly 給 _Client 的 C.minimapRule 讀（閘門每幀可能問）
+local Snd5, page5 = MinidoracatWatchSound, MO5.Dict.MinidoracatWatch
+local lookOpt, lookTick = page5:getOption("LookOnly"), Snd5.SECTION.ticks[4]
+local function effRule() return MinidoracatWatchClient.minimapRule() end
+check(lookOpt and lookOpt.type == "tickbox" and lookOpt.value == false and Snd5.lookOnly == false
+    and lookTick and lookTick.label == "IGUI_MinidoracatWatch_LookOnly" and lookTick.tooltip == "IGUI_MinidoracatWatch_LookOnly_tooltip"
+    and lookTick.default == false and lookTick.get() == false and effRule() == W.RULE_WATCH,
+    "預設不勾：MODS 頁與齒輪分類都有，小地圖規則照伺服器")
+lookOpt:setValue(true)
+check(Snd5.lookOnly == false, "MODS 頁勾選、還沒按套用：不變")
+page5:apply()
+check(Snd5.lookOnly == true and effRule() == W.RULE_LOOK, "按套用：立刻變成看錶時才顯示")
+lookTick.set(false)
+check(Snd5.lookOnly == false and lookTick.get() == false and effRule() == W.RULE_WATCH
+    and iniHas("tickbox|MinidoracatWatch|LookOnly|false"), "齒輪取消勾選：立刻恢復、寫回 ModOptions.ini")
+lookTick.set(true)
+check(iniHas("tickbox|MinidoracatWatch|LookOnly|true"), "齒輪勾選：寫回 ModOptions.ini")
+local MO6 = installModOptions() -- 下次啟動：設定是勾選
+F.load("client/MinidoracatWatch_Sound.lua")
+check(MinidoracatWatchSound.lookOnly == false, "讀檔前是預設（不勾）")
+MO6:load()
+F.fire("OnGameStart")
+check(MinidoracatWatchSound.lookOnly == true and effRule() == W.RULE_LOOK, "進遊戲：讀回勾選")
+lookOpt = MO6.Dict.MinidoracatWatch:getOption("LookOnly")
+lookOpt:setValue("garbage")
+MO6.Dict.MinidoracatWatch:apply()
+check(MinidoracatWatchSound.lookOnly == false, "設定值不是布林（讀壞）：當沒勾")
+MinidoracatWatchSound.setLookOnly(false)
+
 -- ===== 面板的音效音量列（框架 rev 17 SliderRow；和齒輪分類、ESC 頁同一份 ModOptions）=====
 function getCore() return { getScreenWidth = function() return 1920 end, getScreenHeight = function() return 1080 end } end
 function getTextManager() return { MeasureStringX = function(_, _, s) return #s * 7 end, getFontHeight = function() return 16 end } end

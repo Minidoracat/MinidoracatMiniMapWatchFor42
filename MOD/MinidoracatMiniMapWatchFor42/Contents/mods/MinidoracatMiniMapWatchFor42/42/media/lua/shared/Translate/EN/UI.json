@@ -1,4 +1,5 @@
 {
     "UI_optionscreen_binding_MinidoracatWatch": "Minidoracat Map Watch",
-    "UI_optionscreen_binding_MinidoracatWatch_Light": "Toggle watch light"
+    "UI_optionscreen_binding_MinidoracatWatch_Light": "Toggle watch light",
+    "UI_optionscreen_binding_MinidoracatWatch_Look": "Look at map watch"
 }

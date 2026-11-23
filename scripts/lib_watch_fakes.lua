@@ -221,6 +221,15 @@ local Player = {}
 Player.__index = Player
 function Player:getInventory() return self.inv end
 function Player:isDead() return self.dead == true end
+function Player:isAsleep() return self.asleep == true end
+-- 引擎的動作清單（IsoGameCharacter.characterActions，裡面是 Java 動作）：F.startAction 放進去
+function Player:getCharacterActions()
+    local list = self.actions or {}
+    return { contains = function(_, a)
+        for _, x in ipairs(list) do if x == a then return true end end
+        return false
+    end }
+end
 function Player:getModData() return self.md end
 function Player:getPlayerNum() return self.pn end
 function Player:getUsername() return self.name end
@@ -458,7 +467,7 @@ function F.scriptManager(over)
 end
 function getScriptManager() return F.scriptManager() end
 
--- ===== 計時動作（ISBaseTimedAction.lua:173-184 的形狀；ISTimedActionQueue 只留 add 與佇列）=====
+-- ===== 計時動作（ISBaseTimedAction.lua:173-184 的形狀；ISTimedActionQueue 只留 add、clear、佇列與 indexOfType）=====
 ISBaseTimedAction = {}
 ISBaseTimedAction.__index = ISBaseTimedAction
 function ISBaseTimedAction:derive(name)
@@ -467,18 +476,44 @@ function ISBaseTimedAction:derive(name)
     return c
 end
 function ISBaseTimedAction.new(cls, character)
-    return setmetatable({ character = character, stopOnWalk = true, stopOnRun = true, maxTime = -1 }, cls)
+    return setmetatable({ character = character, stopOnWalk = true, stopOnRun = true, stopOnAim = true, maxTime = -1 }, cls)
 end
 function ISBaseTimedAction:perform() F.performed = (F.performed or 0) + 1 end
+function ISBaseTimedAction:forceComplete() self.forced = true end
+-- 姿勢：poseCalls 記呼叫順序（動畫變數要早於 setActionAnim 才會同步給其他玩家）
+CharacterActionAnims = { Read = "Read" }
+local function poseCall(a, what) a.poseCalls = a.poseCalls or {}; a.poseCalls[#a.poseCalls + 1] = what end
+function ISBaseTimedAction:setAnimVariable(k, v) poseCall(self, "var:" .. k .. "=" .. tostring(v)) end
+function ISBaseTimedAction:setActionAnim(anim) poseCall(self, "anim:" .. tostring(anim)) end
+function ISBaseTimedAction:setOverrideHandModels(a, b) poseCall(self, "hands") end
 F.queues = {}
+local Queue = {}
+Queue.__index = Queue
+function Queue:indexOfType(t) -- 找不到回 -1（ISTimedActionQueue.lua:30-37）
+    for i, v in ipairs(self.queue) do if v.Type == t then return i end end
+    return -1
+end
 ISTimedActionQueue = {
     add = function(a)
         F.queues[a.character] = F.queues[a.character] or {}
         table.insert(F.queues[a.character], a)
         return a
     end,
-    getTimedActionQueue = function(p) return { queue = F.queues[p] or {} } end,
+    getTimedActionQueue = function(p)
+        F.queues[p] = F.queues[p] or {}
+        return setmetatable({ queue = F.queues[p] }, Queue)
+    end,
+    -- 原版：StopAllActionQueue（引擎清單清空，不呼叫 Lua 的 stop）＋清佇列（ISTimedActionQueue.lua:236-243）
+    clear = function(p) F.queues[p], p.actions = {}, {} end,
 }
+-- 佇列開始第一個動作：建 Java 動作、放進角色的動作清單、呼叫 start（ISBaseTimedAction.lua:83-93）
+function F.startAction(p)
+    local a = F.queues[p][1]
+    a.action = {}
+    p.actions = { a.action }
+    a:start()
+    return a
+end
 -- 跑完一位玩家佇列裡的所有動作：isValid 為假＝動作被取消（不 perform）
 function F.runActions(p)
     local q = F.queues[p] or {}
@@ -509,6 +544,7 @@ local MODULES = {
     MinidoracatWatch_Admin = F.MEDIA .. "/server/MinidoracatWatch_Admin.lua",
     MinidoracatWatch_AdminModel = F.MEDIA .. "/client/MinidoracatWatch_AdminModel.lua",
     MinidoracatWatch_AdminUI = F.MEDIA .. "/client/MinidoracatWatch_AdminUI.lua",
+    MinidoracatWatch_Look = F.MEDIA .. "/client/MinidoracatWatch_Look.lua",
 }
 local loaded = {}
 -- 第三方 MOD 的模組：F.required[路徑]＝它 return 的值（PZ 的 require 對已載入的檔回同一份，LuaManager.java:1349-1350）；

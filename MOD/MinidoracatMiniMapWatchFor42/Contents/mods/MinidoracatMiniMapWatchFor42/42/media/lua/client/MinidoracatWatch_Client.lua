@@ -3,6 +3,7 @@
 require "MinidoracatWatch"
 require "MinidoracatWatch_Action"
 require "MinidoracatWatch_DropData"
+require "MinidoracatWatch_Sound"
 local W = MinidoracatWatchCore
 local C = {}
 MinidoracatWatchClient = C -- 內部表（測試與 E2E 用），不是公開 API
@@ -65,15 +66,60 @@ function C.navDevice(pn)
     return has == true
 end
 
+-- ===== 小地圖規則與「看錶時才顯示」=====
+-- 生效的規則：伺服器的沙盒規則，加上玩家自己的「只在看錶時顯示小地圖」（MinidoracatWatch_Sound.lua 的 LookOnly）。
+-- 玩家勾了＝自己照規則 4 玩，所以伺服器是「不需要錶」時也要戴著有電的錶（使用者 2026-11-24 裁定兩邊都能開；
+-- 規則是關閉或已經是 4 時，選項沒有作用）。
+function C.minimapRule()
+    local rule = W.minimapRule()
+    if (rule == W.RULE_FREE or rule == W.RULE_WATCH) and MinidoracatWatchSound.lookOnly then return W.RULE_LOOK end
+    return rule
+end
+
+-- 正在看錶：記動作實例（MinidoracatWatch_Look.lua 的 start 寫入），每次向引擎的動作清單核對。不用布林旗標：
+-- 引擎有不通知 Lua 就丟掉動作的路徑（StartAction 直接清空清單，IsoGameCharacter.java:5456-5462），旗標卡在 true
+-- 就等於繞過規則。死亡、重生（換了角色物件）、被別的動作取代都自動變 false。熱路徑，不配置 table。
+C.lookAction = {} -- [pn] = 看錶動作的 Lua 表
+function C.lookActive(pn)
+    local a = C.lookAction[pn]
+    if not a then return false end
+    local p = getSpecificPlayer(pn)
+    if p and a.character == p and a.action and p:getCharacterActions():contains(a.action) then return true end
+    C.lookAction[pn] = nil
+    return false
+end
+
+-- 小地圖這一項的判定：回 allowed, reasonKey, 生效的規則。looking＝當作正在看錶
+function C.minimapAllowed(pn, looking)
+    local enabled, rule = W.enabled(), C.minimapRule()
+    local player = getSpecificPlayer(pn)
+    local watch = enabled and (rule == W.RULE_WATCH or rule == W.RULE_LOOK) and player and W.status(player).watch or nil
+    local ok, reason
+    if watch then
+        ok, reason = W.minimapDecision(enabled, rule, true, W.power(watch), W.deadKeepsMinimap(player), looking)
+    else
+        ok, reason = W.minimapDecision(enabled, rule, false, nil)
+    end
+    return ok, reason, rule
+end
+
+-- 看錶模式的狀態（看錶動作、快捷鍵、面板按鈕、右鍵選單共用）：nil＝不是這個模式；true＝看了就有畫面；
+-- false, reasonKey＝看了也沒有（沒戴錶、沒電）
+function C.lookState(pn)
+    if not W.enabled() or C.minimapRule() ~= W.RULE_LOOK then return nil end
+    local ok, reason = C.minimapAllowed(pn, true)
+    return ok, reason
+end
+
 function C.gate(pn, feature, surface)
     if feature == "arrow" then feature = "nav" end -- 畫面外的目標箭頭跟著導航（沒有自己的模組，2026-10-09 使用者裁定）
     local player = getSpecificPlayer(pn)
     if feature == "minimap" then
-        local enabled, rule = W.enabled(), W.minimapRule()
-        if not enabled or rule ~= W.RULE_WATCH then return W.minimapDecision(enabled, rule, false, nil) end
-        local watch = player and W.status(player).watch
-        if not watch then return W.minimapDecision(enabled, rule, false, nil) end
-        return W.minimapDecision(enabled, rule, true, W.power(watch), W.deadKeepsMinimap(player))
+        local ok, reason, rule = C.minimapAllowed(pn, C.lookActive(pn))
+        if ok or rule ~= W.RULE_LOOK then return ok, reason end
+        -- 看錶模式被擋（沒在看、沒錶、沒電）：第 4 個回傳值請主 MOD 連視窗一起收起來。主 MOD 還不認得這個值時
+        -- 只取前三個（MinidoracatMiniMap_FeatureGate.lua:92），照舊保留視窗畫「無訊號」。
+        return false, reason, nil, "hide"
     end
     local ok, reason, dist = W.featureDecision(player, feature, surface)
     if not ok and feature == "nav" and reason ~= W.REASON_FEATURE_OFF then
@@ -547,7 +593,7 @@ function C.watchWeight(player, watch)
 end
 
 -- 節能核心的附加效果（句子陣列）：耐力一行（設 0 的那一項不寫，兩項都 0 整行不寫）；沒電時保留小地圖只在用得到時寫
--- （沙盒 EcoKeepsMap 開著、DeadMode 不是本來就保留、小地圖規則要戴錶、會沒電＝需要電池）
+-- （沙盒 EcoKeepsMap 開著、DeadMode 不是本來就保留、小地圖規則要戴錶〔含看錶時才顯示〕、會沒電＝需要電池）
 function C.ecoLines()
     local out = {}
     local d, r = W.ecoEnduranceDrain(), W.ecoEnduranceRegen()
@@ -557,8 +603,9 @@ function C.ecoLines()
         if r > 0 then parts[#parts + 1] = getText("IGUI_MinidoracatWatch_EcoEnduranceRegen", tostring(r)) end
         out[1] = getText("IGUI_MinidoracatWatch_EcoEndurance", table.concat(parts, getText("IGUI_MinidoracatWatch_ListSep")))
     end
-    if W.sandbox("EcoKeepsMap", true) ~= false and not W.deadKeepsMinimap() and W.minimapRule() == W.RULE_WATCH
-        and W.needBattery() then
+    local rule = C.minimapRule()
+    if W.sandbox("EcoKeepsMap", true) ~= false and not W.deadKeepsMinimap()
+        and (rule == W.RULE_WATCH or rule == W.RULE_LOOK) and W.needBattery() then
         out[#out + 1] = getText("IGUI_MinidoracatWatch_EcoKeepsMap")
     end
     return out

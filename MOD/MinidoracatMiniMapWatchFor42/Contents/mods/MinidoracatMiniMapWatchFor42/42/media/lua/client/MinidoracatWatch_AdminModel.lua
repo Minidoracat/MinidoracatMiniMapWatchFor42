@@ -17,7 +17,7 @@ M.T = T
 local B, I, E = "bool", "int", "enum"
 M.FIELDS = {
     -- features
-    { "Enabled", B, nil, nil, true }, { "SoloDefaults", B, nil, nil, true }, { "MinimapRule", E, 1, 3, 2 },
+    { "Enabled", B, nil, nil, true }, { "SoloDefaults", B, nil, nil, true }, { "MinimapRule", E, 1, 4, 2 },
     { "RulePoi", E, 1, 4, 3 }, { "RuleNav", E, 1, 4, 3 }, { "RuleShare", E, 1, 4, 3 }, { "RuleScan", E, 1, 4, 3 },
     { "RuleZombie", E, 1, 4, 3 }, { "RuleLight", E, 1, 2, 1 }, { "ScanRadius", I, 1, 1000, 60 },
     { "DetectRadius", I, 1, 1000, 40 }, { "MilDetectRadius", I, 1, 1000, 80 }, { "CommRange", I, 1, 50000, 2000 },
@@ -87,7 +87,7 @@ end
 
 -- 功能規則（設計稿 FEATURE_RULES）：沙盒值 → free／watch／module／off
 M.FEATURES = {
-    { id = "minimap", key = "MinimapRule", values = { "free", "watch", "off" } },
+    { id = "minimap", key = "MinimapRule", values = { "free", "watch", "off", "look" } },
     { id = "poi", key = "RulePoi" }, { id = "nav", key = "RuleNav" },
     { id = "share", key = "RuleShare" }, { id = "scan", key = "RuleScan" }, { id = "zombie", key = "RuleZombie" },
     { id = "light", key = "RuleLight", values = { "module", "off" } },

@@ -1,4 +1,5 @@
 {
     "UI_optionscreen_binding_MinidoracatWatch": "Minidoracat マップウォッチ",
-    "UI_optionscreen_binding_MinidoracatWatch_Light": "ウォッチのライト切替"
+    "UI_optionscreen_binding_MinidoracatWatch_Light": "ウォッチのライト切替",
+    "UI_optionscreen_binding_MinidoracatWatch_Look": "ウォッチを見る"
 }

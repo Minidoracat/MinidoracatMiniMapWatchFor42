@@ -102,9 +102,13 @@ end)
 -- DevProfiler \、Economy [、UI Dock .）；本機 Workshop 424 個項目 0 次。不用 ,：EquipmentUI（3780682550）與
 -- NeatUI_Equipment（3790656296）拿它開裝備視窗。筆電與小配列常沒有 Scroll Lock：照明另有面板按鈕與錶的右鍵選單，
 -- 也能改鍵。文字輸入期間引擎不派送按鍵事件（GameKeyboard isDoingTextEntry）。
+-- 看錶（MinidoracatWatch_Look.lua）預設 0（KEY_0＝11）：原版 keyBinding.lua 的字母鍵全綁了（K＝顯示 FPS，寫成裸 37），
+-- 數字只綁 1–8；原版 Lua、反編譯 Java 直接讀鍵、家族 MOD、本機 Workshop 154 個項目都沒有用 KEY_0 或裸 11
+-- （2026-11-24 查）。筆電也有這個鍵。
 Events.OnGameBoot.Add(function()
     table.insert(keyBinding, { value = "[MinidoracatWatch]" })
     table.insert(keyBinding, { value = "MinidoracatWatch_Light", key = Keyboard.KEY_SCROLL })
+    table.insert(keyBinding, { value = "MinidoracatWatch_Look", key = Keyboard.KEY_0 })
 end)
 
 Events.OnKeyPressed.Add(function(key)

@@ -35,6 +35,9 @@ if PZAPI and PZAPI.ModOptions then
     -- 穿長袖時顯示地圖手錶（預設勾；使用者 2026-10-23 裁定玩家能自己調）
     opts:addTickBox("OverSleeve", "IGUI_MinidoracatWatch_OverSleeve", true,
         "IGUI_MinidoracatWatch_OverSleeve_tooltip")
+    -- 只在看錶時顯示小地圖（預設不勾；使用者 2026-11-24 裁定玩家也能自己開）
+    opts:addTickBox("LookOnly", "IGUI_MinidoracatWatch_LookOnly", false,
+        "IGUI_MinidoracatWatch_LookOnly_tooltip")
     -- 原版主選單套用可能把 ModOptions.ini 清成 0 byte：讓 UI 框架（rev 23 modOptionsBackup）從它的備份補回。
     -- 放 OnGameBoot：載入時框架檔不一定先跑（本檔沒 require 框架）；OnGameBoot 仍早於 MainOptions:create 的 load，
     -- 補回的值會被那次 load 套上（多人進服 ResetLua 也是先 OnGameBoot 再 OnMainMenuEnter，Core.java:3962-3963）
@@ -116,10 +119,22 @@ function Snd.setOverSleeve(on)
     Snd.applyOverSleeve()
 end
 
--- MODS 頁按套用：每頁呼叫一次 options:apply()（MainOptions.lua:3760-3762），兩個要立即生效的勾選一起套
+-- 只在看錶時顯示小地圖：玩家自己照沙盒規則 4 玩（_Client 的 C.minimapRule）。閘門與看錶動作的 isValid 可能每幀讀，
+-- 只讀這個快取；更新點同上（OnGameStart、MODS 頁套用、齒輪分類的 set）。
+Snd.lookOnly = false
+function Snd.loadLookOnly() Snd.lookOnly = opt("LookOnly", false) end
+Events.OnGameStart.Add(Snd.loadLookOnly)
+function Snd.lookOnlyOpt() return opt("LookOnly", false) end
+function Snd.setLookOnly(on)
+    setOpt("LookOnly", on == true)
+    Snd.loadLookOnly()
+end
+
+-- MODS 頁按套用：每頁呼叫一次 options:apply()（MainOptions.lua:3760-3762），要立即生效的勾選一起套
 function Snd.applyOptions()
     Snd.loadShowButton()
     Snd.applyOverSleeve()
+    Snd.loadLookOnly()
 end
 if opts then opts.apply = Snd.applyOptions end
 
@@ -217,7 +232,9 @@ Snd.SECTION = {
         { label = "IGUI_MinidoracatWatch_ShowButton", tooltip = "IGUI_MinidoracatWatch_ShowButton_tooltip",
         default = true, get = Snd.showButtonOpt, set = Snd.setShowButton },
         { label = "IGUI_MinidoracatWatch_OverSleeve", tooltip = "IGUI_MinidoracatWatch_OverSleeve_tooltip",
-        default = true, get = Snd.overSleeve, set = Snd.setOverSleeve } },
+        default = true, get = Snd.overSleeve, set = Snd.setOverSleeve },
+        { label = "IGUI_MinidoracatWatch_LookOnly", tooltip = "IGUI_MinidoracatWatch_LookOnly_tooltip",
+        default = false, get = Snd.lookOnlyOpt, set = Snd.setLookOnly } },
     -- 「取得方式」視窗（MinidoracatWatch_Guide.lua；settingsApiVersion 2 起有 actions）：沒戴錶也能從這裡開；
     -- 伺服器不開放或 UI 框架太舊時停用
     actions = { { label = "IGUI_MinidoracatWatch_Guide_Open", tooltip = "IGUI_MinidoracatWatch_Guide_Open_tooltip",

@@ -46,7 +46,8 @@ local PAY_ICON = { rent = "clock", renew = "clock", buy = "infinity", pay = "che
 -- 沒電畫電池：恢復方法是換電池，不是換槽位（和停用的暫停分開）
 local STATUS_ICON = { active = "check", rent = "clock", paused = "pause", dead = "battery", locked = "lock", empty = "plus",
     lapsed = "clock", off = "close", Installing = "screwdriver", Removing = "screwdriver" }
-local PAUSE_REASONS = { [W.REASON_PAUSED] = true, [W.REASON_DEAD] = true, [W.REASON_NO_BATTERY] = true }
+local PAUSE_REASONS = { [W.REASON_PAUSED] = true, [W.REASON_DEAD] = true, [W.REASON_NO_BATTERY] = true,
+    [W.REASON_LOOK] = true }
 local TEX_DIR = "media/ui/MinidoracatWatch/"
 
 local function fontH(f) return getTextManager():getFontHeight(f or UIFont.Small) end
@@ -658,7 +659,9 @@ function M:build()
     self.btnScreen = button(getText("IGUI_MinidoracatWatch_ScreenAmber"), nil, "normal", M.onScreen)
     -- 照明模組的開關（MinidoracatWatch_LightClient.lua）：戴著的錶裝了照明模組才出現；chip（§3.7：active＝燈開著）
     self.btnLight = button(getText("IGUI_MinidoracatWatch_LightOn"), "lightbulb", "chip", M.onLight)
-    self.footBtns = { self.btnLight, self.btnScreen, self.btnRemove, self.btnInsert } -- 由右而左
+    -- 看錶（MinidoracatWatch_Look.lua）：小地圖規則是「看錶時才顯示」、檢視的是戴著的那支才出現；active＝正在看
+    self.btnLook = button(getText("IGUI_MinidoracatWatch_Look_Start"), "clock", "chip", M.onLook)
+    self.footBtns = { self.btnLook, self.btnLight, self.btnScreen, self.btnRemove, self.btnInsert } -- 由右而左
     -- 「取得方式」視窗（MinidoracatWatch_Guide.lua）：排在功能清單最後；鍵盤與手把照框架焦點按得到
     self.btnGuide = button(getText("IGUI_MinidoracatWatch_Guide_Button"), "search", "normal", M.onGuide)
 end
@@ -1024,7 +1027,16 @@ function M:arrange(player, w)
         self.btnLight:setActive(on == true)
         self.btnLight:setEnabled(on or W.lightAllowed(player) == true)
     end
-    local show = { hasLight == true, screen == true, true, true }
+    local L = MinidoracatWatchLook
+    local look = nil
+    if e and L then look = C.lookState(self.playerNum) end
+    if look ~= nil then
+        local queued = L.index(player) ~= -1
+        self.btnLook:setTitle(getText(queued and "IGUI_MinidoracatWatch_Look_Stop" or "IGUI_MinidoracatWatch_Look_Start"))
+        self.btnLook:setActive(C.lookActive(self.playerNum))
+        self.btnLook:setEnabled(queued or look == true)
+    end
+    local show = { look ~= nil, hasLight == true, screen == true, true, true }
     local right, maxH = width - PAD, 0
     for i, b in ipairs(self.footBtns) do
         b:setVisible(show[i])
@@ -1423,6 +1435,11 @@ end
 function M:onLight()
     local player = self:target()
     C.toggleLight(player)
+end
+
+function M:onLook()
+    local player = self:target()
+    if player and MinidoracatWatchLook then MinidoracatWatchLook.toggle(player) end
 end
 
 -- ===== 開關 =====

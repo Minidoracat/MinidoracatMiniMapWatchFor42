@@ -1,4 +1,5 @@
 {
     "UI_optionscreen_binding_MinidoracatWatch": "Minidoracat Relógio-Mapa",
-    "UI_optionscreen_binding_MinidoracatWatch_Light": "Ligar/desligar luz do relógio"
+    "UI_optionscreen_binding_MinidoracatWatch_Light": "Ligar/desligar luz do relógio",
+    "UI_optionscreen_binding_MinidoracatWatch_Look": "Olhar o relógio-mapa"
 }

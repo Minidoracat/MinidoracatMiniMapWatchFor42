@@ -195,6 +195,9 @@ do
     check(base.sb.FullHours == 72 and base.sb.ChargeCar == false, "base reads the sandbox, charge fields included")
     local s = M.summary(base, false)
     check(has(s, "小地圖：戴錶就能用"), "summary: minimap rule")
+    base.sb.MinimapRule = 4
+    check(has(M.summary(base, false), "小地圖：看錶時才顯示") and M.ruleId(M.FEATURES[1], 4) == "look", "summary: minimap rule 4 (look)")
+    base.sb.MinimapRule = 2
     check(has(s, "導航：需要定位模組") and not has(s, "方向箭頭"), "summary: module rule names the module; the arrow has no rule of its own")
     check(has(s, "照明：需要照明模組"), "summary: light rule")
     check(has(s, "擴充槽：目前沒有經濟系統，暫時改用解鎖卡"), "summary: economy tier without Economy falls back to cards")
