@@ -97,6 +97,9 @@ SB.MinimapRule = 4
 ok, reason, dist, how = gate()
 check(ok == false and reason == W.REASON_LOOK and dist == nil and how == "hide", "規則 4 沒在看：擋、請主 MOD 收起視窗")
 check(C.lookState(0) == true, "戴著有電的錶：看了就有畫面")
+C.gateActive = false
+check(C.lookState(0) == nil, "閘門沒註冊成功（主 MOD 太舊）：小地圖其實開著，不算看錶模式")
+C.gateActive = true
 F.unwear(p, watch)
 ok, reason, dist, how = gate()
 check(ok == false and reason == W.REASON_NO_WATCH and how == "hide" and select(2, C.lookState(0)) == W.REASON_NO_WATCH
@@ -152,24 +155,57 @@ check(rawget(A, "complete") == nil and rawget(A, "perform") == nil and rawget(A,
     "只在客戶端跑：不定義 complete；不靠 perform／stop 收尾")
 check(C.lookActive(0) == false and gate() == false, "排進佇列還沒開始：不算在看")
 F.startAction(p)
-check(#a.poseCalls == 2 and a.poseCalls[1] == "anim:MinidoracatWatch_LookL" and a.poseCalls[2] == "hands",
-    "姿勢：戴左手錶，抬左手腕的看錶節點、空手")
-local function poseOf(who)
-    local r = setmetatable({ character = who }, A)
+check(#a.poseCalls == 1 and a.poseCalls[1] == "anim:MinidoracatWatch_LookL", "姿勢：戴左手錶，抬左手腕的看錶節點；不藏手上的東西")
+local function poseOf(pn)
+    local r = setmetatable({ pn = pn }, A)
+    W.invalidate()
     Look.pose(r)
     return r.poseCalls[1]
 end
-check(poseOf(bob) == "anim:MinidoracatWatch_LookR", "姿勢：戴右手錶，抬右手腕")
-check(poseOf({ getWornItems = function() return nil end }) == "anim:MinidoracatWatch_LookL", "姿勢：找不到錶時用左手")
+check(poseOf(1) == "anim:MinidoracatWatch_LookR", "姿勢：戴右手錶，抬右手腕")
+check(poseOf(7) == "anim:MinidoracatWatch_LookL", "姿勢：找不到錶時用左手")
 ok, reason, dist, how = gate()
 check(C.lookActive(0) == true and ok == true and how == nil, "動作開始：正在看、小地圖放行")
 check(a:isValid() == true, "isValid 回布林 true")
+p.asleep = true
+check(a:isValid() == false, "睡著：動作失效")
+p.asleep = nil
 a:update()
 check(a.forced == nil, "佇列只有它：繼續看")
-ISTimedActionQueue.add(F.action(ISWearClothing, p, watch))
+p.aiming = true
 a:update()
-check(a.forced == true, "排了別的動作：讓路")
-table.remove(queue(), 2)
+check(a.forced == true and #queue() == 0 and C.lookActive(0) == false, "瞄準（車上引擎不會停動作）：自己停")
+p.aiming = nil
+-- 排了別的動作：讓路，而且後面的動作真的開始
+local function later() return ISBaseTimedAction.new(ISBaseTimedAction:derive("Later"), p) end
+Look.toggle(p)
+a = F.startAction(p)
+local nxt = ISTimedActionQueue.add(later())
+a:update()
+check(a.forced == true and #queue() == 1 and queue()[1] == nxt and nxt.action ~= nil, "排了別的動作：讓路，下一個動作開始")
+ISTimedActionQueue.clear(p)
+-- 後面已經排了動作、還沒輪到讓路就按停止：只結束看錶，後面的照做
+Look.toggle(p)
+a = F.startAction(p)
+nxt = ISTimedActionQueue.add(later())
+Look.toggle(p)
+check(#queue() == 1 and queue()[1] == nxt and nxt.action ~= nil, "看錶後面有動作時按停止：只停看錶")
+ISTimedActionQueue.clear(p)
+-- 排在別的動作後面，輪到時已經不能看：只跳過自己，再後面的動作照做（不讓原版把整列清掉）
+local first = ISTimedActionQueue.add(later())
+first:begin()
+Look.toggle(p)
+nxt = ISTimedActionQueue.add(later())
+W.setCharge(watch, 0)
+W.invalidate()
+ISTimedActionQueue.getTimedActionQueue(p):onCompleted(first)
+check(#queue() == 1 and queue()[1] == nxt and nxt.action ~= nil and C.lookActive(0) == false,
+    "輪到看錶時錶沒電：跳過看錶，後面的動作開始")
+W.setCharge(watch, 1)
+W.invalidate()
+ISTimedActionQueue.clear(p)
+Look.toggle(p)
+a = F.startAction(p)
 
 -- 引擎不通知 Lua 就丟掉動作（StartAction 清空清單）：下一次問就不算在看
 p.actions = {}
@@ -285,6 +321,15 @@ W.setCharge(watch, 0)
 W.invalidate()
 panel:update()
 check(b.visible and not b.enable, "沒電：按鈕停用")
+-- 底部按鈕排不下時（這裡的假按鈕用翻譯鍵當標題，一定排不下）：文字自己一列，按鈕全部留在面板裡、在文字下面
+local inside = panel.footTextW == panel.width - 28
+for _, fb in ipairs(panel.footBtns) do
+    if fb.visible and (fb.x < 14 or fb.x + fb.width > panel.width - 14 or fb.y < panel.footTextY + 16
+            or fb.y + fb.height > panel.height) then
+        inside = false
+    end
+end
+check(inside, "底部按鈕放不下：換到文字下面，都在面板裡")
 W.setCharge(watch, 1)
 SB.MinimapRule = 2
 W.invalidate()

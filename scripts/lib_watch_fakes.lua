@@ -467,7 +467,7 @@ function F.scriptManager(over)
 end
 function getScriptManager() return F.scriptManager() end
 
--- ===== 計時動作（ISBaseTimedAction.lua:173-184 的形狀；ISTimedActionQueue 只留 add、clear、佇列與 indexOfType）=====
+-- ===== 計時動作（ISBaseTimedAction.lua:173-184 的形狀；ISTimedActionQueue 只留 add、clear、佇列、indexOfType 與換下一個）=====
 ISBaseTimedAction = {}
 ISBaseTimedAction.__index = ISBaseTimedAction
 function ISBaseTimedAction:derive(name)
@@ -479,17 +479,41 @@ function ISBaseTimedAction.new(cls, character)
     return setmetatable({ character = character, stopOnWalk = true, stopOnRun = true, stopOnAim = true, maxTime = -1 }, cls)
 end
 function ISBaseTimedAction:perform() F.performed = (F.performed or 0) + 1 end
-function ISBaseTimedAction:forceComplete() self.forced = true end
+function ISBaseTimedAction:start() end
+-- 佇列輪到它：建 Java 動作交給引擎（清單換成它），引擎呼叫 start（ISBaseTimedAction.lua:83-89、IsoGameCharacter.java:5456-5462）
+function ISBaseTimedAction:begin()
+    self.action = {}
+    self.character.actions = { self.action }
+    self:start()
+end
+-- 引擎下一幀 perform：佇列移掉它、開始下一個（ISBaseTimedAction.lua:68-69、ISTimedActionQueue.lua:60-99）
+function ISBaseTimedAction:forceComplete()
+    self.forced = true
+    self.character.actions = {}
+    ISTimedActionQueue.getTimedActionQueue(self.character):onCompleted(self)
+end
 -- 姿勢：poseCalls 記呼叫順序
 local function poseCall(a, what) a.poseCalls = a.poseCalls or {}; a.poseCalls[#a.poseCalls + 1] = what end
 function ISBaseTimedAction:setActionAnim(anim) poseCall(self, "anim:" .. tostring(anim)) end
-function ISBaseTimedAction:setOverrideHandModels(a, b) poseCall(self, "hands") end
 F.queues = {}
 local Queue = {}
 Queue.__index = Queue
 function Queue:indexOfType(t) -- 找不到回 -1（ISTimedActionQueue.lua:30-37）
     for i, v in ipairs(self.queue) do if v.Type == t then return i end end
     return -1
+end
+function Queue:removeFromQueue(a)
+    for i, v in ipairs(self.queue) do
+        if v == a then
+            table.remove(self.queue, i)
+            return
+        end
+    end
+end
+function Queue:onCompleted(a)
+    self:removeFromQueue(a)
+    local nxt = self.queue[1]
+    if nxt and nxt.begin then nxt:begin() end
 end
 ISTimedActionQueue = {
     add = function(a)
@@ -504,12 +528,10 @@ ISTimedActionQueue = {
     -- 原版：StopAllActionQueue（引擎清單清空，不呼叫 Lua 的 stop）＋清佇列（ISTimedActionQueue.lua:236-243）
     clear = function(p) F.queues[p], p.actions = {}, {} end,
 }
--- 佇列開始第一個動作：建 Java 動作、放進角色的動作清單、呼叫 start（ISBaseTimedAction.lua:83-93）
+-- 佇列開始第一個動作（ISTimedActionQueue.lua 的 addToQueue：第一個進佇列就 begin）
 function F.startAction(p)
     local a = F.queues[p][1]
-    a.action = {}
-    p.actions = { a.action }
-    a:start()
+    a:begin()
     return a
 end
 -- 跑完一位玩家佇列裡的所有動作：isValid 為假＝動作被取消（不 perform）

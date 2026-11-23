@@ -104,9 +104,10 @@ function C.minimapAllowed(pn, looking)
 end
 
 -- 看錶模式的狀態（看錶動作、快捷鍵、面板按鈕、右鍵選單共用）：nil＝不是這個模式；true＝看了就有畫面；
--- false, reasonKey＝看了也沒有（沒戴錶、沒電）
+-- false, reasonKey＝看了也沒有（沒戴錶、沒電）。閘門沒註冊成功（主 MOD 太舊，C.registerGate）也是 nil：
+-- 小地圖其實一直開著，不能再教玩家「看錶才有」
 function C.lookState(pn)
-    if not W.enabled() or C.minimapRule() ~= W.RULE_LOOK then return nil end
+    if not C.gateActive or not W.enabled() or C.minimapRule() ~= W.RULE_LOOK then return nil end
     local ok, reason = C.minimapAllowed(pn, true)
     return ok, reason
 end

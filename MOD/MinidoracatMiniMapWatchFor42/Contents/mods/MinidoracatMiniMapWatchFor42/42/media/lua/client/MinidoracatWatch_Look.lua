@@ -1,7 +1,7 @@
 -- MinidoracatWatch_Look.lua（client）：「看錶」動作。小地圖規則是「看錶時才顯示」（沙盒 MinimapRule 4，或玩家自己勾
 -- 「只在看錶時顯示小地圖」）時，角色做這個動作期間才有小地圖；閘門在 _Client 的 C.gate，用 C.lookActive 問。
--- 動作不會自己結束（maxTime -1，BaseAction.java:116）。結束的方式：再觸發一次、跑步、瞄準、排了別的動作、脫錶、沒電。
--- 走路與開車不中斷（使用者 2026-11-24 裁定）。只在客戶端跑、不定義 complete（理由同 _Action.lua 檔頭；這個動作
+-- 動作不會自己結束（maxTime -1，BaseAction.java:116）。結束的方式：再觸發一次、跑步、瞄準（車上也算）、排了別的動作、
+-- 脫錶、沒電、睡著。走路與開車不中斷（使用者 2026-11-24 裁定）。只在客戶端跑、不定義 complete（理由同 _Action.lua 檔頭；這個動作
 -- 不改任何狀態，伺服器不必知道）。其他玩家看得到姿勢：動作子狀態與動畫變數由引擎同步（PlayerActionsState.java:128-146）。
 -- 入口三個：快捷鍵（綁定在 _LightClient 的 OnGameBoot，同一個分組）、錶的右鍵選單、面板按鈕（_Panel）。
 -- 不是這個模式時三個入口都不出現、不作用（C.lookState 回 nil）。
@@ -17,27 +17,38 @@ ISMinidoracatWatchLookAction = ISBaseTimedAction:derive("ISMinidoracatWatchLookA
 local A = ISMinidoracatWatchLookAction
 
 -- 姿勢只在這裡決定：自製的看錶節點（scripts/look_anim.py 產生；姿勢、遮罩與權重的理由寫在那裡），抬起戴著生效那支錶
--- （W.wornWatch）的手腕。setActionAnim(String) 設 PerformingAction（BaseAction.java:265-280），節點條件就是它；
+-- （C.watchOf，和閘門同一個來源）的手腕。setActionAnim(String) 設 PerformingAction（BaseAction.java:265-280），節點條件就是它；
 -- 同名節點在 AnimSets/player（站、走）與 player-vehicle（座位）各一份，跟原版 Bandage 等動作一樣由角色當下的
 -- AnimSet 挑。錶的物品類型固定分左右（MapWatch_*_Left／_Right），戴在哪個部位都一樣；找不到錶時用左手。
+-- 不呼叫 setOverrideHandModels：傳兩個 nil 是把兩手拿的東西都藏起來（BaseAction.java:297-306），沒戴錶那隻手也會空掉。
 function Look.pose(action)
-    local w = W.wornWatch(action.character)
+    local w = C.watchOf(action.pn)
     local side = (w and w:getFullType():sub(-6) == "_Right") and "R" or "L"
     action:setActionAnim("MinidoracatWatch_Look" .. side)
-    action:setOverrideHandModels(nil, nil)
 end
 
--- 每幀被問（IsoGameCharacter.java:9176）：脫錶、沒電、模式關掉，下一幀就停
-function A:isValid() return C.lookState(self.pn) == true end
+-- 每幀被問（IsoGameCharacter.java:9176）：脫錶、沒電、模式關掉、睡著，下一幀就停
+-- （睡覺只設欄位、不清動作，IsoGameCharacter.java:3158-3160）
+function A:isValid() return C.lookState(self.pn) == true and not self.character:isAsleep() end
+
+-- 輪到時已經不能看（排隊期間脫錶、沒電、規則改了）：只跳過自己。照原版走的話引擎不啟動它，佇列發現第一個動作
+-- 不在引擎清單就整列清掉（ISTimedActionQueue.lua:117-125），排在後面的動作跟著沒了
+function A:begin()
+    if self:isValid() then return ISBaseTimedAction.begin(self) end
+    ISTimedActionQueue.getTimedActionQueue(self.character):onCompleted(self)
+end
 
 function A:start()
     Look.pose(self)
     C.lookAction[self.pn] = self
 end
 
--- 排了別的動作就讓路：這個動作不會結束，不讓路的話後面的動作永遠輪不到
+-- 排了別的動作就讓路：這個動作不會結束，不讓路的話後面的動作永遠輪不到。
+-- 瞄準自己查：走路時引擎會停（stopOnAim），車上那條更新路徑只設瞄準狀態、不停動作（IsoPlayer.java:4396-4446）
 function A:update()
-    if #ISTimedActionQueue.getTimedActionQueue(self.character).queue > 1 then self:forceComplete() end
+    if self.character:isAiming() or #ISTimedActionQueue.getTimedActionQueue(self.character).queue > 1 then
+        self:forceComplete()
+    end
 end
 
 function A:new(character)
@@ -54,16 +65,17 @@ function Look.index(player)
     return ISTimedActionQueue.getTimedActionQueue(player):indexOfType(A.Type)
 end
 
--- 開始或停止。正在做＝停；排隊中＝取消；不是這個模式＝沒反應；沒錶、沒電＝提示原因
+-- 開始或停止。正在做＝停（只結束這個動作，排在後面的照做）；排隊中＝取消；不是這個模式＝沒反應；沒錶、沒電＝提示原因
 function Look.toggle(player)
     local queue = ISTimedActionQueue.getTimedActionQueue(player)
     local i = queue:indexOfType(A.Type)
     if i == 1 then
-        ISTimedActionQueue.clear(player)
+        local a = queue.queue[1]
+        if a.action then a:forceComplete() else ISTimedActionQueue.clear(player) end
         return
     end
     if i > 1 then
-        table.remove(queue.queue, i)
+        queue:removeFromQueue(queue.queue[i])
         return
     end
     local ok, reason = C.lookState(player:getPlayerNum())

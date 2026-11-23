@@ -277,8 +277,9 @@ def main():
     check(bones, edits, G)
     want = {os.path.normpath(os.path.join(OUT, CLIPS[s] + ".x")): s for s in CLIPS}
     xml = {os.path.normpath(p): t for p, t in nodes().items()}
-    have = {os.path.normpath(p) for p in glob.glob(os.path.join(OUT, "MinidoracatWatch_*.x"))
-            + glob.glob(os.path.join(MEDIA, "AnimSets", "*", "*", "MinidoracatWatch_*.xml"))}
+    # 只認這支腳本自己的名字（MinidoracatWatch_Look*）：同前綴的其他動畫不是這裡的產物，不能當成舊檔刪掉
+    have = {os.path.normpath(p) for p in glob.glob(os.path.join(OUT, "MinidoracatWatch_Look*.x"))
+            + glob.glob(os.path.join(MEDIA, "AnimSets", "*", "*", "MinidoracatWatch_Look*.xml"))}
     old = sorted(have - set(want) - set(xml))
     stale = list(old)
 

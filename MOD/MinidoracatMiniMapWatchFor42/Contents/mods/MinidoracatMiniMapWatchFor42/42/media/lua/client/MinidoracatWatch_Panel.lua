@@ -23,6 +23,7 @@ local PAD, GAP = 14, 10
 local PANEL_W, LEFT_W = 740, 290
 local INSP_X = PAD + LEFT_W + 18
 local INSP_MIN_H = 300
+local FOOT_TEXT_MIN = 200 -- 底部電量說明至少這麼寬；按鈕排完剩不到就改成文字一列、按鈕排在下面
 local SOCK, ADDON, ADDON_GAP = 56, 40, 8
 -- 負重列：三格對齊錶面三欄；44px 才畫得出 I／II／III 等級標籤。wt1..wt3 固定在 W.slotList 第 7..9 格，其他 MOD 的槽位接在後面
 local WEIGHT_SOCK, WEIGHT_SLOTS = 44, 3
@@ -662,6 +663,7 @@ function M:build()
     -- 看錶（MinidoracatWatch_Look.lua）：小地圖規則是「看錶時才顯示」、檢視的是戴著的那支才出現；active＝正在看
     self.btnLook = button(getText("IGUI_MinidoracatWatch_Look_Start"), "clock", "chip", M.onLook)
     self.footBtns = { self.btnLook, self.btnLight, self.btnScreen, self.btnRemove, self.btnInsert } -- 由右而左
+    self.footRow = {} -- arrange 換列時重填（由左到右，順序和單列時相同），不另配置
     -- 「取得方式」視窗（MinidoracatWatch_Guide.lua）：排在功能清單最後；鍵盤與手把照框架焦點按得到
     self.btnGuide = button(getText("IGUI_MinidoracatWatch_Guide_Button"), "search", "normal", M.onGuide)
 end
@@ -1049,9 +1051,28 @@ function M:arrange(player, w)
     end
     self.footText = self:composeFoot(player, w)
     self.footTextW = right - PAD - 4
-    local footH = math.max(maxH + 16, #wrap(self.footText, self.footTextW) * fh + 16)
+    local footH
+    if self.footTextW >= FOOT_TEXT_MIN then
+        local textH = #wrap(self.footText, self.footTextW) * fh
+        footH = math.max(maxH + 16, textH + 16)
+        for _, b in ipairs(self.footBtns) do b:setY(y + math.floor((footH - b.height) / 2)) end
+        self.footTextY = y + math.floor((footH - textH) / 2)
+    else
+        -- 按鈕多到文字放不下（嗶嗶腕機的螢幕鈕＋照明＋看錶，字寬的語言或大字級）：文字自己一列，按鈕排到下面、再放不下換列
+        local row, k = self.footRow, 0
+        for i = #self.footBtns, 1, -1 do
+            if show[i] then
+                k = k + 1
+                row[k] = self.footBtns[i]
+            end
+        end
+        self.footTextW = width - 2 * PAD
+        local textH = #wrap(self.footText, self.footTextW) * fh
+        footH = 8 + textH + 8 - flow(row, k, PAD, width - PAD, 0, 8) + 8
+        flow(row, k, PAD, width - PAD, y + footH - 8, 8)
+        self.footTextY = y + 8
+    end
     self.footY, self.footH = y, footH
-    for _, b in ipairs(self.footBtns) do b:setY(y + math.floor((footH - b.height) / 2)) end
     local h = y + footH
     if h ~= self.height then self:setHeight(h) end
 end
@@ -1317,8 +1338,7 @@ function M:drawFooter(UI, colors)
         UI.Skin.dot(self, 5, y + 5, 5, colors.rivet)
         UI.Skin.dot(self, self.width - 10, y + 5, 5, colors.rivet)
     end
-    local lines = wrap(self.footText, self.footTextW)
-    para(self, self.footText, PAD, y + math.floor((h - #lines * fontH()) / 2), self.footTextW, colors.titleText)
+    para(self, self.footText, PAD, self.footTextY, self.footTextW, colors.titleText)
 end
 
 local SCAN_LINE = { r = 0, g = 0, b = 0, a = 0.2 }
