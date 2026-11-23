@@ -87,7 +87,8 @@ module Base
         ValuTech 地圖手錶（基礎款）：原版電子錶＋電子零件＋滿電電池（2026-11-23 使用者裁定，Workshop 玩家許願）。
         - 錶只列原版三款電子錶左右手六個物品，不用 tags[base:digital]：七款地圖手錶與原版名錶也有這個 tag，
           用 tag 會把地圖手錶（連同裝著的模組）當材料。
-        - flags[IsNotWorn]＝戴著的不用（InputScript.java:1016-1020）；收藏的物品引擎本來就不用（:970-976，沒寫 AllowFavorite）。
+        - flags[IsNotWorn]＝自己戴著的不用（InputScript.java:1016-1020；屍體容器裡的物品引擎不做這項檢查，:1016-1017，
+          屍體身上的電子錶可以直接當材料）；收藏的物品引擎本來就不用（:970-976，沒寫 AllowFavorite）。
         - 電池 flags[IsFull;ItemCount] mode:destroy（同 recipes_metalWelding.txt:16）：整顆滿電電池用掉。做好的錶沒有電量紀錄＝
           出廠滿電（shared/MinidoracatWatch.lua 的 W.charge），取出來也是一顆滿電電池；不要求滿電的話，
           快沒電的電池做一支錶再取出就變滿電（規劃書 §4「擋用錶充一般電池」）。
