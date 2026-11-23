@@ -101,6 +101,7 @@ function R.protectWatches()
             end
         end
     end
+    R.usedSum = sum()
     return n
 end
 

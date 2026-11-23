@@ -429,25 +429,33 @@ end
 BodyLocations = { getGroup = function(name) assert(name == "Human"); return Group end }
 dofile(F.MEDIA .. "/../registries.lua")
 
--- ===== 物品腳本（getScriptManager():FindItem 的替身）=====
+-- ===== 物品腳本（getScriptManager():FindItem／getItem 的替身）=====
 -- 同一個 fullType 回同一個物件（ScriptManager 的物品腳本是單例）；部位照腳本、玩家選項會換（W.setWristCovered）。
 -- 測試要的其他欄位用 extra 傳入，只在第一次建立時放；自己替換 getScriptManager 的測試也用它建物件。
 local ScriptItem = { __index = { getBodyLocation = function(self) return self.loc end,
     setBodyLocation = function(self, loc) self.loc = loc end,
+    getFullName = function(self) return self.fullType end,
     getUsedInRecipes = function(self) self.usedIn = self.usedIn or F.mutableList({}); return self.usedIn end } }
 F.scripts = {}
 function F.scriptItem(t, extra)
     local s = F.scripts[t]
     if not s then
         s = setmetatable(extra or {}, ScriptItem)
+        s.fullType = t
         s.loc = t:find("_Left", 1, true) and MinidoracatWatchLocations.LEFT or MinidoracatWatchLocations.RIGHT
         F.scripts[t] = s
     end
     return s
 end
-function getScriptManager()
-    return { FindItem = function(_, t) return F.scriptItem(t) end, getCraftRecipe = function() return nil end }
+-- 假 ScriptManager：物品腳本照上面；配方預設一條都沒有，測試用 over 換掉要的方法
+function F.scriptManager(over)
+    local sm = { FindItem = function(_, t) return F.scriptItem(t) end, getItem = function(_, t) return F.scriptItem(t) end,
+        getCraftRecipe = function() return nil end,
+        getAllCraftRecipes = function() return F.javaList({}) end, getAllBuildableRecipes = function() return F.javaList({}) end }
+    for k, v in pairs(over or {}) do sm[k] = v end
+    return sm
 end
+function getScriptManager() return F.scriptManager() end
 
 -- ===== 計時動作（ISBaseTimedAction.lua:173-184 的形狀；ISTimedActionQueue 只留 add 與佇列）=====
 ISBaseTimedAction = {}
