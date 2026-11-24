@@ -1,5 +1,6 @@
 {
     "IGUI_MinidoracatWatch_DockLabel": "Reloj de mapa",
+    "IGUI_MinidoracatWatch_WhatsNew": "Fabrica un reloj de mapa ValuTech con un reloj digital. Nueva regla \"Solo al mirar el reloj\". El desarmado ya no destruye relojes de mapa.",
     "IGUI_MinidoracatWatch_Open": "Abrir reloj de mapa",
     "IGUI_MinidoracatWatch_InsertBattery": "Insertar pila",
     "IGUI_MinidoracatWatch_ReplaceBattery": "Cambiar pila",

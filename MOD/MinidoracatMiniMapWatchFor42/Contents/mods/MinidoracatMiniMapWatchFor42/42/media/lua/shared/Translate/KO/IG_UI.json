@@ -1,5 +1,6 @@
 {
     "IGUI_MinidoracatWatch_DockLabel": "지도 시계",
+    "IGUI_MinidoracatWatch_WhatsNew": "디지털 손목시계로 ValuTech 지도 시계를 만들 수 있습니다. 새 미니맵 규칙 \"시계를 볼 때만\". 기본 분해 제작법이 지도 시계를 없애지 않습니다.",
     "IGUI_MinidoracatWatch_Open": "지도 시계 열기",
     "IGUI_MinidoracatWatch_InsertBattery": "건전지 넣기",
     "IGUI_MinidoracatWatch_ReplaceBattery": "건전지 교체",

@@ -8,6 +8,22 @@ local W = MinidoracatWatchCore
 local C = {}
 MinidoracatWatchClient = C -- 內部表（測試與 E2E 用），不是公開 API
 
+-- 更新概要（框架 rev 24，WhatsNew）：玩家更新後第一次進遊戲，右上角跳一則本版重點。發布列車的 ready 用 regex
+-- 讀這段：四欄寫字面字串、一欄一行；發版寫了新概要才把 since 改成本版（家族 conventions.md「遊戲內更新概要」）。
+pcall(require, "MinidoracatUI/WhatsNew")
+do
+    local ui = MinidoracatUI and MinidoracatUI.v1
+    if ui and ui.API_MAJOR == 1 and type(ui.API_REVISION) == "number" and ui.API_REVISION >= 24
+            and ui.CAPABILITIES and ui.CAPABILITIES.whatsNew and ui.WhatsNew then
+        ui.WhatsNew.register({
+            modId = "MinidoracatMiniMapWatchFor42",
+            since = "0.9.0",
+            name = "IGUI_MinidoracatWatch_DockLabel",
+            text = "IGUI_MinidoracatWatch_WhatsNew",
+        })
+    end
+end
+
 -- ===== 戴著的錶 =====
 -- gateFn 與 Dock 回呼可能每幀被叫：一律讀 shared 狀態快取 W.status（期限 1 秒，不翻背包、不配置 table）。
 -- 穿脫衣物會觸發 OnClothingUpdated（本機 setWornItem＝IsoGameCharacter.java:3573、伺服器同步＝

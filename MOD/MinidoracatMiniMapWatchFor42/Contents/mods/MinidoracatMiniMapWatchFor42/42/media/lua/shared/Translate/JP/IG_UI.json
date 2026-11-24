@@ -1,5 +1,6 @@
 {
     "IGUI_MinidoracatWatch_DockLabel": "マップウォッチ",
+    "IGUI_MinidoracatWatch_WhatsNew": "デジタル腕時計から ValuTech マップウォッチを作れます。新ルール「ウォッチ確認中のみ」を追加。バニラの分解でマップウォッチが消えなくなりました。",
     "IGUI_MinidoracatWatch_Open": "マップウォッチを開く",
     "IGUI_MinidoracatWatch_InsertBattery": "電池を入れる",
     "IGUI_MinidoracatWatch_ReplaceBattery": "電池を交換",

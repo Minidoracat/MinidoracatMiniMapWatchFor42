@@ -1,5 +1,6 @@
 {
     "IGUI_MinidoracatWatch_DockLabel": "地图手表",
+    "IGUI_MinidoracatWatch_WhatsNew": "可以用原版电子表做 ValuTech 地图手表了。新的小地图规则「看表时才显示」，服务器或玩家都能开。原版拆解电子设备不再拆掉地图手表。",
     "IGUI_MinidoracatWatch_Open": "打开地图手表",
     "IGUI_MinidoracatWatch_InsertBattery": "装入电池",
     "IGUI_MinidoracatWatch_ReplaceBattery": "更换电池",
