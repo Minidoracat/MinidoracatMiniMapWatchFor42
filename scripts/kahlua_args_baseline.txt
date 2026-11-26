@@ -26,7 +26,6 @@
 15	client/MinidoracatWatch_Panel.lua|fontH|0<1
 6	client/MinidoracatWatch_Panel.lua|measure|1<2
 3	client/MinidoracatWatch_Panel.lua|measure|1~2|getText
-1	client/MinidoracatWatch_Panel.lua|new|0<1
 15	client/MinidoracatWatch_Panel.lua|rect|6<7
 6	client/MinidoracatWatch_Panel.lua|text|5<6
 2	client/MinidoracatWatch_Panel.lua|tint|7<8
