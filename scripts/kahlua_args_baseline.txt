@@ -1,0 +1,48 @@
+# 既有的「固定參數少傳」呼叫（scripts/verify_mod.py 第 1c 項）。只會變少：改掉一處就重跑
+# python scripts/verify_mod.py --rebase-args。不要為了讓新的呼叫通過而重跑：少的補 nil 傳齊，
+# 或把選用參數改成 ... 接。只有確定呼叫的是 Java 方法，或最後一個引數的呼叫確定每條路都回夠多個值
+# （key 裡是 ~，後面是那個呼叫的函式名）才加進來。
+1	client/MinidoracatWatch_AdminUI.lua|button|5<8
+9	client/MinidoracatWatch_AdminUI.lua|button|7<8
+3	client/MinidoracatWatch_AdminUI.lua|cell|5<6
+1	client/MinidoracatWatch_AdminUI.lua|check|1<2
+1	client/MinidoracatWatch_AdminUI.lua|enumOptions|1<2
+4	client/MinidoracatWatch_AdminUI.lua|markBad|3<4
+22	client/MinidoracatWatch_AdminUI.lua|para|5<6
+2	client/MinidoracatWatch_AdminUI.lua|row|3~4|T
+5	client/MinidoracatWatch_AdminUI.lua|sbCheck|5<7
+1	client/MinidoracatWatch_AdminUI.lua|sbCheck|6<7
+3	client/MinidoracatWatch_AdminUI.lua|sbCheck|6~7|T
+3	client/MinidoracatWatch_AdminUI.lua|sbDropdown|6<7
+3	client/MinidoracatWatch_Guide.lua|fontH|0<1
+2	client/MinidoracatWatch_Guide.lua|measure|1<2
+3	client/MinidoracatWatch_Hud.lua|say|6~8|T
+1	client/MinidoracatWatch_Hud.lua|say|6~8|failText
+1	client/MinidoracatWatch_Hud.lua|say|7<8
+3	client/MinidoracatWatch_Panel.lua|add|5<7
+2	client/MinidoracatWatch_Panel.lua|box|7<8
+7	client/MinidoracatWatch_Panel.lua|button|4<5
+2	client/MinidoracatWatch_Panel.lua|chip|9~10|getText
+15	client/MinidoracatWatch_Panel.lua|fontH|0<1
+6	client/MinidoracatWatch_Panel.lua|measure|1<2
+3	client/MinidoracatWatch_Panel.lua|measure|1~2|getText
+1	client/MinidoracatWatch_Panel.lua|new|0<1
+15	client/MinidoracatWatch_Panel.lua|rect|6<7
+6	client/MinidoracatWatch_Panel.lua|text|5<6
+2	client/MinidoracatWatch_Panel.lua|tint|7<8
+15	client/MinidoracatWatch_PayClient.lua|button|4<5
+2	client/MinidoracatWatch_PayClient.lua|button|4~5|P.canPay
+5	client/MinidoracatWatch_PayClient.lua|line|2~3|T
+1	client/MinidoracatWatch_PayClient.lua|openSheet|2<3
+9	client/MinidoracatWatch_PayClient.lua|say|2<3
+1	client/MinidoracatWatch_PayClient.lua|say|2~3|T
+2	client/MinidoracatWatch_PayClient.lua|sendAuto|5<6
+6	client/MinidoracatWatch_PayClient.lua|view|1<2
+2	server/MinidoracatWatch_Admin.lua|pushLists|0<1
+2	server/MinidoracatWatch_Economy.lua|register|4<5
+2	shared/MinidoracatWatch.lua|wornWatch|1<2
+3	shared/MinidoracatWatch_Modules.lua|addSlot|4<5
+1	shared/MinidoracatWatch_Modules.lua|copyTable|1<2
+1	shared/MinidoracatWatch_Modules.lua|copyTable|1~2|item:getModData
+2	shared/MinidoracatWatch_Modules.lua|featureDecision|2<3
+1	shared/MinidoracatWatch_Modules.lua|registerModule|1<2
