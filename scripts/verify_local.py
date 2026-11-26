@@ -31,7 +31,7 @@ def ok(label):
 
 
 def fail(label, details=None):
-    # 不讀 verify_ignore.txt：豁免由 verify_mod.py 第 19 項對本檔輸出套用（本檔 FAIL 那一行不會被豁免）
+    # 不讀 verify_ignore.txt，verify_mod.py 第 19 項也不對本檔輸出套用豁免：要豁免就在本檔處理
     details = details or []
     if not details:
         # 呼叫端說「失敗」卻沒附細節：照失敗算，不能因為清單是空的就變成 PASS
